@@ -1,0 +1,66 @@
+package com.example.smarthome.server.netty.handler.security;
+
+import com.example.smarthome.server.netty.handler.ServerHandler;
+import com.example.smarthome.server.service.DeviceAccessService;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.ssl.SslHandler;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class AuthHandler extends ChannelInboundHandlerAdapter {
+
+    private static Logger LOGGER = Logger.getLogger(AuthHandler.class.getName());
+    private final Encryption enc;
+    private  DeviceAccessService service;
+
+    public AuthHandler() {
+        enc = new Encryption();
+        service = DeviceAccessService.getInstance();
+    }
+
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        Channel ch = ctx.channel();
+        LOGGER.log(Level.INFO, "Channel is active");
+
+        ctx.pipeline().get(SslHandler.class).handshakeFuture().addListener(future ->
+                LOGGER.log(Level.INFO, "SSL handshake is success!")
+        );
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        Channel ch = ctx.channel();
+
+        if (!enc.isKeySet()) {
+            // тут нам клиент прислал свой публичный ключ
+            byte[] pKeyEnc = enc.getPublicKey((byte[]) msg);
+            ch.writeAndFlush(pKeyEnc);
+
+            ch.pipeline().addAfter("frameEncoder", "cipherDecoder", new CipherDecoder(enc));
+            ch.pipeline().addAfter("cipherDecoder", "cipherEncoder", new CipherEncoder(enc));
+            ch.pipeline().remove("bytesDecoder");
+            ch.pipeline().remove("bytesEncoder");
+
+            LOGGER.log(Level.INFO, "Encryption AES key is: " + enc.isKeySet());
+        } else {
+            // а тут он высылает токен, который был получен пользователем в телеграме
+            LOGGER.log(Level.INFO, String.format("Token from channel %s is %s", ch.remoteAddress(), msg));
+
+            if (service.isExists(msg.toString())) {
+                LOGGER.log(Level.INFO, "Token is right");
+
+                ch.pipeline().addLast("mainHandler", new ServerHandler(msg.toString(), ch));
+                ch.pipeline().remove("idleHandler");
+                ch.pipeline().remove("eventHandler");
+                ch.pipeline().remove("authHandler");
+            } else {
+                LOGGER.log(Level.INFO, "Token is wrong");
+                ctx.close();
+            }
+        }
+    }
+}
