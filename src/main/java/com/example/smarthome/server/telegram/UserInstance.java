@@ -1,9 +1,9 @@
 package com.example.smarthome.server.telegram;
 
+import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.service.DeviceAccessService;
-import io.netty.channel.Channel;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
@@ -11,8 +11,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,26 +20,35 @@ class UserInstance {
     /* ***************************** MAIN ******************************************************* */
     private static final String defaultMain = "Команды '%s' не существует. Пожалуйста, " +
             "наберите команду \"меню\" чтобы воспользоваться ботом";
+
     /* ********************************* DEFAULT IN SECTION ************************************* */
     private static final String defaultSection = "Команды '%s' нет в данном разделе. Пожалуйста, " +
             "выберите один из предложенных вариантов";
+
     /* ************************************* MENU *********************************************** */
     private static final String menuMsg = "Нажмите \"Управление домом\" чтобы перейти к управлению умным домом и " +
             "просмотру информации с датчиков или нажмите \"Информация\", чтобы узнать точное время или погоду";
     private static final List<String> menuButtons;
+
     /* ************************************* INFO ************************************************ */
     private static final String infoMsg = "Выберите \"Погода\" чтобы узнать погоду в совём городе " +
             "или нажмите \"Время\"чтобы узнать точное время в вашем городе";
     private static final List<String> infoButtons;
+
     /* ********************************** NOTHING ************************************************ */
     private static final String nothingToShow = "Тут пока ничего нет...";
+
     /* *********************************** HOME CONTROL *************************************** */
+    private static final List<String> homeControlBtns;
+    private static final String addBtn = "Добавить";
     private static final String tokenNotFound = "Похоже, что у Вас нет токена...\nЧтобы управлять домом через этого телеграм " +
             "бота Вам нужен уникальный токен, который Ваша Raspberry PI будет использовать для подключения у серверу";
-    private static final List<String> tokenBtn;
+    private static final List<String> tokenGenBtn;
     private static final String channelNotFound = "Ваша Raspberry PI не подключена к серверу\n" +
             "Введите, пожалуйста, свой токен в соответствующем разделе в приложении чтобы Ваше устройство могло " +
             "подключиться к серверу";
+
+    /* ******************************** STATIC FINAL VARIABLES ********************************************** */
     private static final Logger LOGGER;
     private static final YandexWeather weatherService;
     private static final DeviceAccessService service;
@@ -59,10 +68,19 @@ class UserInstance {
             add("Время");
         }};
 
-        tokenBtn = new ArrayList<String>() {{
+        tokenGenBtn = new ArrayList<String>() {{
             add("Сгенерировать токен");
         }};
+
+        homeControlBtns = new ArrayList<String>() {{
+            add("Устройства");
+            add("Датчики");
+        }};
     }
+
+    /* ************************************ TEMP VARIABLES ************************************************** */
+    private Output creationOutput;
+    private Map<String, Integer> outputsMap;
 
     private int level = 0;
     private int subLevel = 0;
@@ -78,26 +96,19 @@ class UserInstance {
         if (incoming.equals("меню") || incoming.equals("/start")) {
             messages.add(getKeyboard(menuMsg, menuButtons, userId, false));
             level = 1;
-            return messages;
-        } else if (level == 0) {
+        } else if (level == 0)
             messages.add(createMsg(userId).setText(String.format(defaultMain, incoming)));
-        }
+
+        if (!messages.isEmpty()) return messages;
 
         switch (level) {
             case 1:
                 switch (incoming) {
                     case "управление домом":
                         if (service.isExists(userId)) {
-                            try {
-                                Channel ch = service.getChannel(userId);
-                                messages.add(getKeyboard(nothingToShow, null, userId, true));
-                            } catch (ChannelNotFoundException e) {
-                                LOGGER.log(Level.WARNING, e.getMessage());
-                                messages.add(getKeyboard(channelNotFound, null, userId, true));
-                            }
-                        }
-                        else
-                            messages.add(getKeyboard(tokenNotFound, tokenBtn, userId, true));
+                            messages.add(getHomeControl());
+                        } else
+                            messages.add(getKeyboard(tokenNotFound, tokenGenBtn, userId, true));
                         subLevel = 1;
                         level++;
                         break;
@@ -114,12 +125,37 @@ class UserInstance {
                 switch (subLevel) {
                     case 1:
                         switch (incoming) {
+                            case "устройства":
+                                List<String> outputsBtns = new ArrayList<>();
+
+                                for (Output output : getOutputs()) {
+                                    outputsBtns.add(output.getName());
+                                    outputsMap.put(output.getName(), output.getOutputId());
+                                }
+                                outputsBtns.add(addBtn);
+
+                                messages.add(getKeyboard("Нажмите на существующее устройство или добавьте новое",
+                                        outputsBtns, userId, true));
+                                level++;
+                                subLevel = 1;
+                                break;
+                            case "датчики":
+                                // Запрашиваем с raspberry pi все подключенные датчики и выводим их как кнопки
+                                List<String> inputsBtns = new ArrayList<>();
+
+                                inputsBtns.add(addBtn);
+
+                                messages.add(getKeyboard("Нажмите на существующий датчик или добавьте новый",
+                                        inputsBtns, userId, true));
+                                level++;
+                                subLevel = 2;
+                                break;
                             case "сгенерировать токен":
                                 try {
                                     messages.add(createMsg(userId)
                                             .setText("Ваш токен успешно сгенерирован!\n" +
                                                     "Он требуется для подключения Вашего устройства к серверу.\n" +
-                                                    "Пожалуйста, скопируйте и вставьте Ваш токен в соответствующий раздел в"+
+                                                    "Пожалуйста, скопируйте и вставьте Ваш токен в соответствующий раздел в" +
                                                     "приложении, чтобы Ваше устройство могло подключиться к серверу\n\n" +
                                                     "\u2B07\u2B07\u2B07 ВАШ ТОКЕН \u2B07\u2B07\u2B07"));
                                     // Сообщение с токеном
@@ -171,6 +207,36 @@ class UserInstance {
                         break;
                 }
                 break;
+            case 3:
+                switch (subLevel) {
+                    case 1:
+                        if (incoming.equals("добавить")) {
+                            // код для добавления кнопки
+                        } else if (incoming.equals("назад")) {
+                            messages.add(getHomeControl());
+                            subLevel = 1;
+                            level--;
+                        } else if (outputsMap.containsKey(incoming)) {
+                            // код для показа информации о кнопке
+                        } else {
+                            messages.add(createMsg(userId).setText(String.format(defaultSection, incoming)));
+                        }
+                        break;
+                    case 2:
+                        if (incoming.equals("добавить")) {
+                            // код для добавления кнопки
+                        } else if (incoming.equals("назад")) {
+                            messages.add(getHomeControl());
+                            subLevel = 1;
+                            level--;
+                        } /*else if () {
+                            // код для показа информации о кнопке
+                        }*/ else {
+                            messages.add(createMsg(userId).setText(String.format(defaultSection, incoming)));
+                        }
+                        break;
+                }
+                break;
         }
 
         return messages;
@@ -183,7 +249,8 @@ class UserInstance {
     private SendMessage getKeyboard(String messageText, List<String> buttonsText, long userId, Boolean prevBtn) {
         SendMessage msg = createMsg(userId);
 
-        msg.setText(messageText);
+        if (messageText != null)
+            msg.setText(messageText);
 
         ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup()
                 .setResizeKeyboard(true)
@@ -214,6 +281,33 @@ class UserInstance {
         markup.setKeyboard(keyboard);
         msg.setReplyMarkup(markup);
 
+        return msg;
+    }
+
+    private Output getOutputByName(String name) {
+        for (Output output : getOutputs()) {
+            if (output.getName().equals(name)) return output;
+        }
+        return null;
+    }
+
+    private List<Output> getOutputs() {
+        List<Output> outputList = new ArrayList<>();
+        // метод, в котором мы получаем устройства с Raspberry PI
+        return outputList;
+    }
+
+    private SendMessage getHomeControl() {
+        SendMessage msg;
+        try {
+            service.getChannel(userId);
+            msg = getKeyboard("Выберите Устройства, чтобы управлять устройствами " +
+                    "или добавить новое, или выберите Датчики чтобы посмотреть показания или добавить " +
+                    "новый датчик", homeControlBtns, userId, true);
+        } catch (ChannelNotFoundException e) {
+            LOGGER.log(Level.WARNING, e.getMessage());
+            msg = getKeyboard(channelNotFound, null, userId, true);
+        }
         return msg;
     }
 }
