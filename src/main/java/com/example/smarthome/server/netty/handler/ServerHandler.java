@@ -14,25 +14,38 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
 
     private static Logger LOGGER;
     private static Map<String, Channel> tokenToChannel;
+    private static Map<Channel, String> channelToToken;
 
     static {
         LOGGER = Logger.getLogger(ServerHandler.class.getName());
+
         tokenToChannel = new HashMap<>();
+        channelToToken = new HashMap<>();
     }
 
     public ServerHandler(String token, Channel ch) {
         tokenToChannel.put(token, ch);
+        channelToToken.put(ch, token);
     }
 
     public static Channel getChannel(String token) {
         return tokenToChannel.get(token);
     }
 
+    private static void removeChannel(Channel channel) {
+        tokenToChannel.remove(channelToToken.get(channel));
+    }
+
+    @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        removeChannel(ctx.channel());
+    }
+
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         Channel ch = ctx.channel();
 
-        LOGGER.log(Level.INFO, "Main Handler added");
+        LOGGER.log(Level.INFO, "Main handler has added");
 
         ch.writeAndFlush("Your protection is: " +
                         ctx.pipeline().get(SslHandler.class).engine().getSession().getCipherSuite() + "\r\n");

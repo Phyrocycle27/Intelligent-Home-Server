@@ -14,22 +14,23 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.security.SecureRandom;
+import java.util.HashSet;
 import java.util.logging.Logger;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DeviceAccessService {
 
-    private static DeviceAccessService instance;
-    @Setter
-    private TokensRepository tokensRepo;
-    @Setter
-    private TelegramUsersRepository usersRepo;
-
     private static final Logger LOGGER;
+    private static DeviceAccessService instance;
 
     static {
         LOGGER = Logger.getLogger(DeviceAccessService.class.getName());
     }
+
+    @Setter
+    private TokensRepository tokensRepo;
+    @Setter
+    private TelegramUsersRepository usersRepo;
 
     public static synchronized DeviceAccessService getInstance() {
         if (instance == null) {
@@ -39,12 +40,16 @@ public class DeviceAccessService {
     }
 
     public String createToken(long userId) throws UserAlreadyExistsException {
-        if(isExists(userId)) throw new UserAlreadyExistsException(userId);
+        if (isExists(userId)) throw new UserAlreadyExistsException(userId);
 
         String tokenStr = SecureTokenGenerator.nextToken();
 
-        Token token = new Token(0, tokenStr);
+        Token token = new Token(0, tokenStr, null);
         TelegramUser user = new TelegramUser(userId, "admin", token);
+
+        token.setUsers(new HashSet<TelegramUser>(){{
+            add(user);
+        }});
 
         tokensRepo.save(token);
         usersRepo.save(user);
@@ -52,14 +57,11 @@ public class DeviceAccessService {
         return tokenStr;
     }
 
-    public Channel getChannel(long userId) throws ChannelNotFoundException, UserNotFoundException {
-        if (usersRepo.existsById(userId)) {
+    public Channel getChannel(long userId) throws ChannelNotFoundException {
+        Channel ch = ServerHandler.getChannel(usersRepo.getOne(userId).getToken().getToken());
 
-            Channel ch = ServerHandler.getChannel(usersRepo.getOne(userId).getToken().getToken());
-
-            if (ch == null) throw new ChannelNotFoundException(userId);
-            return ch;
-        } else throw new UserNotFoundException(userId);
+        if (ch == null) throw new ChannelNotFoundException(userId);
+        return ch;
     }
 
     public void addUser(long newUserId, String newUserRole, long userId, String userRole)

@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 import java.time.LocalDateTime;
 
 @Data
-@EqualsAndHashCode(of = {"outputId"}, callSuper = false)
+@EqualsAndHashCode(of = {"outputId"})
 public class Output {
 
     private Integer outputId;
