@@ -5,8 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
 
 @Data
 @Entity
@@ -22,7 +20,4 @@ public class Token {
 
     @Column(name = "token", nullable = false, unique = true, updatable = false, length = 32)
     private String token;
-
-    @OneToMany(mappedBy = "token", cascade = {CascadeType.ALL})
-    private Set<TelegramUser> users = new HashSet<>();
 }

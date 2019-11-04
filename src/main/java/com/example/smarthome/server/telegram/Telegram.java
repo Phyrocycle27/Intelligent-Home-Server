@@ -40,9 +40,7 @@ public class Telegram implements Runnable {
             options.setRequestConfig(requestConfig);
 
             bot = new Bot(options);
-        } else {
-            bot = new Bot();
-        }
+        } else bot = new Bot();
 
         try {
             telegram.registerBot(bot);

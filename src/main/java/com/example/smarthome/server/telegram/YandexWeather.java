@@ -93,10 +93,10 @@ class YandexWeather {
 
     private String getPrecWithStrength(int precCode, double strength) {
         String prec = getPrec(precCode);
-        if (strength == 1) return prec.equals("дождь") ? "сильный ливень" : "очень сильный" + prec;
-        else if (strength == 0.75) return "сильный" + prec;
+        if (strength == 1) return prec.equals("дождь") ? "сильный ливень" : "очень сильный " + prec;
+        else if (strength == 0.75) return "сильный " + prec;
         else if (strength == 0.5) return prec;
-        else if (strength == 0.25) return "слабый" + prec;
+        else if (strength == 0.25) return "слабый " + prec;
         else return prec;
     }
 

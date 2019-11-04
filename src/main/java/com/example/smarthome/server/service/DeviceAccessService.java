@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.security.SecureRandom;
+import java.util.logging.Logger;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DeviceAccessService {
@@ -24,6 +25,12 @@ public class DeviceAccessService {
     @Setter
     private TelegramUsersRepository usersRepo;
 
+    private static final Logger LOGGER;
+
+    static {
+        LOGGER = Logger.getLogger(DeviceAccessService.class.getName());
+    }
+
     public static synchronized DeviceAccessService getInstance() {
         if (instance == null) {
             instance = new DeviceAccessService();
@@ -32,11 +39,11 @@ public class DeviceAccessService {
     }
 
     public String createToken(long userId) throws UserAlreadyExistsException {
-        if(isUserRegistered(userId)) throw new UserAlreadyExistsException(userId);
+        if(isExists(userId)) throw new UserAlreadyExistsException(userId);
 
         String tokenStr = SecureTokenGenerator.nextToken();
 
-        Token token = new Token(0, tokenStr, null);
+        Token token = new Token(0, tokenStr);
         TelegramUser user = new TelegramUser(userId, "admin", token);
 
         tokensRepo.save(token);
@@ -55,16 +62,25 @@ public class DeviceAccessService {
         } else throw new UserNotFoundException(userId);
     }
 
-    public void addUser(long newUserId, String newUserRole, long userId, String userRole) {
-        // Нужно сделать
+    public void addUser(long newUserId, String newUserRole, long userId, String userRole)
+            throws UserAlreadyExistsException, UserNotFoundException {
+
+        if (isExists(newUserId)) throw new UserAlreadyExistsException(newUserId);
+        if (!isExists(userId)) throw new UserNotFoundException(userId);
+
+        Token token = usersRepo.getOne(userId).getToken();
+        TelegramUser user = new TelegramUser(newUserId, newUserRole, token);
+
+        usersRepo.save(user);
     }
 
-    private boolean isUserRegistered(long userId) {
-        return usersRepo.existsById(userId);
-    }
-
+    // For Netty authHandler
     public boolean isExists(String token) {
         return !tokensRepo.findByToken(token).isEmpty();
+    }
+
+    public boolean isExists(long userId) {
+        return usersRepo.existsById(userId);
     }
 
     private static class SecureTokenGenerator {

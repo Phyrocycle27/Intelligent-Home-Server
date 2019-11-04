@@ -12,13 +12,17 @@ import java.util.logging.Logger;
 
 public class AuthHandler extends ChannelInboundHandlerAdapter {
 
-    private static Logger LOGGER = Logger.getLogger(AuthHandler.class.getName());
+    private static final Logger LOGGER;
+    private static final DeviceAccessService service;
     private final Encryption enc;
-    private  DeviceAccessService service;
+
+    static {
+        service = DeviceAccessService.getInstance();
+        LOGGER = Logger.getLogger(AuthHandler.class.getName());
+    }
 
     public AuthHandler() {
         enc = new Encryption();
-        service = DeviceAccessService.getInstance();
     }
 
     @Override

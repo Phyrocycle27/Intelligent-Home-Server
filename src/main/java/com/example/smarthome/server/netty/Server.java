@@ -44,7 +44,7 @@ public class Server implements Runnable {
         try {
             ServerBootstrap bootstrap = new ServerBootstrap()
                     .group(bossGroup, workerGroup)
-                    .option(ChannelOption.SO_BACKLOG, 100) // limit of connections
+                    .option(ChannelOption.SO_BACKLOG, 1000) // limit of connections
                     .channel(NioServerSocketChannel.class)
                     .childHandler(new ServerInitializer(sslCtx));
 
