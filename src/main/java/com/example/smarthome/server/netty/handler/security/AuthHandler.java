@@ -1,6 +1,6 @@
 package com.example.smarthome.server.netty.handler.security;
 
-import com.example.smarthome.server.netty.handler.ServerHandler;
+import com.example.smarthome.server.netty.handler.SessionHandler;
 import com.example.smarthome.server.service.DeviceAccessService;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -27,7 +27,6 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-        Channel ch = ctx.channel();
         LOGGER.log(Level.INFO, "Channel is active");
 
         ctx.pipeline().get(SslHandler.class).handshakeFuture().addListener(future ->
@@ -57,7 +56,7 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
             if (service.isExists(msg.toString())) {
                 LOGGER.log(Level.INFO, "Token is right");
 
-                ch.pipeline().addLast("mainHandler", new ServerHandler(msg.toString(), ch));
+                ch.pipeline().addLast("sessionHandler", new SessionHandler(msg.toString(), ch));
                 ch.pipeline().remove("idleHandler");
                 ch.pipeline().remove("eventHandler");
                 ch.pipeline().remove("authHandler");

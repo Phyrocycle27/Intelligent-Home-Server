@@ -71,10 +71,10 @@ public class Bot extends TelegramLongPollingBot {
         } else messages = new ArrayList<SendMessage>() {{
             add(new SendMessage()
                     .setChatId(update.getMessage().getChatId())
-                    .setText("Sorry, I can't read your message because it not contains text")
+                    .setText("Извините, я не могу прочитать ваше собщение, потому что оно не содержит текст")
             );
         }};
-        // executing the message
+        // sending the message
         try {
             for (SendMessage message : messages) {
                 execute(message);

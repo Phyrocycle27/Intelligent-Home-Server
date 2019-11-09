@@ -5,7 +5,7 @@ import com.example.smarthome.server.entity.Token;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
-import com.example.smarthome.server.netty.handler.ServerHandler;
+import com.example.smarthome.server.netty.handler.SessionHandler;
 import com.example.smarthome.server.repository.TelegramUsersRepository;
 import com.example.smarthome.server.repository.TokensRepository;
 import io.netty.channel.Channel;
@@ -22,15 +22,14 @@ public class DeviceAccessService {
 
     private static final Logger LOGGER;
     private static DeviceAccessService instance;
-
-    static {
-        LOGGER = Logger.getLogger(DeviceAccessService.class.getName());
-    }
-
     @Setter
     private TokensRepository tokensRepo;
     @Setter
     private TelegramUsersRepository usersRepo;
+
+    static {
+        LOGGER = Logger.getLogger(DeviceAccessService.class.getName());
+    }
 
     public static synchronized DeviceAccessService getInstance() {
         if (instance == null) {
@@ -58,7 +57,7 @@ public class DeviceAccessService {
     }
 
     public Channel getChannel(long userId) throws ChannelNotFoundException {
-        Channel ch = ServerHandler.getChannel(usersRepo.getOne(userId).getToken().getToken());
+        Channel ch = SessionHandler.getChannel(usersRepo.getOne(userId).getToken().getToken());
 
         if (ch == null) throw new ChannelNotFoundException(userId);
         return ch;

@@ -2,28 +2,27 @@ package com.example.smarthome.server.netty.handler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.ssl.SslHandler;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ServerHandler extends SimpleChannelInboundHandler<String> {
+public class SessionHandler extends ChannelInboundHandlerAdapter {
 
     private static Logger LOGGER;
     private static Map<String, Channel> tokenToChannel;
     private static Map<Channel, String> channelToToken;
 
     static {
-        LOGGER = Logger.getLogger(ServerHandler.class.getName());
+        LOGGER = Logger.getLogger(SessionHandler.class.getName());
 
         tokenToChannel = new HashMap<>();
         channelToToken = new HashMap<>();
     }
 
-    public ServerHandler(String token, Channel ch) {
+    public SessionHandler(String token, Channel ch) {
         tokenToChannel.put(token, ch);
         channelToToken.put(ch, token);
     }
@@ -43,28 +42,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-        Channel ch = ctx.channel();
-
-        LOGGER.log(Level.INFO, "Main handler has added");
-
-        ch.writeAndFlush("Your protection is: " +
-                        ctx.pipeline().get(SslHandler.class).engine().getSession().getCipherSuite() + "\r\n");
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        Channel ch = ctx.channel();
-
-        LOGGER.log(Level.INFO, "Channel inactive");
-    }
-
-    @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String s) throws Exception {
-        Channel ch = ctx.channel();
-
-        LOGGER.log(Level.INFO, "New message on channel");
-
-        ch.writeAndFlush("[you] " + s + "\r\n");
+        LOGGER.log(Level.INFO, "Session handler has added");
     }
 
     @Override

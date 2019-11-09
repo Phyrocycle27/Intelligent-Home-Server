@@ -4,10 +4,15 @@ import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.service.DeviceAccessService;
+import io.netty.channel.*;
+import org.apache.http.client.methods.HttpGet;
+import org.json.JSONObject;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -126,18 +131,25 @@ class UserInstance {
                     case 1:
                         switch (incoming) {
                             case "устройства":
-                                List<String> outputsBtns = new ArrayList<>();
+                                try {
+                                    List<String> outputsBtns = new ArrayList<>();
 
-                                for (Output output : getOutputs()) {
-                                    outputsBtns.add(output.getName());
-                                    outputsMap.put(output.getName(), output.getOutputId());
+                                    for (Output output : getOutputs(null)) {
+                                        outputsBtns.add(output.getName());
+                                        outputsMap.put(output.getName(), output.getOutputId());
+                                        outputsBtns.add(addBtn);
+                                    }
+
+                                    messages.add(getKeyboard("Нажмите на существующее устройство или " +
+                                                    "добавьте новое",
+                                            outputsBtns, userId, true));
+
+                                    level++;
+                                    subLevel = 1;
+                                } catch (ChannelNotFoundException e) {
+                                    LOGGER.log(Level.WARNING, e.getMessage());
+                                    messages.add(getKeyboard(channelNotFound, null, userId, true));
                                 }
-                                outputsBtns.add(addBtn);
-
-                                messages.add(getKeyboard("Нажмите на существующее устройство или добавьте новое",
-                                        outputsBtns, userId, true));
-                                level++;
-                                subLevel = 1;
                                 break;
                             case "датчики":
                                 // Запрашиваем с raspberry pi все подключенные датчики и выводим их как кнопки
@@ -242,6 +254,98 @@ class UserInstance {
         return messages;
     }
 
+    private Output getOutputByName(String name) throws ChannelNotFoundException {
+        for (Output output : getOutputs(null)) {
+            if (output.getName().equals(name)) return output;
+        }
+        return null;
+    }
+
+    private List<Output> getOutputs(String type) throws ChannelNotFoundException {
+        List<Output> outputList = new ArrayList<>();
+        // метод, в котором мы получаем устройства с Raspberry PI
+        // собираем запрос
+        try {
+            URI uri = new URI(String.format("http://localhost:8080/outputs?type=%s", type != null ? type : ""));
+
+            HttpGet request = new HttpGet(uri);
+            request.addHeader("content-type", "application/json");
+
+            // Составляем HTTP запрос из JSON
+            JSONObject jsonRequest = new JSONObject()
+                    .put("type", "request")
+                    .put("body", new JSONObject()
+                            .put("method", "GET")
+                            .put("uri", uri));
+
+            JSONObject data = getDataFromClient(jsonRequest);
+
+            LOGGER.log(Level.INFO, data.toString());
+
+
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+
+        return outputList;
+    }
+
+    private JSONObject getDataFromClient(JSONObject request) throws ChannelNotFoundException {
+        JSONObject obj = new JSONObject();
+        Channel ch = service.getChannel(userId);
+
+
+            ChannelFuture f = ch.writeAndFlush(request.toString()).addListener((ChannelFutureListener) channelFuture -> {
+                LOGGER.log(Level.INFO, "Waiting message from Raspberry PI...");
+
+                if (ch.pipeline().names().contains("msgTmpReader"))
+                    ch.pipeline().remove("msgTmpReader");
+
+                ch.pipeline().addBefore("sessionHandler", "msgTmpReader", new ChannelInboundHandlerAdapter() {
+
+                    @Override
+                    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                        LOGGER.log(Level.INFO, String.format("This is answer from client: %s", msg));
+
+                        obj.put("head", new JSONObject(msg.toString()));
+                    }
+
+                    @Override
+                    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+                        LOGGER.log(Level.INFO, "Handler deleting");
+                        ch.pipeline().remove(this);
+
+                        synchronized (obj) {
+                            obj.notify();
+                        }
+                    }
+                });
+            });
+
+        try {
+            synchronized (obj) {
+                obj.wait();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return obj;
+    }
+
+    private SendMessage getHomeControl() {
+        SendMessage msg;
+        try {
+            service.getChannel(userId);
+            msg = getKeyboard("Выберите Устройства, чтобы управлять устройствами " +
+                    "или добавить новое, или выберите Датчики чтобы посмотреть показания или добавить " +
+                    "новый датчик", homeControlBtns, userId, true);
+        } catch (ChannelNotFoundException e) {
+            LOGGER.log(Level.WARNING, e.getMessage());
+            msg = getKeyboard(channelNotFound, null, userId, true);
+        }
+        return msg;
+    }
+
     private SendMessage createMsg(long chatId) {
         return new SendMessage().setChatId(chatId);
     }
@@ -281,33 +385,6 @@ class UserInstance {
         markup.setKeyboard(keyboard);
         msg.setReplyMarkup(markup);
 
-        return msg;
-    }
-
-    private Output getOutputByName(String name) {
-        for (Output output : getOutputs()) {
-            if (output.getName().equals(name)) return output;
-        }
-        return null;
-    }
-
-    private List<Output> getOutputs() {
-        List<Output> outputList = new ArrayList<>();
-        // метод, в котором мы получаем устройства с Raspberry PI
-        return outputList;
-    }
-
-    private SendMessage getHomeControl() {
-        SendMessage msg;
-        try {
-            service.getChannel(userId);
-            msg = getKeyboard("Выберите Устройства, чтобы управлять устройствами " +
-                    "или добавить новое, или выберите Датчики чтобы посмотреть показания или добавить " +
-                    "новый датчик", homeControlBtns, userId, true);
-        } catch (ChannelNotFoundException e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
-            msg = getKeyboard(channelNotFound, null, userId, true);
-        }
         return msg;
     }
 }
