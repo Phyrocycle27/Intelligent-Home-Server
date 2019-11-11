@@ -15,6 +15,7 @@ import lombok.Setter;
 
 import java.security.SecureRandom;
 import java.util.HashSet;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -38,9 +39,7 @@ public class DeviceAccessService {
         return instance;
     }
 
-    public String createToken(long userId) throws UserAlreadyExistsException {
-        if (isExists(userId)) throw new UserAlreadyExistsException(userId);
-
+    public String createToken(long userId)  {
         String tokenStr = SecureTokenGenerator.nextToken();
 
         Token token = new Token(0, tokenStr, null);
@@ -63,6 +62,7 @@ public class DeviceAccessService {
         return ch;
     }
 
+    // не добавлена в продакшн
     public void addUser(long newUserId, String newUserRole, long userId, String userRole)
             throws UserAlreadyExistsException, UserNotFoundException {
 
@@ -75,13 +75,23 @@ public class DeviceAccessService {
         usersRepo.save(user);
     }
 
-    // For Netty authHandler
-    public boolean isExists(String token) {
-        return !tokensRepo.findByToken(token).isEmpty();
+    public boolean isChannelExist(long userId) {
+        boolean flag = false;
+        try {
+            flag = getChannel(userId) != null;
+        } catch (ChannelNotFoundException e) {
+            LOGGER.log(Level.ALL, e.getMessage());
+        }
+        return flag;
     }
 
     public boolean isExists(long userId) {
         return usersRepo.existsById(userId);
+    }
+
+    // For Netty authHandler
+    public boolean isExists(String token) {
+        return !tokensRepo.findByToken(token).isEmpty();
     }
 
     private static class SecureTokenGenerator {

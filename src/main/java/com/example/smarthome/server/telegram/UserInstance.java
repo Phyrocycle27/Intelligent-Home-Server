@@ -2,26 +2,25 @@ package com.example.smarthome.server.telegram;
 
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
-import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import io.netty.channel.*;
-import org.apache.http.client.methods.HttpGet;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 class UserInstance {
+
     /* ***************************** MAIN ******************************************************* */
     private static final String defaultMain = "Команды '%s' не существует. Пожалуйста, " +
             "наберите команду \"меню\" чтобы воспользоваться ботом";
@@ -45,14 +44,20 @@ class UserInstance {
 
     /* *********************************** HOME CONTROL *************************************** */
     private static final List<String> homeControlBtns;
-    private static final String addBtn = "Добавить";
-    private static final String tokenNotFound = "Похоже, что у Вас нет токена...\nЧтобы управлять домом через этого телеграм " +
-            "бота Вам нужен уникальный токен, который Ваша Raspberry PI будет использовать для подключения у серверу";
-    private static final List<String> tokenGenBtn;
     private static final String channelNotFound = "Ваша Raspberry PI не подключена к серверу\n" +
             "Введите, пожалуйста, свой токен в соответствующем разделе в приложении чтобы Ваше устройство могло " +
             "подключиться к серверу";
-
+    private static final String homeControl = "Выберите Устройства, чтобы управлять устройствами или добавить новое, или " +
+            "выберите Датчики чтобы посмотреть показания или добавить новый датчик";
+    // ********************* TOKEN **********************
+    private static final String tokenAlreadyHaveGot = "Вам уже выдан токен. Введите его, пожалуйста, в соответствующем разделе " +
+            "в приложении чтобы Ваше устройство могло подключиться к серверу";
+    private static final String tokenSuccessGen = "Ваш токен успешно сгенерирован!\nОн требуется для подключения Вашего " +
+            "устройства к серверу.\nПожалуйста, скопируйте и вставьте Ваш токен в соответствующий раздел в приложении, " +
+            "чтобы Ваше устройство могло подключиться к серверу\n\n\u2B07\u2B07\u2B07 ВАШ ТОКЕН \u2B07\u2B07\u2B07";
+    private static final String tokenNotFound = "Похоже, что у Вас нет токена...\nЧтобы управлять домом через этого телеграм " +
+            "бота Вам нужен уникальный токен, который Ваша Raspberry PI будет использовать для подключения у серверу";
+    private static final List<String> tokenGenBtn;
     /* ******************************** STATIC FINAL VARIABLES ********************************************** */
     private static final Logger LOGGER;
     private static final YandexWeather weatherService;
@@ -93,13 +98,14 @@ class UserInstance {
 
     UserInstance(long userId) {
         this.userId = userId;
+        outputsMap = new HashMap<>();
     }
 
     List<SendMessage> getMessage(String incoming) {
         List<SendMessage> messages = new ArrayList<>();
 
         if (incoming.equals("меню") || incoming.equals("/start")) {
-            messages.add(getKeyboard(menuMsg, menuButtons, userId, false));
+            messages.add(getKeyboard(menuMsg, menuButtons, userId, false, false));
             level = 1;
         } else if (level == 0)
             messages.add(createMsg(userId).setText(String.format(defaultMain, incoming)));
@@ -112,13 +118,15 @@ class UserInstance {
                     case "управление домом":
                         if (service.isExists(userId)) {
                             messages.add(getHomeControl());
-                        } else
-                            messages.add(getKeyboard(tokenNotFound, tokenGenBtn, userId, true));
-                        subLevel = 1;
-                        level++;
+                        } else {
+                            messages.add(getKeyboard(tokenNotFound, tokenGenBtn, userId, true,
+                                    false));
+                            subLevel = 1;
+                            level++;
+                        }
                         break;
                     case "информация":
-                        messages.add(getKeyboard(infoMsg, infoButtons, userId, true));
+                        messages.add(getKeyboard(infoMsg, infoButtons, userId, true, false));
                         subLevel = 2;
                         level++;
                         break;
@@ -134,57 +142,48 @@ class UserInstance {
                                 try {
                                     List<String> outputsBtns = new ArrayList<>();
 
-                                    for (Output output : getOutputs(null)) {
+                                    for (Output output : getOutputs()) {
                                         outputsBtns.add(output.getName());
                                         outputsMap.put(output.getName(), output.getOutputId());
-                                        outputsBtns.add(addBtn);
                                     }
 
                                     messages.add(getKeyboard("Нажмите на существующее устройство или " +
                                                     "добавьте новое",
-                                            outputsBtns, userId, true));
+                                            outputsBtns, userId, true, true));
 
                                     level++;
                                     subLevel = 1;
                                 } catch (ChannelNotFoundException e) {
                                     LOGGER.log(Level.WARNING, e.getMessage());
-                                    messages.add(getKeyboard(channelNotFound, null, userId, true));
+                                    messages.add(createMsg(userId).setText(channelNotFound));
                                 }
                                 break;
                             case "датчики":
                                 // Запрашиваем с raspberry pi все подключенные датчики и выводим их как кнопки
                                 List<String> inputsBtns = new ArrayList<>();
 
-                                inputsBtns.add(addBtn);
-
                                 messages.add(getKeyboard("Нажмите на существующий датчик или добавьте новый",
-                                        inputsBtns, userId, true));
+                                        inputsBtns, userId, true, true));
                                 level++;
                                 subLevel = 2;
                                 break;
                             case "сгенерировать токен":
-                                try {
-                                    messages.add(createMsg(userId)
-                                            .setText("Ваш токен успешно сгенерирован!\n" +
-                                                    "Он требуется для подключения Вашего устройства к серверу.\n" +
-                                                    "Пожалуйста, скопируйте и вставьте Ваш токен в соответствующий раздел в" +
-                                                    "приложении, чтобы Ваше устройство могло подключиться к серверу\n\n" +
-                                                    "\u2B07\u2B07\u2B07 ВАШ ТОКЕН \u2B07\u2B07\u2B07"));
+                                if (!service.isExists(userId)) {
+
+                                    messages.add(getKeyboard(tokenSuccessGen, null, userId,
+                                            true, false));
+
                                     // Сообщение с токеном
                                     messages.add(createMsg(userId)
                                             .setText(service.createToken(userId)));
-
-                                } catch (UserAlreadyExistsException e) {
-                                    LOGGER.log(Level.WARNING, e.getMessage());
-                                    messages.clear();
-
+                                } else
                                     messages.add(createMsg(userId)
-                                            .setText("Вам уже выдан токен. Введите его, пожалуйста, в соответствующем разделе " +
-                                                    "в приложении чтобы Ваше устройство могло подключиться к серверу"));
-                                }
+                                            .setText(tokenAlreadyHaveGot));
+
                                 break;
                             case "назад":
-                                messages.add(getKeyboard(menuMsg, menuButtons, userId, false));
+                                messages.add(getKeyboard(menuMsg, menuButtons, userId, false,
+                                        false));
                                 subLevel = 0;
                                 level--;
                                 break;
@@ -209,7 +208,8 @@ class UserInstance {
                                                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
                                 break;
                             case "назад":
-                                messages.add(getKeyboard(menuMsg, menuButtons, userId, false));
+                                messages.add(getKeyboard(menuMsg, menuButtons, userId, false,
+                                        false));
                                 subLevel = 0;
                                 level--;
                                 break;
@@ -226,10 +226,10 @@ class UserInstance {
                             // код для добавления кнопки
                         } else if (incoming.equals("назад")) {
                             messages.add(getHomeControl());
-                            subLevel = 1;
-                            level--;
                         } else if (outputsMap.containsKey(incoming)) {
                             // код для показа информации о кнопке
+                            messages.add(createMsg(userId).setText("Вот мы и получили устройство с малинки, а тут - " +
+                                    "должны вывести о нём подробную информацию"));
                         } else {
                             messages.add(createMsg(userId).setText(String.format(defaultSection, incoming)));
                         }
@@ -239,8 +239,6 @@ class UserInstance {
                             // код для добавления кнопки
                         } else if (incoming.equals("назад")) {
                             messages.add(getHomeControl());
-                            subLevel = 1;
-                            level--;
                         } /*else if () {
                             // код для показа информации о кнопке
                         }*/ else {
@@ -254,73 +252,64 @@ class UserInstance {
         return messages;
     }
 
-    private Output getOutputByName(String name) throws ChannelNotFoundException {
-        for (Output output : getOutputs(null)) {
-            if (output.getName().equals(name)) return output;
-        }
-        return null;
-    }
+    private List<Output> getOutputs() throws ChannelNotFoundException {
+        List<Output> outputs = new ArrayList<>();
 
-    private List<Output> getOutputs(String type) throws ChannelNotFoundException {
-        List<Output> outputList = new ArrayList<>();
-        // метод, в котором мы получаем устройства с Raspberry PI
-        // собираем запрос
-        try {
-            URI uri = new URI(String.format("http://localhost:8080/outputs?type=%s", type != null ? type : ""));
+        // ********************************
+        JSONObject jsonRequest = new JSONObject()
+                .put("type", "request")
+                .put("body", new JSONObject()
+                        .put("method", "GET")
+                        .put("uri", "http://localhost:8080/outputs"));
+        // *******************************
 
-            HttpGet request = new HttpGet(uri);
-            request.addHeader("content-type", "application/json");
+        JSONArray outputList = getDataFromClient(jsonRequest)
+                .getJSONObject("body")
+                .getJSONObject("_embedded")
+                .getJSONArray("outputList");
 
-            // Составляем HTTP запрос из JSON
-            JSONObject jsonRequest = new JSONObject()
-                    .put("type", "request")
-                    .put("body", new JSONObject()
-                            .put("method", "GET")
-                            .put("uri", uri));
+        for (int i = 0; i < outputList.length(); i++) {
+            JSONObject outputJson = outputList.getJSONObject(i);
+            Output output = new Output();
 
-            JSONObject data = getDataFromClient(jsonRequest);
+            output.setName(outputJson.getString("name"));
+            output.setOutputId(outputJson.getInt("outputId"));
 
-            LOGGER.log(Level.INFO, data.toString());
-
-
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
+            outputs.add(output);
         }
 
-        return outputList;
+        return outputs;
     }
 
     private JSONObject getDataFromClient(JSONObject request) throws ChannelNotFoundException {
         JSONObject obj = new JSONObject();
+
         Channel ch = service.getChannel(userId);
+        ChannelFuture f = ch.writeAndFlush(request.toString()).addListener((ChannelFutureListener) channelFuture -> {
 
+            if (ch.pipeline().names().contains("msgTmpReader"))
+                ch.pipeline().remove("msgTmpReader");
 
-            ChannelFuture f = ch.writeAndFlush(request.toString()).addListener((ChannelFutureListener) channelFuture -> {
-                LOGGER.log(Level.INFO, "Waiting message from Raspberry PI...");
+            ch.pipeline().addBefore("sessionHandler", "msgTmpReader", new ChannelInboundHandlerAdapter() {
 
-                if (ch.pipeline().names().contains("msgTmpReader"))
-                    ch.pipeline().remove("msgTmpReader");
+                @Override
+                public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                    JSONObject tmp = new JSONObject(msg.toString());
 
-                ch.pipeline().addBefore("sessionHandler", "msgTmpReader", new ChannelInboundHandlerAdapter() {
+                    if (tmp.getString("type").equals("data"))
+                        obj.put("body", tmp.getJSONObject("body"));
+                }
 
-                    @Override
-                    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-                        LOGGER.log(Level.INFO, String.format("This is answer from client: %s", msg));
-
-                        obj.put("head", new JSONObject(msg.toString()));
+                @Override
+                public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+                    synchronized (obj) {
+                        obj.notify();
                     }
 
-                    @Override
-                    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-                        LOGGER.log(Level.INFO, "Handler deleting");
-                        ch.pipeline().remove(this);
-
-                        synchronized (obj) {
-                            obj.notify();
-                        }
-                    }
-                });
+                    ch.pipeline().remove(this);
+                }
             });
+        });
 
         try {
             synchronized (obj) {
@@ -334,15 +323,16 @@ class UserInstance {
 
     private SendMessage getHomeControl() {
         SendMessage msg;
-        try {
-            service.getChannel(userId);
-            msg = getKeyboard("Выберите Устройства, чтобы управлять устройствами " +
-                    "или добавить новое, или выберите Датчики чтобы посмотреть показания или добавить " +
-                    "новый датчик", homeControlBtns, userId, true);
-        } catch (ChannelNotFoundException e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
-            msg = getKeyboard(channelNotFound, null, userId, true);
+        if (service.isChannelExist(userId)) {
+            msg = getKeyboard(homeControl, homeControlBtns, userId, true, false);
+            level = 2;
+            subLevel = 1;
+        } else {
+            msg = getKeyboard(channelNotFound, menuButtons, userId, false, false);
+            level = 1;
+            subLevel = 0;
         }
+
         return msg;
     }
 
@@ -350,7 +340,9 @@ class UserInstance {
         return new SendMessage().setChatId(chatId);
     }
 
-    private SendMessage getKeyboard(String messageText, List<String> buttonsText, long userId, Boolean prevBtn) {
+    private SendMessage getKeyboard(String messageText, List<String> buttonsText, long userId, boolean containPrevBtn,
+                                    boolean containAddBtn) {
+
         SendMessage msg = createMsg(userId);
 
         if (messageText != null)
@@ -376,11 +368,15 @@ class UserInstance {
             keyboard.add(row);
         }
 
-        if (prevBtn) {
-            KeyboardRow row = new KeyboardRow();
+        KeyboardRow row = new KeyboardRow();
+
+        if (containPrevBtn)
             row.add("Назад");
-            keyboard.add(row);
-        }
+
+        if (containAddBtn)
+            row.add("Добавить");
+
+        keyboard.add(row);
 
         markup.setKeyboard(keyboard);
         msg.setReplyMarkup(markup);

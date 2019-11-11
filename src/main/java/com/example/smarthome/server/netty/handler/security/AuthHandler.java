@@ -59,7 +59,7 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
                 ch.pipeline().addLast("sessionHandler", new SessionHandler(msg.toString(), ch));
                 ch.pipeline().remove("idleHandler");
                 ch.pipeline().remove("eventHandler");
-                ch.pipeline().remove("authHandler");
+                ch.pipeline().remove(this);
             } else {
                 LOGGER.log(Level.INFO, "Token is wrong");
                 ctx.close();
