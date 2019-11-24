@@ -4,6 +4,9 @@ import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import io.netty.channel.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -101,18 +104,17 @@ class UserInstance {
     }
 
     /* ************************************ TEMP VARIABLES ************************************************** */
-    private Output creationOutput;
     private Map<String, Integer> outputsMap;
+    private DeviceCreator creator;
 
     private int level = 0;
     private int subLevel = 0;
-    private int step = 0;
     private long userId;
 
     UserInstance(long userId) {
         this.userId = userId;
         outputsMap = new HashMap<>();
-        creationOutput = new Output();
+        creator = new DeviceCreator();
     }
 
     List<SendMessage> getMessage(String incoming) {
@@ -247,11 +249,7 @@ class UserInstance {
                     // Устройства
                     case 1:
                         if (incoming.equals("добавить")) {
-                            messages.add(getKeyboard("Пожалуйста, введите имя нового устройства:",
-                                    null, userId, 2, true, false));
-                            level++;
-                            subLevel = 1;
-                            step = 1;
+                            messages.add(creator.goToStepOne());
                         } else if (incoming.equals("назад")) {
                             messages.add(goToHomeControlLevel());
                         } else if (outputsMap.containsKey(incoming)) {
@@ -280,107 +278,42 @@ class UserInstance {
             case 4:
                 switch (subLevel) {
                     case 1:
-                        if (incoming.equals("назад")) {
-                            messages.add(goToDevices(null));
-                            creationOutput = new Output();
-                            step = 0;
-                            break;
-                        }
-                        switch (step) {
+                        switch (creator.getStep()) {
                             // Вот тут мы указываем имя нового пина
                             case 1:
-                                if (!outputsMap.containsKey(incoming)) {
-                                    creationOutput.setName(incoming);
+                                if (incoming.equals("назад")) {
+                                    messages.add(goToDevices(null));
+                                    break;
+                                }
 
-                                    messages.add(getKeyboard("Отлично! Теперь наберите тип сигнала, который " +
-                                                    "может принимать устройство", typesOfSignal, userId, 2,
-                                            true, false));
-                                    step = 2;
-                                } else
-                                    messages.add(createMsg(userId).setText("Устройство с таким именем уже существует"));
-
+                                messages.add(creator.setName(incoming));
                                 break;
                             // Теперь принимаем от пользователя тип сигнала устройства
                             case 2:
-                                switch (incoming) {
-                                    case "цифровой":
-                                        creationOutput.setType("digital");
-                                        try {
-                                            messages.add(getKeyboard("Теперь выберите пин, к которому вы " +
-                                                            "хотите подключить новое устройство",
-                                                    getAvailableOutputs("digital"), userId, 4,
-                                                    true, false));
-                                            step = 3;
-                                        } catch (ChannelNotFoundException e) {
-                                            LOGGER.log(Level.WARNING, e.getMessage());
-                                            messages.add(goToHomeControlLevel());
-                                        }
-                                        break;
-                                    case "шим":
-                                        creationOutput.setType("pwm");
-                                        try {
-                                            messages.add(getKeyboard("Теперь выберите пин, к которому вы " +
-                                                            "хотите подключить новое устройство",
-                                                    getAvailableOutputs("pwm"), userId, 4,
-                                                    true, false));
-                                            step = 3;
-                                        } catch (ChannelNotFoundException e) {
-                                            LOGGER.log(Level.WARNING, e.getMessage());
-                                            messages.add(goToHomeControlLevel());
-                                        }
-                                        break;
-                                    default:
-                                        messages.add(createMsg(userId).setText("Вы ввели несуществующий тип сигнала"));
+                                if (incoming.equals("назад")) {
+                                    messages.add(creator.goToStepOne());
+                                    break;
                                 }
+
+                                messages.add(creator.setSignalType(incoming));
                                 break;
                             // Тут мы пишем пин, к которому подключено устройство
                             case 3:
-                                try {
-                                    int gpio = Integer.parseInt(incoming);
-                                    if (getAvailableOutputs(creationOutput.getType()).contains(String.valueOf(gpio))) {
-                                        creationOutput.setGpio(gpio);
-
-                                        messages.add(getKeyboard("Сделать инверсию сигнала для данного " +
-                                                        "устройства?", yesOrNo, userId, 2, true,
-                                                false));
-                                        step = 4;
-                                    } else
-                                        messages.add(getKeyboard("Выберите на клавиатуре предложенный выход",
-                                                getAvailableOutputs(creationOutput.getType()), userId, 4,
-                                                true, false));
-
-                                } catch (NumberFormatException e) {
-                                    LOGGER.log(Level.WARNING, e.getMessage());
-                                    messages.add(createMsg(userId).setText("Вы ввели не число"));
-                                } catch (ChannelNotFoundException e) {
-                                    LOGGER.log(Level.WARNING, e.getMessage());
-                                    messages.add(goToHomeControlLevel());
+                                if (incoming.equals("назад")) {
+                                    messages.add(creator.goToStepTwo());
+                                    break;
                                 }
+
+                                messages.add(creator.setGpio(incoming));
                                 break;
                             // А тут мы (не)устанавливаем инверсию сигнала для данного устройства
                             case 4:
-                                switch (incoming) {
-                                    case "да":
-                                        creationOutput.setReverse(true);
-                                        break;
-                                    case "нет":
-                                        creationOutput.setReverse(false);
-                                        break;
-                                    default:
-                                        messages.add(createMsg(userId).setText("Ответ должен быть либо \"Да\", " +
-                                                "либо \"Нет\""));
-                                        return messages;
+                                if (incoming.equals("назад")) {
+                                    messages.add(creator.goToStepThree(creator.getCreationOutput().getType()));
+                                    break;
                                 }
-                                try {
-                                    createOutput(creationOutput);
-                                    messages.add(goToDevices("Устройство успешно создано"));
-                                } catch (ChannelNotFoundException e) {
-                                    goToHomeControlLevel();
-                                    e.printStackTrace();
-                                } finally {
-                                    creationOutput = new Output();
-                                    step = 0;
-                                }
+
+                                messages.add(creator.setReverse(incoming));
                                 break;
                         }
                         break;
@@ -435,13 +368,6 @@ class UserInstance {
 
         return msg;
     }
-
-    /* *****************************************************************************
-    **************************** СОЗДАНИЕ УСТРОЙСТВА *******************************
-    ***************************************************************************** */
-
-
-    // *****************************************************************************
 
     // ПОЛУЧЕНИЕ И ОТПРАВКА ДАННЫХ С Raspberry PI
     private List<String> getAvailableOutputs(String type) throws ChannelNotFoundException {
@@ -577,7 +503,8 @@ class UserInstance {
         }
         return obj;
     }
-    /* ******************************************************** */
+
+    // **************************************************************************************************************
 
     private SendMessage createMsg(long chatId) {
         return new SendMessage().setChatId(chatId);
@@ -625,5 +552,150 @@ class UserInstance {
         msg.setReplyMarkup(markup);
 
         return msg;
+    }
+
+    /* **************************************************************************************************************
+     ************************************** СОЗДАНИЕ УСТРОЙСТВА *****************************************************
+     ************************************************************************************************************** */
+
+    private class DeviceCreator {
+
+        @Getter(value = AccessLevel.PRIVATE)
+        private Output creationOutput;
+
+        @Getter(value = AccessLevel.PRIVATE)
+        @Setter(value = AccessLevel.PRIVATE)
+        private int step = 0;
+
+        private DeviceCreator() {
+            creationOutput = new Output();
+        }
+
+        private SendMessage goToStepOne() {
+            SendMessage msg = getKeyboard("Пожалуйста, введите имя нового устройства:",
+                    null, userId, 2, true, false);
+            level = 4;
+            subLevel = 1;
+            step = 1;
+            return msg;
+        }
+
+        private SendMessage setName(String name) {
+            SendMessage msg;
+            if (!outputsMap.containsKey(name)) {
+                creationOutput.setName(name);
+
+                msg = goToStepTwo();
+            } else msg = createMsg(userId).setText("Устройство с таким именем уже существует");
+            return msg;
+        }
+
+        private SendMessage goToStepTwo() {
+            SendMessage msg = getKeyboard("Отлично! Теперь наберите тип сигнала, который " +
+                            "может принимать устройство", typesOfSignal, userId, 2,
+                    true, false);
+            step = 2;
+            return msg;
+        }
+
+        private SendMessage setSignalType(String signalType) {
+            SendMessage msg;
+            switch (signalType) {
+                case "цифровой":
+                    creationOutput.setType("digital");
+                    msg = goToStepThree("digital");
+                    break;
+                case "шим":
+                    creationOutput.setType("pwm");
+                    msg = goToStepThree("pwm");
+                    break;
+                default:
+                    msg = createMsg(userId).setText("Вы ввели несуществующий тип сигнала");
+            }
+            return msg;
+        }
+
+        private SendMessage goToStepThree(String signalType) {
+            SendMessage msg = new SendMessage();
+            try {
+                switch (signalType) {
+                    case "digital":
+                        msg = getKeyboard("Теперь выберите пин, к которому вы хотите подключить новое " +
+                                        "устройство", getAvailableOutputs("digital"), userId, 4,
+                                true, false);
+                        step = 3;
+                        break;
+                    case "pwm":
+                        msg = getKeyboard("Теперь выберите пин, к которому вы хотите подключить новое " +
+                                        "устройство", getAvailableOutputs("pwm"), userId, 4,
+                                true, false);
+                        step = 3;
+                        break;
+                }
+            } catch (ChannelNotFoundException e) {
+                LOGGER.log(Level.WARNING, e.getMessage());
+                msg = goToHomeControlLevel();
+                creationOutput = null;
+            }
+            return msg;
+        }
+
+        private SendMessage setGpio(String gpioStr) {
+            SendMessage msg;
+            try {
+                int gpio = Integer.parseInt(gpioStr);
+                if (getAvailableOutputs(creationOutput.getType()).contains(String.valueOf(gpio))) {
+                    creationOutput.setGpio(gpio);
+
+                    msg = goToStepFour();
+                } else
+                    msg = getKeyboard("Выберите на клавиатуре предложенный выход",
+                            getAvailableOutputs(creationOutput.getType()), userId, 4, true,
+                            false);
+
+            } catch (NumberFormatException e) {
+                LOGGER.log(Level.WARNING, e.getMessage());
+                msg = createMsg(userId).setText("Вы ввели не число");
+            } catch (ChannelNotFoundException e) {
+                LOGGER.log(Level.WARNING, e.getMessage());
+                msg = goToHomeControlLevel();
+            }
+            return msg;
+        }
+
+        private SendMessage goToStepFour() {
+            SendMessage msg = getKeyboard("Сделать инверсию сигнала для данного устройства?",
+                    yesOrNo, userId, 2, true,
+                    false);
+            step = 4;
+            return msg;
+        }
+
+        private SendMessage setReverse(String reverse) {
+            SendMessage msg;
+            switch (reverse) {
+                case "да":
+                    creationOutput.setReverse(true);
+                    break;
+                case "нет":
+                    creationOutput.setReverse(false);
+                    break;
+                default:
+                    msg = createMsg(userId).setText("Ответ должен быть либо \"Да\", " +
+                            "либо \"Нет\"");
+                    return msg;
+            }
+            try {
+                createOutput(creationOutput);
+                msg = goToDevices("Устройство успешно создано");
+            } catch (ChannelNotFoundException e) {
+                LOGGER.log(Level.WARNING, e.getMessage());
+                msg = goToHomeControlLevel();
+            } finally {
+                creationOutput = new Output();
+                step = 0;
+            }
+            return msg;
+        }
     }
 }
