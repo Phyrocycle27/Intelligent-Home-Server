@@ -1,6 +1,8 @@
 package com.example.smarthome.server.telegram;
 
 import com.example.smarthome.server.service.DeviceAccessService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.ActionType;
@@ -13,21 +15,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Bot extends TelegramLongPollingBot {
 
     private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
     private final static String USER_NAME = "intelligent_home_bot";
     private static final DeviceAccessService service;
-    private static Logger LOGGER;
-    private static Map<Long, UserInstance> userInstances;
+    public static final Logger log;
+    private static Map<Long, UserInstance> instances;
 
     static {
-        LOGGER = Logger.getLogger(Bot.class.getName());
+        log = LoggerFactory.getLogger(Bot.class);
         service = DeviceAccessService.getInstance();
-        userInstances = new HashMap<>();
+        instances = new HashMap<>();
     }
 
     Bot() {
@@ -49,7 +49,7 @@ public class Bot extends TelegramLongPollingBot {
                     " " + update.getMessage().getChat().getLastName();
             Long userId = update.getMessage().getChat().getId();
 
-            LOGGER.log(Level.INFO, String.format("New message '%s' from %s (id %d)", text, userName, userId));
+            log.debug(String.format("New message '%s' from %s (id %d)", text, userName, userId));
             // устанавливаем действие, отображаемое у пользователя
             SendChatAction sendChatAction = new SendChatAction()
                     .setChatId(update.getMessage().getChatId())
@@ -61,10 +61,10 @@ public class Bot extends TelegramLongPollingBot {
                 e.printStackTrace();
             }
             // preparing the answering message
-            UserInstance userInstance = userInstances.get(userId);
+            UserInstance userInstance = instances.get(userId);
             if (userInstance == null) {
                 userInstance = new UserInstance(userId);
-                userInstances.put(userId, userInstance);
+                instances.put(userId, userInstance);
             }
             messages = userInstance.getMessage(text);
 

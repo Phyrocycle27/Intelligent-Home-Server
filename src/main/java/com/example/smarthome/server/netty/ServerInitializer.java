@@ -13,21 +13,25 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class ServerInitializer extends ChannelInitializer<SocketChannel> {
 
-    private static Logger LOGGER = Logger.getLogger(ServerInitializer.class.getName());
+    public static final Logger log;
+
+    static {
+        log = LoggerFactory.getLogger(ServerInitializer.class);
+    }
+
     private final SslContext sslCtx;
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
         ChannelPipeline p = ch.pipeline();
 
-        LOGGER.log(Level.INFO, "New client connected from " + ch.remoteAddress());
+        log.debug("New client connected from " + ch.remoteAddress());
 
         p.addLast(sslCtx.newHandler(ch.alloc()));
         p.addLast("frameDecoder",

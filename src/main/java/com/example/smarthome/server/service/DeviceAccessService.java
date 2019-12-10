@@ -55,13 +55,6 @@ public class DeviceAccessService {
         return tokenStr;
     }
 
-    public Channel getChannel(long userId) throws ChannelNotFoundException {
-        Channel ch = SessionHandler.getChannel(usersRepo.getOne(userId).getToken().getToken());
-
-        if (ch == null) throw new ChannelNotFoundException(userId);
-        return ch;
-    }
-
     // не добавлена в продакшн
     public void addUser(long newUserId, String newUserRole, long userId, String userRole)
             throws UserAlreadyExistsException, UserNotFoundException {
@@ -73,6 +66,13 @@ public class DeviceAccessService {
         TelegramUser user = new TelegramUser(newUserId, newUserRole, token);
 
         usersRepo.save(user);
+    }
+
+    public Channel getChannel(long userId) throws ChannelNotFoundException {
+        Channel ch = SessionHandler.getChannel(usersRepo.getOne(userId).getToken().getToken());
+
+        if (ch == null) throw new ChannelNotFoundException(userId);
+        return ch;
     }
 
     public boolean isChannelExist(long userId) {

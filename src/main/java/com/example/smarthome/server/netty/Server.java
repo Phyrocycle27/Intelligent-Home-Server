@@ -8,25 +8,30 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Server implements Runnable {
 
-    private static Logger LOGGER = Logger.getLogger(Server.class.getName());
+    public static final Logger log;
+
+    static {
+        log = LoggerFactory.getLogger(Server.class);
+    }
+
     private final int PORT;
 
     public Server(int port) {
-        this.PORT = port;
+        PORT = port;
         new Thread(this, "Netty Server").start();
     }
 
     @Override
     public void run() {
-        LOGGER.log(Level.INFO, "Netty thread is running");
+        log.debug("Netty thread is running");
 
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();

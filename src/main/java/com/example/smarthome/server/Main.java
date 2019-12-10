@@ -5,13 +5,13 @@ import com.example.smarthome.server.repository.TelegramUsersRepository;
 import com.example.smarthome.server.repository.TokensRepository;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Telegram;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @SpringBootApplication
 public class Main {
@@ -19,14 +19,14 @@ public class Main {
     private static final String PROXY_HOST = "151.80.199.89";
     private static final Integer PROXY_PORT = 3128;
     private static final int SERVER_PORT = 3141;
-    private static Logger LOGGER;
+    public static final Logger log;
 
     static {
-        LOGGER = Logger.getLogger(Main.class.getName());
+        log = LoggerFactory.getLogger(Main.class);
     }
 
     public static void main(String[] args) throws IOException {
-        LOGGER.log(Level.INFO, "Application started");
+        log.debug("Application started");
 
         ApplicationContext ctx = SpringApplication.run(Main.class, args);
 
