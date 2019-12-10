@@ -6,6 +6,7 @@ import com.example.smarthome.server.service.DeviceAccessService;
 import io.netty.channel.*;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -53,6 +54,7 @@ class UserInstance {
             "выберите Датчики чтобы посмотреть показания или добавить новый датчик";
     private static final List<String> typesOfSignal;
     private static final List<String> yesOrNo;
+    private static final List<String> onOrOff;
     // ****************************************** TOKEN ***********************************************************
     private static final String tokenAlreadyHaveGot = "Вам уже выдан токен. Введите его, пожалуйста, в соответствующем разделе " +
             "в приложении чтобы Ваше устройство могло подключиться к серверу";
@@ -101,6 +103,11 @@ class UserInstance {
             add("Да");
             add("Нет");
         }};
+
+        onOrOff = new ArrayList<String>() {{
+            add("Включить");
+            add("Выключить");
+        }};
     }
 
     /* ************************************ TEMP VARIABLES ************************************************** */
@@ -109,6 +116,7 @@ class UserInstance {
 
     private int level = 0;
     private int subLevel = 0;
+    private int outputId;
     private long userId;
 
     UserInstance(long userId) {
@@ -123,7 +131,7 @@ class UserInstance {
         // если пользователь нам прислал команду "меню" или "/start", то отправляем ему главное меню
         if (incoming.equals("меню") || incoming.equals("/start")) {
             messages.add(getKeyboard(menuMsg, menuButtons, userId, 2, false,
-                    false));
+                    false, false));
             level = 1;
         } else if (level == 0)
             messages.add(createMsg(userId).setText(String.format(unknownCmdMain, incoming)));
@@ -144,14 +152,14 @@ class UserInstance {
                             messages.add(goToHomeControlLevel());
                         } else {
                             messages.add(getKeyboard(tokenNotFound, tokenGenBtn, userId, 2,
-                                    true, false));
+                                    true, false, false));
                             subLevel = 1;
                             level = 2;
                         }
                         break;
                     case "информация":
                         messages.add(getKeyboard(infoMsg, infoButtons, userId, 2, true,
-                                false));
+                                false, false));
                         subLevel = 2;
                         level = 2;
                         break;
@@ -179,7 +187,7 @@ class UserInstance {
                                 List<String> inputsBtns = new ArrayList<>();
 
                                 messages.add(getKeyboard("Нажмите на существующий датчик или добавьте новый",
-                                        inputsBtns, userId, 2, true, true));
+                                        inputsBtns, userId, 2, true, true, false));
                                 level = 3;
                                 subLevel = 2;
                                 break;
@@ -187,7 +195,7 @@ class UserInstance {
                                 if (!service.isExists(userId)) {
 
                                     messages.add(getKeyboard(tokenSuccessGen, null, userId, 2,
-                                            true, false));
+                                            true, false, false));
 
                                     // Сообщение с токеном
                                     messages.add(createMsg(userId)
@@ -199,7 +207,7 @@ class UserInstance {
                                 break;
                             case "назад":
                                 messages.add(getKeyboard(menuMsg, menuButtons, userId, 2,
-                                        false, false));
+                                        false, false, false));
                                 subLevel = 0;
                                 level--;
                                 break;
@@ -234,7 +242,7 @@ class UserInstance {
                                 break;
                             case "назад":
                                 messages.add(getKeyboard(menuMsg, menuButtons, userId, 2,
-                                        false, false));
+                                        false, false, false));
                                 subLevel = 0;
                                 level--;
                                 break;
@@ -245,20 +253,45 @@ class UserInstance {
                 }
                 break;
             case 3:
+                if (incoming.equals("назад")) {
+                    messages.add(goToHomeControlLevel());
+                    break;
+                }
                 switch (subLevel) {
                     // Устройства
                     case 1:
                         if (incoming.equals("добавить")) {
                             messages.add(creator.goToStepOne());
-                        } else if (incoming.equals("назад")) {
-                            messages.add(goToHomeControlLevel());
                         } else if (outputsMap.containsKey(incoming)) {
                             try {
                                 Output output = getOutput(incoming);
 
                                 if (output == null)
                                     messages.add(goToDevices("Устройство не найдено"));
-                                else messages.add(createMsg(userId).setText(output.toString()));
+                                else {
+                                    String currState = getDigitalState(output.getOutputId()) ? "включено" : "выключено";
+                                    String inversion = output.getReverse() ? "включена" : "выключена";
+                                    String signalType = "";
+                                    switch (output.getType()) {
+                                        case "digital":
+                                            signalType = "цифовой";
+                                            break;
+                                        case "pwm":
+                                            signalType = "ШИМ";
+                                    }
+
+                                    messages.add(getKeyboard(String.format("<b>%s</b>\n" +
+                                                    "Текущее состояние: <i>%s</i>\n" +
+                                                    "Тип сигнала: <i>%s</i>\n" +
+                                                    "Инверсия: <i>%s</i>\n" +
+                                                    "GPIO-пин: <i>%d</i>",
+                                            output.getName(), currState, signalType, inversion,
+                                            output.getGpio()), onOrOff, userId, 2, true,
+                                            false, true));
+                                    level = 4;
+                                    subLevel = 2;
+                                    outputId = output.getOutputId();
+                                }
 
                             } catch (ChannelNotFoundException e) {
                                 goToHomeControlLevel();
@@ -269,54 +302,66 @@ class UserInstance {
                         }
                         break;
                     // Датчики
-                    case 2:
-                        if (incoming.equals("назад"))
-                            messages.add(goToHomeControlLevel());
-                        break;
                 }
                 break;
             case 4:
                 switch (subLevel) {
                     case 1:
+                        if (incoming.equals("назад")) {
+                            messages.add(creator.goToPrev());
+                            break;
+                        }
+
                         switch (creator.getStep()) {
                             // Вот тут мы указываем имя нового пина
                             case 1:
-                                if (incoming.equals("назад")) {
-                                    messages.add(goToDevices(null));
-                                    break;
-                                }
-
-                                messages.add(creator.setName(incoming));
+                                messages.add(creator.setOutputName(incoming));
                                 break;
                             // Теперь принимаем от пользователя тип сигнала устройства
                             case 2:
-                                if (incoming.equals("назад")) {
-                                    messages.add(creator.goToStepOne());
-                                    break;
-                                }
-
-                                messages.add(creator.setSignalType(incoming));
+                                messages.add(creator.setOutputSignalType(incoming));
                                 break;
                             // Тут мы пишем пин, к которому подключено устройство
                             case 3:
-                                if (incoming.equals("назад")) {
-                                    messages.add(creator.goToStepTwo());
-                                    break;
-                                }
-
-                                messages.add(creator.setGpio(incoming));
+                                messages.add(creator.setOutputGpio(incoming));
                                 break;
                             // А тут мы (не)устанавливаем инверсию сигнала для данного устройства
                             case 4:
-                                if (incoming.equals("назад")) {
-                                    messages.add(creator.goToStepThree(creator.getCreationOutput().getType()));
-                                    break;
-                                }
-
-                                messages.add(creator.setReverse(incoming));
+                                messages.add(creator.setOutputReverse(incoming));
                                 break;
                         }
                         break;
+                    case 2:
+                        if (incoming.equals("включить") || incoming.equals("выключить")) {
+                            try {
+                                if (incoming.equals("включить"))
+                                    messages.add(createMsg(userId).setText("Устройство успешно включено"));
+                                else messages.add(createMsg(userId).setText("Устройство успешно выключено"));
+
+                                setDigitalState(outputId, incoming.equals("включить"));
+                            } catch (ChannelNotFoundException e) {
+                                goToHomeControlLevel();
+                                e.printStackTrace();
+                            }
+                        } else {
+                            switch (incoming) {
+                                case "удалить":
+                                    try {
+                                        deleteOutput(outputId);
+                                        messages.add(goToDevices("Устройство успешно удалено"));
+                                    } catch (ChannelNotFoundException e) {
+                                        goToHomeControlLevel();
+                                        e.printStackTrace();
+                                    }
+                                    break;
+                                case "назад":
+                                    messages.add(goToDevices(null));
+                                    outputId = 0;
+                                    break;
+                                default:
+                                    messages.add(createMsg(userId).setText(defaultSection));
+                            }
+                        }
                 }
                 break;
         }
@@ -329,12 +374,12 @@ class UserInstance {
         SendMessage msg;
         if (service.isChannelExist(userId)) {
             msg = getKeyboard(homeControl, homeControlBtns, userId, 2, true,
-                    false);
+                    false, false);
             level = 2;
             subLevel = 1;
         } else {
             msg = getKeyboard(channelNotFound, menuButtons, userId, 2, false,
-                    false);
+                    false, false);
             level = 1;
             subLevel = 0;
         }
@@ -353,7 +398,7 @@ class UserInstance {
             }
 
             msg = getKeyboard(null,
-                    outputsBtns, userId, 1, true, true);
+                    outputsBtns, userId, 1, true, true, false);
 
             if (msgText == null)
                 msg.setText("Нажмите на существующее устройство или добавьте новое");
@@ -370,26 +415,47 @@ class UserInstance {
     }
 
     // ПОЛУЧЕНИЕ И ОТПРАВКА ДАННЫХ С Raspberry PI
-    private List<String> getAvailableOutputs(String type) throws ChannelNotFoundException {
-        List<String> outputs = new ArrayList<>();
 
+    /* **************************************************************************************************************
+     ************************* ПОЛУЧЕНИЕ И ОТПРАВКА ДАННЫХ С Raspberry PI *******************************************
+     ************************************************************************************************************** */
+
+    private boolean getDigitalState(@NonNull Integer outputId) throws ChannelNotFoundException {
         JSONObject request = new JSONObject()
                 .put("type", "request")
                 .put("body", new JSONObject()
                         .put("method", "GET")
-                        .put("uri", "http://localhost:8080/outputs/available?type=" + type));
+                        .put("uri", "http://localhost:8080/outputs/control/digital?id=" + outputId));
 
-        JSONArray array = getDataFromClient(request)
-                .getJSONObject("body")
-                .getJSONArray("available_gpios");
-
-        for (int i = 0; i < array.length(); i++)
-            outputs.add(array.get(i).toString());
-
-        LOGGER.log(Level.INFO, "Available outputs are " + outputs);
-        return outputs;
+        return getDataFromClient(request).getJSONObject("body").getBoolean("digitalState");
     }
 
+    private void setDigitalState(@NonNull Integer outputId, boolean state) throws ChannelNotFoundException {
+        JSONObject request = new JSONObject()
+                .put("type", "request")
+                .put("body", new JSONObject()
+                        .put("method", "PUT")
+                        .put("uri", "http://localhost:8080/outputs/control/digital")
+                        .put("request_body", new JSONObject()
+                                .put("outputId", outputId)
+                                .put("digitalState", state)));
+
+        getDataFromClient(request);
+    }
+
+    // DELETE
+    private void deleteOutput(Integer outputId) throws ChannelNotFoundException {
+
+        JSONObject request = new JSONObject()
+                .put("type", "request")
+                .put("body", new JSONObject()
+                        .put("method", "DELETE")
+                        .put("uri", "http://localhost:8080/outputs/output/" + outputId));
+
+        getDataFromClient(request);
+    }
+
+    // CREATE
     private void createOutput(Output newOutput) throws ChannelNotFoundException {
         JSONObject request = new JSONObject()
                 .put("type", "request")
@@ -402,6 +468,7 @@ class UserInstance {
                 .getJSONObject("body");
     }
 
+    // GET
     private Output getOutput(String name) throws ChannelNotFoundException {
         Integer outputId = outputsMap.get(name);
         Output output = new Output();
@@ -433,6 +500,7 @@ class UserInstance {
         }
     }
 
+    // GET LIST
     private List<Output> getOutputs() throws ChannelNotFoundException {
         List<Output> outputs = new ArrayList<>();
 
@@ -461,6 +529,26 @@ class UserInstance {
                 outputs.add(output);
             }
         }
+        return outputs;
+    }
+
+    private List<String> getAvailableOutputs(String type) throws ChannelNotFoundException {
+        List<String> outputs = new ArrayList<>();
+
+        JSONObject request = new JSONObject()
+                .put("type", "request")
+                .put("body", new JSONObject()
+                        .put("method", "GET")
+                        .put("uri", "http://localhost:8080/outputs/available?type=" + type));
+
+        JSONArray array = getDataFromClient(request)
+                .getJSONObject("body")
+                .getJSONArray("available_gpios");
+
+        for (int i = 0; i < array.length(); i++)
+            outputs.add(array.get(i).toString());
+
+        LOGGER.log(Level.INFO, "Available outputs are " + outputs);
         return outputs;
     }
 
@@ -507,11 +595,11 @@ class UserInstance {
     // **************************************************************************************************************
 
     private SendMessage createMsg(long chatId) {
-        return new SendMessage().setChatId(chatId);
+        return new SendMessage().setChatId(chatId).setParseMode("HTML");
     }
 
     private SendMessage getKeyboard(String messageText, List<String> buttonsText, long userId, int numOfColumns,
-                                    boolean containPrevBtn, boolean containAddBtn) {
+                                    boolean prevBtn, boolean addBtn, boolean removeBtn) {
 
         SendMessage msg = createMsg(userId);
 
@@ -540,10 +628,15 @@ class UserInstance {
 
         KeyboardRow row = new KeyboardRow();
 
-        if (containPrevBtn)
+        if (removeBtn)
+            row.add("Удалить");
+        keyboard.add(row);
+        row = new KeyboardRow();
+
+        if (prevBtn)
             row.add("Назад");
 
-        if (containAddBtn)
+        if (addBtn)
             row.add("Добавить");
 
         keyboard.add(row);
@@ -571,16 +664,30 @@ class UserInstance {
             creationOutput = new Output();
         }
 
+        private SendMessage goToPrev() {
+            switch (step) {
+                case 1:
+                    return goToDevices(null);
+                case 2:
+                    return goToStepOne();
+                case 3:
+                    return goToStepTwo();
+                case 4:
+                    return goToStepThree(creationOutput.getType());
+            }
+            return null;
+        }
+
         private SendMessage goToStepOne() {
             SendMessage msg = getKeyboard("Пожалуйста, введите имя нового устройства:",
-                    null, userId, 2, true, false);
+                    null, userId, 2, true, false, false);
             level = 4;
             subLevel = 1;
             step = 1;
             return msg;
         }
 
-        private SendMessage setName(String name) {
+        private SendMessage setOutputName(String name) {
             SendMessage msg;
             if (!outputsMap.containsKey(name)) {
                 creationOutput.setName(name);
@@ -593,12 +700,12 @@ class UserInstance {
         private SendMessage goToStepTwo() {
             SendMessage msg = getKeyboard("Отлично! Теперь наберите тип сигнала, который " +
                             "может принимать устройство", typesOfSignal, userId, 2,
-                    true, false);
+                    true, false, false);
             step = 2;
             return msg;
         }
 
-        private SendMessage setSignalType(String signalType) {
+        private SendMessage setOutputSignalType(String signalType) {
             SendMessage msg;
             switch (signalType) {
                 case "цифровой":
@@ -622,13 +729,13 @@ class UserInstance {
                     case "digital":
                         msg = getKeyboard("Теперь выберите пин, к которому вы хотите подключить новое " +
                                         "устройство", getAvailableOutputs("digital"), userId, 4,
-                                true, false);
+                                true, false, false);
                         step = 3;
                         break;
                     case "pwm":
                         msg = getKeyboard("Теперь выберите пин, к которому вы хотите подключить новое " +
                                         "устройство", getAvailableOutputs("pwm"), userId, 4,
-                                true, false);
+                                true, false, false);
                         step = 3;
                         break;
                 }
@@ -640,7 +747,7 @@ class UserInstance {
             return msg;
         }
 
-        private SendMessage setGpio(String gpioStr) {
+        private SendMessage setOutputGpio(String gpioStr) {
             SendMessage msg;
             try {
                 int gpio = Integer.parseInt(gpioStr);
@@ -651,7 +758,7 @@ class UserInstance {
                 } else
                     msg = getKeyboard("Выберите на клавиатуре предложенный выход",
                             getAvailableOutputs(creationOutput.getType()), userId, 4, true,
-                            false);
+                            false, false);
 
             } catch (NumberFormatException e) {
                 LOGGER.log(Level.WARNING, e.getMessage());
@@ -666,12 +773,12 @@ class UserInstance {
         private SendMessage goToStepFour() {
             SendMessage msg = getKeyboard("Сделать инверсию сигнала для данного устройства?",
                     yesOrNo, userId, 2, true,
-                    false);
+                    false, false);
             step = 4;
             return msg;
         }
 
-        private SendMessage setReverse(String reverse) {
+        private SendMessage setOutputReverse(String reverse) {
             SendMessage msg;
             switch (reverse) {
                 case "да":
@@ -698,4 +805,6 @@ class UserInstance {
             return msg;
         }
     }
+
+    // **************************************************************************************************************
 }

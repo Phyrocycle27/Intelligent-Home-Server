@@ -14,12 +14,12 @@ import java.util.logging.Logger;
 public class Telegram implements Runnable {
 
     private static Logger LOGGER = Logger.getLogger(Telegram.class.getName());
-    private final String PROXY_HOST = null;
-    private final Integer PROXY_PORT = 0;
+    private final String PROXY_HOST;
+    private final Integer PROXY_PORT;
 
     public Telegram(String proxyHost, Integer proxyPort) {
-        /*this.PROXY_HOST = proxyHost;
-        this.PROXY_PORT = proxyPort;*/
+        this.PROXY_HOST = proxyHost;
+        this.PROXY_PORT = proxyPort;
         new Thread(this, "Telegram Thread").start();
     }
 
