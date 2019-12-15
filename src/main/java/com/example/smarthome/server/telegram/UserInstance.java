@@ -1,5 +1,6 @@
 package com.example.smarthome.server.telegram;
 
+import com.example.smarthome.server.connection.JsonRequester;
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
@@ -427,7 +428,7 @@ class UserInstance {
                         .put("method", "GET")
                         .put("uri", "http://localhost:8080/outputs/control/digital?id=" + outputId));
 
-        return getDataFromClient(request).getJSONObject("body").getBoolean("digitalState");
+        return JsonRequester.execute(request, getChannel()).getJSONObject("body").getBoolean("digitalState");
     }
 
     private void setDigitalState(@NonNull Integer outputId, boolean state) throws ChannelNotFoundException {
@@ -440,19 +441,18 @@ class UserInstance {
                                 .put("outputId", outputId)
                                 .put("digitalState", state)));
 
-        getDataFromClient(request);
+        JsonRequester.execute(request, getChannel());
     }
 
     // DELETE
     private void deleteOutput(Integer outputId) throws ChannelNotFoundException {
-
         JSONObject request = new JSONObject()
                 .put("type", "request")
                 .put("body", new JSONObject()
                         .put("method", "DELETE")
-                        .put("uri", "http://localhost:8080/outputs/output/" + outputId));
+                        .put("uri", "http://localhost:8080/outputs/one/" + outputId));
 
-        getDataFromClient(request);
+        JsonRequester.execute(request, getChannel());
     }
 
     // CREATE
@@ -464,7 +464,7 @@ class UserInstance {
                         .put("uri", "http://localhost:8080/outputs")
                         .put("request_body", new JSONObject(newOutput)));
 
-        JSONObject response = getDataFromClient(request)
+        JSONObject response = JsonRequester.execute(request, getChannel())
                 .getJSONObject("body");
     }
 
@@ -478,10 +478,10 @@ class UserInstance {
                 .put("type", "request")
                 .put("body", new JSONObject()
                         .put("method", "GET")
-                        .put("uri", "http://localhost:8080/outputs/output/" + outputId));
+                        .put("uri", "http://localhost:8080/outputs/one/" + outputId));
         // ***********************************************************
 
-        JSONObject response = getDataFromClient(request)
+        JSONObject response = JsonRequester.execute(request, getChannel())
                 .getJSONObject("body");
 
         if (response.getInt("code") == 200) {
@@ -509,9 +509,9 @@ class UserInstance {
                 .put("type", "request")
                 .put("body", new JSONObject()
                         .put("method", "GET")
-                        .put("uri", "http://localhost:8080/outputs?"));
+                        .put("uri", "http://localhost:8080/outputs/all"));
         // ***********************************************************
-        JSONObject response = getDataFromClient(reqest)
+        JSONObject response = JsonRequester.execute(reqest, getChannel())
                 .getJSONObject("body");
 
         if (response.keySet().contains("_embedded")) {
@@ -541,7 +541,7 @@ class UserInstance {
                         .put("method", "GET")
                         .put("uri", "http://localhost:8080/outputs/available?type=" + type));
 
-        JSONArray array = getDataFromClient(request)
+        JSONArray array = JsonRequester.execute(request, getChannel())
                 .getJSONObject("body")
                 .getJSONArray("available_gpios");
 
@@ -552,44 +552,8 @@ class UserInstance {
         return outputs;
     }
 
-    private JSONObject getDataFromClient(JSONObject request) throws ChannelNotFoundException {
-        JSONObject obj = new JSONObject();
-
-        Channel ch = service.getChannel(userId);
-        ChannelFuture f = ch.writeAndFlush(request.toString()).addListener((ChannelFutureListener) channelFuture -> {
-
-            if (ch.pipeline().names().contains("msgTmpReader"))
-                ch.pipeline().remove("msgTmpReader");
-
-            ch.pipeline().addBefore("sessionHandler", "msgTmpReader", new ChannelInboundHandlerAdapter() {
-
-                @Override
-                public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-                    JSONObject tmp = new JSONObject(msg.toString());
-
-                    if (tmp.getString("type").equals("data"))
-                        obj.put("body", tmp.getJSONObject("body"));
-                }
-
-                @Override
-                public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-                    synchronized (obj) {
-                        obj.notify();
-                    }
-
-                    ch.pipeline().remove(this);
-                }
-            });
-        });
-
-        try {
-            synchronized (obj) {
-                obj.wait();
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return obj;
+    private Channel getChannel() throws ChannelNotFoundException {
+        return service.getChannel(userId);
     }
 
     // **************************************************************************************************************
