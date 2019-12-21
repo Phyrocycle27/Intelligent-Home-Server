@@ -32,7 +32,7 @@ public class Telegram implements Runnable {
         TelegramBotsApi telegram = new TelegramBotsApi();
         Bot bot;
 
-        /*if (PROXY_HOST != null && PROXY_PORT != 0) {
+        if (PROXY_HOST != null && PROXY_PORT != 0) {
             HttpHost httpHost = new HttpHost(PROXY_HOST, PROXY_PORT);
 
             DefaultBotOptions options = ApiContext.getInstance(DefaultBotOptions.class);
@@ -40,7 +40,7 @@ public class Telegram implements Runnable {
             options.setRequestConfig(requestConfig);
 
             bot = new Bot(options);
-        } else */bot = new Bot();
+        } else bot = new Bot();
 
         try {
             telegram.registerBot(bot);

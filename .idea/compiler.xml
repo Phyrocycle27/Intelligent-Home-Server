@@ -8,11 +8,13 @@
         <outputRelativeToContentRoot value="true" />
         <module name="SmartHomeServer" />
         <module name="SmartHome Server" />
+        <module name="Smart-Home-Server" />
       </profile>
     </annotationProcessing>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="Smart-Home-Server" options="-parameters" />
       <module name="SmartHome Server" options="-parameters" />
       <module name="SmartHomeServer" options="-parameters" />
     </option>
