@@ -68,12 +68,12 @@ class UserInstance {
 
     // ******************************** STATIC FINAL VARIABLES **********************************************
     private static final Logger LOGGER;
-    private static final YandexWeather weatherService;
+    private static final Weather weatherService;
     private static final DeviceAccessService service;
 
     static {
         LOGGER = Logger.getLogger(Bot.class.getName());
-        weatherService = new YandexWeather();
+        weatherService = new Weather();
         service = DeviceAccessService.getInstance();
 
         menuButtons = new ArrayList<String>() {{
