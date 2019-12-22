@@ -20,6 +20,8 @@ public class Bot extends TelegramLongPollingBot {
 
     private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
     private final static String USER_NAME = "intelligent_home_bot";
+//    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
+//    private final static String USER_NAME = "intelligent_home_beta_bot";
     private static final DeviceAccessService service;
     public static final Logger log;
     private static Map<Long, UserInstance> instances;

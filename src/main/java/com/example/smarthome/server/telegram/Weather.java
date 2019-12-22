@@ -10,7 +10,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.text.DecimalFormat;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 class Weather {
 
@@ -30,18 +32,23 @@ class Weather {
             StringBuilder message = new StringBuilder();
             JSONObject obj = new JSONObject(EntityUtils.toString(entity));
 
-            message.append("Текущая погода в Химках\n");
+            message.append("<b>Текущая погода в Химках</b>\n");
 
-            // ВЕТЕР
-            JSONObject wind = obj.getJSONObject("wind");
-            message.append(String.format("• Скорость ветра %d м/с\n",
-                    wind.getInt("speed")));
-            message.append(String.format("• Направление ветра %s\n",
-                    getWindDir((wind.getInt("deg")))));
+            // ТЕМПЕРАТУРА
+            JSONObject main = obj.getJSONObject("main");
 
-            // ОБЛАЧНОСТЬ
-            JSONObject clouds = obj.getJSONObject("clouds");
-            message.append(String.format("• Облачность %d ", clouds.getInt("all"))).append("%");
+            NumberFormat nf = NumberFormat.getInstance(Locale.ENGLISH);
+            nf.setMaximumFractionDigits(2);
+            nf.setRoundingMode(RoundingMode.UP);
+
+            message.append(String.format("• Температура %s °C\n",
+                    nf.format(main.getDouble("temp"))));
+            message.append(String.format("• Ощущается как %s °C\n",
+                    nf.format(main.getDouble("feels_like"))));
+
+            // Влажность
+            message.append(String.format("• Влажность %d",
+                    main.getInt("humidity"))).append("%\n");
 
             // ОПИСАНИЕ
             StringBuilder description = new StringBuilder();
@@ -55,28 +62,28 @@ class Weather {
                     description.append(", ");
             }
 
-            message.append(String.format("• На улице %s", description.toString()));
+            message.append(String.format("• На улице %s\n", description.toString()));
 
-            // ТЕМПЕРАТУРА
-            JSONObject main = obj.getJSONObject("main");
+            // ВЕТЕР
+            JSONObject wind = obj.getJSONObject("wind");
+            message.append(String.format("• Скорость ветра %d м/с\n",
+                    wind.getInt("speed")));
+            message.append(String.format("• Направление ветра %s\n",
+                    getWindDir((wind.getInt("deg")))));
 
-            message.append(String.format("• Температура %d°C\n",
-                    main.getInt("temp")));
-            message.append(String.format("  Ощущается как %d°C\n",
-                    main.getInt("feels_like")));
-
-            // Влажность
-            message.append(String.format("• Влажность %d\n",
-                    main.getInt("humidity"))).append("%");
+            // ОБЛАЧНОСТЬ
+            JSONObject clouds = obj.getJSONObject("clouds");
+            message.append(String.format("• Облачность %d ", clouds.getInt("all"))).append("%\n");
 
             // Давление
             int hPa = main.getInt("pressure");
             message.append(String.format("• Давление %s мм рт.ст.\n",
-                    new DecimalFormat("#.##").format((double) hPa / 0.75006375541921)));
+                    nf.format(hPa * 0.75006375541921)));
 
             // Видимость
-            message.append(String.format("• Видимость %d м\n",
-                    obj.getInt("visibility")));
+            int visibility = obj.getInt("visibility");
+            message.append(String.format("• Видимость %s м\n",
+                    visibility >= 1000? visibility / 1000 + " " + visibility % 1000: visibility));
 
             weather = message.toString();
 
