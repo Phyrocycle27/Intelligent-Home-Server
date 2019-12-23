@@ -10,15 +10,26 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.math.RoundingMode;
-import java.text.NumberFormat;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
 class Weather {
-
     private static final String URL =
             "https://api.openweathermap.org/data/2.5/weather?appid=3156e4747f7d07492a0c3a19b388ed8f&id=550280&lang=ru" +
                     "&units=metric";
+
+    private static final DecimalFormat df;
+
+    static {
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator(' ');
+
+        df = new DecimalFormat();
+        df.setDecimalFormatSymbols(symbols);
+        df.setGroupingSize(3);
+        df.setMaximumFractionDigits(2);
+    }
 
     String getWeather() {
         HttpClient client = HttpClientBuilder.create().build();
@@ -34,23 +45,19 @@ class Weather {
 
             message.append("<b>Текущая погода в Химках</b>\n");
 
-            // ТЕМПЕРАТУРА
+            // Температура
             JSONObject main = obj.getJSONObject("main");
 
-            NumberFormat nf = NumberFormat.getInstance(Locale.ENGLISH);
-            nf.setMaximumFractionDigits(2);
-            nf.setRoundingMode(RoundingMode.UP);
-
-            message.append(String.format("• Температура %s °C\n",
-                    nf.format(main.getDouble("temp"))));
-            message.append(String.format("• Ощущается как %s °C\n",
-                    nf.format(main.getDouble("feels_like"))));
+            message.append(String.format(Locale.ENGLISH, "• Температура %.2f °C\n",
+                    main.getFloat("temp")));
+            message.append(String.format(Locale.ENGLISH, "• Ощущается как %.2f °C\n",
+                    main.getFloat("feels_like")));
 
             // Влажность
-            message.append(String.format("• Влажность %d",
-                    main.getInt("humidity"))).append("%\n");
+            message.append(String.format("• Влажность %d %%\n",
+                    main.getInt("humidity")));
 
-            // ОПИСАНИЕ
+            // Описание
             StringBuilder description = new StringBuilder();
             JSONArray array = obj.getJSONArray("weather");
 
@@ -73,17 +80,15 @@ class Weather {
 
             // ОБЛАЧНОСТЬ
             JSONObject clouds = obj.getJSONObject("clouds");
-            message.append(String.format("• Облачность %d ", clouds.getInt("all"))).append("%\n");
+            message.append(String.format("• Облачность %d %%\n", clouds.getInt("all")));
 
             // Давление
             int hPa = main.getInt("pressure");
-            message.append(String.format("• Давление %s мм рт.ст.\n",
-                    nf.format(hPa * 0.75006375541921)));
+            message.append(String.format(Locale.ENGLISH, "• Давление %.2f мм рт.ст.\n",
+                    (double) hPa * 0.75006375541921));
 
             // Видимость
-            int visibility = obj.getInt("visibility");
-            message.append(String.format("• Видимость %s м\n",
-                    visibility >= 1000? visibility / 1000 + " " + visibility % 1000: visibility));
+            message.append(String.format("• Видимость %s м\n", df.format(obj.getInt("visibility"))));
 
             weather = message.toString();
 

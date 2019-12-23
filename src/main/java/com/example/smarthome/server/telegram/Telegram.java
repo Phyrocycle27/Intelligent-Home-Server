@@ -23,6 +23,12 @@ public class Telegram implements Runnable {
         new Thread(this, "Telegram Thread").start();
     }
 
+    public Telegram() {
+        PROXY_HOST = null;
+        PROXY_PORT = 0;
+        new Thread(this, "Telegram Thread").start();
+    }
+
     @Override
     public void run() {
         LOGGER.log(Level.INFO, "Telegram thread is running");
