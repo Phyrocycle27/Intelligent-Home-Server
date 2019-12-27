@@ -17,10 +17,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,26 +33,26 @@ class UserInstance {
     // ************************************* MENU ***********************************************
     private static final String menuMsg = "Нажмите \"Управление домом\" чтобы перейти к управлению умным домом и " +
             "просмотру информации с датчиков или нажмите \"Информация\", чтобы узнать точное время или погоду";
-    private static final List<String> menuButtons;
+    private static final String[] menuButtons = new String[]{"Управление домом", "Информация"};
 
     // ************************************* INFO ************************************************
     private static final String infoMsg = "Выберите \"Погода\" чтобы узнать погоду в совём городе " +
             "или нажмите \"Время\"чтобы узнать точное время в вашем городе";
-    private static final List<String> infoButtons;
+    private static final String[] infoButtons = new String[]{"Погода", "Время"};
 
     // ********************************** NOTHING ************************************************
     private static final String nothingToShow = "Тут пока ничего нет...";
 
     // *********************************** HOME CONTROL ***************************************
-    private static final List<String> homeControlBtns;
     private static final String channelNotFound = "Ваша Raspberry PI не подключена к серверу\n" +
             "Введите, пожалуйста, свой токен в соответствующем разделе в приложении чтобы Ваше устройство могло " +
             "подключиться к серверу";
     private static final String homeControl = "Выберите Устройства, чтобы управлять устройствами или добавить новое, или " +
             "выберите Датчики чтобы посмотреть показания или добавить новый датчик";
-    private static final List<String> typesOfSignal;
-    private static final List<String> yesOrNo;
-    private static final List<String> onOrOff;
+    private static final String[] typesOfSignal = new String[]{"Цифровой", "ШИМ"};
+    private static final String[] yesOrNo = new String[]{"Да", "Нет"};
+    private static final String[] onOrOff = new String[]{"Включить", "Выключить"};
+    private static final String[] homeControlBtns = new String[]{"Устройства", "Датчики"};
     // ****************************************** TOKEN ***********************************************************
     private static final String tokenAlreadyHaveGot = "Похоже, Ваша Raspberry PI не подключена к серверу";
     private static final String tokenSuccessGen = "Ваш токен успешно сгенерирован!\nОн требуется для подключения Вашей " +
@@ -63,7 +60,7 @@ class UserInstance {
             "\n\n\u2B07\u2B07\u2B07 ВАШ ТОКЕН \u2B07\u2B07\u2B07";
     private static final String tokenNotFound = "Похоже, что у Вас нет токена...\nЧтобы управлять домом через этого телеграм " +
             "бота Вам нужен уникальный токен, который Ваша Raspberry PI будет использовать для подключения у серверу";
-    private static final List<String> tokenGenBtn;
+    private static final String[] tokenGenBtn = new String[]{"Сгенерировать токен"};
 
     // ******************************** STATIC FINAL VARIABLES **********************************************
     private static final Logger LOGGER;
@@ -74,40 +71,6 @@ class UserInstance {
         LOGGER = Logger.getLogger(Bot.class.getName());
         weatherService = new Weather();
         service = DeviceAccessService.getInstance();
-
-        menuButtons = new ArrayList<String>() {{
-            add("Управление домом");
-            add("Информация");
-        }};
-
-        infoButtons = new ArrayList<String>() {{
-            add("Погода");
-            add("Время");
-        }};
-
-        tokenGenBtn = new ArrayList<String>() {{
-            add("Сгенерировать токен");
-        }};
-
-        homeControlBtns = new ArrayList<String>() {{
-            add("Устройства");
-            add("Датчики");
-        }};
-
-        typesOfSignal = new ArrayList<String>() {{
-            add("Цифровой");
-            add("ШИМ");
-        }};
-
-        yesOrNo = new ArrayList<String>() {{
-            add("Да");
-            add("Нет");
-        }};
-
-        onOrOff = new ArrayList<String>() {{
-            add("Включить");
-            add("Выключить");
-        }};
     }
 
     /* ************************************ TEMP VARIABLES ************************************************** */
@@ -121,8 +84,6 @@ class UserInstance {
 
     UserInstance(long userId) {
         this.userId = userId;
-        outputsMap = new HashMap<>();
-        creator = new DeviceCreator();
     }
 
     List<SendMessage> getMessage(String incoming) {
@@ -193,7 +154,8 @@ class UserInstance {
                                 List<String> inputsBtns = new ArrayList<>();
 
                                 messages.add(getKeyboard("Нажмите на существующий датчик или добавьте новый",
-                                        inputsBtns, userId, 2, true, true, false));
+                                        (String[]) inputsBtns.toArray(), userId, 2, true,
+                                        true, false));
                                 level = 3;
                                 subLevel = 2;
                                 break;
@@ -249,6 +211,7 @@ class UserInstance {
             case 3:
                 if (incoming.equals("назад")) {
                     messages.add(goToHomeControlLevel());
+                    outputsMap = null;
                     break;
                 }
                 switch (subLevel) {
@@ -256,8 +219,7 @@ class UserInstance {
                     case 1:
                         if (incoming.equals("добавить")) {
                             messages.add(creator.goToStepOne());
-
-                            //TODO: Здесь нужно создавать объект creator, а в конце удаления присваивать его null
+                            creator = new DeviceCreator();
                         } else if (outputsMap.containsKey(incoming)) {
                             try {
                                 Output output = getOutput(incoming);
@@ -324,6 +286,7 @@ class UserInstance {
                             // А тут мы (не)устанавливаем инверсию сигнала для данного устройства
                             case 4:
                                 messages.add(creator.setOutputReverse(incoming));
+                                creator = null;
                                 break;
                         }
                         break;
@@ -387,14 +350,17 @@ class UserInstance {
         SendMessage msg;
         try {
             List<String> outputsBtns = new ArrayList<>();
+            if (outputsMap == null)
+                outputsMap = new HashMap<>();
 
             for (Output output : getOutputs()) {
                 outputsBtns.add(output.getName());
-                outputsMap.put(output.getName(), output.getOutputId());
+                if (!outputsMap.containsKey(output.getName()))
+                    outputsMap.put(output.getName(), output.getOutputId());
             }
 
             msg = getKeyboard(null,
-                    outputsBtns, userId, 1, true, true, false);
+                    (String[]) outputsBtns.toArray(), userId, 1, true, true, false);
 
             if (msgText == null)
                 msg.setText("Нажмите на существующее устройство или добавьте новое");
@@ -527,8 +493,8 @@ class UserInstance {
         return outputs;
     }
 
-    private List<String> getAvailableOutputs(String type) throws ChannelNotFoundException {
-        List<String> outputs = new ArrayList<>();
+    private String[] getAvailableOutputs(String type) throws ChannelNotFoundException {
+        String[] gpios;
 
         JSONObject request = new JSONObject()
                 .put("type", "request")
@@ -540,11 +506,8 @@ class UserInstance {
                 .getJSONObject("body")
                 .getJSONArray("available_gpios");
 
-        for (int i = 0; i < array.length(); i++)
-            outputs.add(array.get(i).toString());
-
-        LOGGER.log(Level.INFO, "Available outputs are " + outputs);
-        return outputs;
+        gpios = (String[]) array.toList().toArray();
+        return gpios;
     }
 
     private Channel getChannel() throws ChannelNotFoundException {
@@ -557,7 +520,7 @@ class UserInstance {
         return new SendMessage().setChatId(chatId).setParseMode("HTML");
     }
 
-    private SendMessage getKeyboard(String messageText, List<String> buttonsText, long userId, int numOfColumns,
+    private SendMessage getKeyboard(String messageText, String[] buttonsText, long userId, int numOfColumns,
                                     boolean prevBtn, boolean addBtn, boolean removeBtn) {
 
         SendMessage msg = createMsg(userId);
@@ -574,10 +537,10 @@ class UserInstance {
 
         if (buttonsText != null) {
             KeyboardRow row = new KeyboardRow();
-            for (int i = 1; i <= buttonsText.size(); i++) {
-                row.add(buttonsText.get(i - 1));
+            for (int i = 1; i <= buttonsText.length; i++) {
+                row.add(buttonsText[i - 1]);
 
-                if (i % numOfColumns == 0 & i != buttonsText.size()) {
+                if (i % numOfColumns == 0 & i != buttonsText.length) {
                     keyboard.add(row);
                     row = new KeyboardRow();
                 }
@@ -710,13 +673,12 @@ class UserInstance {
         private SendMessage setOutputGpio(String gpioStr) {
             SendMessage msg;
             try {
-                int gpio = Integer.parseInt(gpioStr);
-                if (getAvailableOutputs(creationOutput.getType()).contains(String.valueOf(gpio))) {
-                    creationOutput.setGpio(gpio);
+                if (contains(gpioStr, getAvailableOutputs(creationOutput.getType()))) {
+                    creationOutput.setGpio(Integer.valueOf(gpioStr));
 
                     msg = goToStepFour();
                 } else
-                    msg = getKeyboard("Выберите на клавиатуре предложенный выход",
+                    msg = getKeyboard("Выберите предложенный в списке выход",
                             getAvailableOutputs(creationOutput.getType()), userId, 4, true,
                             false, false);
 
@@ -763,6 +725,10 @@ class UserInstance {
                 step = 0;
             }
             return msg;
+        }
+
+        private boolean contains(String s, String[] arr) {
+            return Arrays.binarySearch(arr, s) >= 0;
         }
     }
 
