@@ -26,8 +26,8 @@ import java.io.IOException;
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
 public class Main {
 
-    private static final String PROXY_HOST = "51.158.113.142";
-    private static final Integer PROXY_PORT = 8811;
+    private static final String PROXY_HOST = "127.0.0.1";
+    private static final Integer PROXY_PORT = 9050;
     private static final int SERVER_PORT = 3141;
     public static final Logger log;
 

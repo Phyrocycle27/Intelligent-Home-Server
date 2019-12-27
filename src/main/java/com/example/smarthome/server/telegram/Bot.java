@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.ActionType;
+import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -15,10 +17,10 @@ import java.util.Map;
 
 public class Bot extends TelegramLongPollingBot {
 
-    //    private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
-//    private final static String USER_NAME = "intelligent_home_bot";
-    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
-    private final static String USER_NAME = "intelligent_home_beta_bot";
+    private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
+    private final static String USER_NAME = "intelligent_home_bot";
+//    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
+//    private final static String USER_NAME = "intelligent_home_beta_bot";
     public static final Logger log;
     private static Map<Long, UserInstance> instances;
 
@@ -34,7 +36,6 @@ public class Bot extends TelegramLongPollingBot {
         super(options);
     }
 
-
     @Override
     public void onUpdateReceived(Update update) {
         Long userId = update.getMessage().getChat().getId();
@@ -42,7 +43,6 @@ public class Bot extends TelegramLongPollingBot {
 
         if (update.hasMessage() && update.getMessage().hasText()) {
             String text = update.getMessage().getText().toLowerCase();
-            /*
             // устанавливаем действие, отображаемое у пользователя
             SendChatAction sendChatAction = new SendChatAction()
                     .setChatId(update.getMessage().getChatId())
@@ -53,7 +53,7 @@ public class Bot extends TelegramLongPollingBot {
                 execute(sendChatAction);
             } catch (TelegramApiException e) {
                 e.printStackTrace();
-            }*/
+            }
 
             new Thread(new MessageCreator(text, userId)).start();
 

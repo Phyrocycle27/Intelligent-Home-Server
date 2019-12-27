@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram;
 
 import org.apache.http.HttpHost;
-import org.apache.http.client.config.RequestConfig;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.ApiContext;
@@ -42,8 +41,10 @@ public class Telegram implements Runnable {
             HttpHost httpHost = new HttpHost(PROXY_HOST, PROXY_PORT);
 
             DefaultBotOptions options = ApiContext.getInstance(DefaultBotOptions.class);
-            RequestConfig requestConfig = RequestConfig.custom().setProxy(httpHost).setAuthenticationEnabled(false).build();
-            options.setRequestConfig(requestConfig);
+
+            options.setProxyType(DefaultBotOptions.ProxyType.SOCKS5);
+            options.setProxyHost(PROXY_HOST);
+            options.setProxyPort(PROXY_PORT);
 
             bot = new Bot(options);
         } else bot = new Bot();

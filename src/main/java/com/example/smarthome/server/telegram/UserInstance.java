@@ -57,11 +57,10 @@ class UserInstance {
     private static final List<String> yesOrNo;
     private static final List<String> onOrOff;
     // ****************************************** TOKEN ***********************************************************
-    private static final String tokenAlreadyHaveGot = "Вам уже выдан токен. Введите его, пожалуйста, в соответствующем разделе " +
-            "в приложении чтобы Ваше устройство могло подключиться к серверу";
-    private static final String tokenSuccessGen = "Ваш токен успешно сгенерирован!\nОн требуется для подключения Вашего " +
-            "устройства к серверу.\nПожалуйста, скопируйте и вставьте Ваш токен в соответствующий раздел в приложении, " +
-            "чтобы Ваше устройство могло подключиться к серверу\n\n\u2B07\u2B07\u2B07 ВАШ ТОКЕН \u2B07\u2B07\u2B07";
+    private static final String tokenAlreadyHaveGot = "Похоже, Ваша Raspberry PI не подключена к серверу";
+    private static final String tokenSuccessGen = "Ваш токен успешно сгенерирован!\nОн требуется для подключения Вашей " +
+            "Raspberry PI к серверу.\nПожалуйста, скопируйте и вставьте Ваш токен в соответствующий раздел в приложении." +
+            "\n\n\u2B07\u2B07\u2B07 ВАШ ТОКЕН \u2B07\u2B07\u2B07";
     private static final String tokenNotFound = "Похоже, что у Вас нет токена...\nЧтобы управлять домом через этого телеграм " +
             "бота Вам нужен уникальный токен, который Ваша Raspberry PI будет использовать для подключения у серверу";
     private static final List<String> tokenGenBtn;
@@ -169,6 +168,12 @@ class UserInstance {
                 }
                 break;
             case 2:
+                if (incoming.equals("назад")) {
+                    messages.add(getKeyboard(menuMsg, menuButtons, userId, 2,
+                            false, false, false));
+                    subLevel = 0;
+                    level = 1;
+                }
                 switch (subLevel) {
                     /* *******************************************************************************
                      _____________________   _____________________           _____________________
@@ -206,12 +211,6 @@ class UserInstance {
                                             .setText(tokenAlreadyHaveGot));
 
                                 break;
-                            case "назад":
-                                messages.add(getKeyboard(menuMsg, menuButtons, userId, 2,
-                                        false, false, false));
-                                subLevel = 0;
-                                level--;
-                                break;
                             default:
                                 messages.add(createMsg(userId).setText(String.format(defaultSection, incoming)));
                         }
@@ -241,12 +240,6 @@ class UserInstance {
                                         .setText(String.format("Химкинское время %s",
                                                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
                                 break;
-                            case "назад":
-                                messages.add(getKeyboard(menuMsg, menuButtons, userId, 2,
-                                        false, false, false));
-                                subLevel = 0;
-                                level--;
-                                break;
                             default:
                                 messages.add(createMsg(userId).setText(String.format(defaultSection, incoming)));
                         }
@@ -263,6 +256,8 @@ class UserInstance {
                     case 1:
                         if (incoming.equals("добавить")) {
                             messages.add(creator.goToStepOne());
+
+                            //TODO: Здесь нужно создавать объект creator, а в конце удаления присваивать его null
                         } else if (outputsMap.containsKey(incoming)) {
                             try {
                                 Output output = getOutput(incoming);
@@ -651,6 +646,7 @@ class UserInstance {
             return msg;
         }
 
+        // Step one - SET UP DEVICE NAME
         private SendMessage setOutputName(String name) {
             SendMessage msg;
             if (!outputsMap.containsKey(name)) {

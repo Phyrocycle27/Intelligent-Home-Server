@@ -20,10 +20,13 @@ class Weather {
                     "&units=metric";
 
     private static final DecimalFormat df;
+    private static final HttpClient client;
 
     static {
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator(' ');
+
+        client = HttpClientBuilder.create().build();
 
         df = new DecimalFormat();
         df.setDecimalFormatSymbols(symbols);
@@ -32,7 +35,6 @@ class Weather {
     }
 
     String getWeather() {
-        HttpClient client = HttpClientBuilder.create().build();
         HttpUriRequest request = new HttpGet(URL);
 
         String weather = null;
@@ -85,7 +87,7 @@ class Weather {
             // Давление
             int hPa = main.getInt("pressure");
             message.append(String.format(Locale.ENGLISH, "• Давление %.2f мм рт.ст.\n",
-                    (double) hPa * 0.75006375541921));
+                    hPa * 0.750063));
 
             // Видимость
             message.append(String.format("• Видимость %s м\n", df.format(obj.getInt("visibility"))));
