@@ -7,6 +7,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.ActionType;
 import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
@@ -17,10 +18,10 @@ import java.util.Map;
 
 public class Bot extends TelegramLongPollingBot {
 
-    private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
-    private final static String USER_NAME = "intelligent_home_bot";
-//    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
-//    private final static String USER_NAME = "intelligent_home_beta_bot";
+    //    private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
+//    private final static String USER_NAME = "intelligent_home_bot";
+    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
+    private final static String USER_NAME = "intelligent_home_beta_bot";
     public static final Logger log;
     private static Map<Long, UserInstance> instances;
 
@@ -38,37 +39,29 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        Long userId = update.getMessage().getChat().getId();
-        List<SendMessage> messages;
+        log.info("New message incoming");
+        Long chatId = 0L;
+        int messageId = 0;
+        String text = "";
 
         if (update.hasMessage() && update.getMessage().hasText()) {
-            String text = update.getMessage().getText().toLowerCase();
-            // устанавливаем действие, отображаемое у пользователя
-            SendChatAction sendChatAction = new SendChatAction()
-                    .setChatId(update.getMessage().getChatId())
-                    .setAction(ActionType.TYPING);
-
-            // executing the action
-            try {
-                execute(sendChatAction);
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
-            }
-
-            new Thread(new MessageCreator(text, userId)).start();
-
-        } else {
-            messages = new ArrayList<SendMessage>() {{
-                add(new SendMessage()
-                        .setChatId(userId)
-                        .setText("Извините, я не могу распознать ваше собщение, потому что оно не содержит текст")
-                );
-            }};
-            execute(messages);
+            chatId = update.getMessage().getChat().getId();
+            text = update.getMessage().getText();
+        } else if (update.hasCallbackQuery()) {
+            text = update.getCallbackQuery().getData();
+            chatId = update.getCallbackQuery().getMessage().getChatId();
         }
+        execute(getAnswer(text, chatId, messageId));
     }
 
-    private synchronized UserInstance getUserInstance(long userId) {
+    private List<SendMessage> getAnswer(String text, long userId, int messageId) {
+        log.info("Executing...");
+        UserInstance instance = getUserInstance(userId);
+        log.info("Action userInstance got");
+        return instance.getMessage(text, messageId);
+    }
+
+    private UserInstance getUserInstance(long userId) {
         UserInstance userInstance = instances.get(userId);
         if (userInstance == null) {
             userInstance = new UserInstance(userId);
@@ -77,32 +70,17 @@ public class Bot extends TelegramLongPollingBot {
         return userInstance;
     }
 
-    private synchronized void execute(List<SendMessage> messages) {
+    private void execute(List<SendMessage> messages) {
         try {
-            for (SendMessage message : messages)
+            for (SendMessage message : messages) {
+                log.info("Step 1");
                 execute(message);
-            messages.clear();
+                log.info("Step 2");
+            }
         } catch (TelegramApiException ex) {
             ex.printStackTrace();
         }
-    }
-
-    class MessageCreator implements Runnable {
-
-        private final String incomingText;
-        private final long userId;
-
-        public MessageCreator(String incomingText, long userId) {
-            this.incomingText = incomingText;
-            this.userId = userId;
-        }
-
-        @Override
-        public void run() {
-            UserInstance userInstance = getUserInstance(userId);
-            List<SendMessage> msg = userInstance.getMessage(incomingText);
-            execute(msg);
-        }
+        log.info("Finish!");
     }
 
     @Override

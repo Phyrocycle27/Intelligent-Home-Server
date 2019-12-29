@@ -19,6 +19,7 @@ public class JsonRequester {
 
     public static JSONObject execute(JSONObject request, Channel ch) throws ChannelNotFoundException {
         JSONObject obj = new JSONObject();
+        LOGGER.log(Level.INFO, "Request is: " + request.toString());
 
         ChannelFuture f = ch.writeAndFlush(request.toString()).addListener((ChannelFutureListener) channelFuture -> {
 

@@ -8,6 +8,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -18,9 +20,9 @@ class Weather {
     private static final String URL =
             "https://api.openweathermap.org/data/2.5/weather?appid=3156e4747f7d07492a0c3a19b388ed8f&id=550280&lang=ru" +
                     "&units=metric";
-
     private static final DecimalFormat df;
     private static final HttpClient client;
+    public static final Logger log;
 
     static {
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
@@ -32,16 +34,20 @@ class Weather {
         df.setDecimalFormatSymbols(symbols);
         df.setGroupingSize(3);
         df.setMaximumFractionDigits(2);
+
+        log = LoggerFactory.getLogger(Weather.class);
     }
 
     String getWeather() {
+        log.info("Build request..");
         HttpUriRequest request = new HttpGet(URL);
 
         String weather = null;
 
         try {
+            log.info("Send..");
             final HttpEntity entity = client.execute(request).getEntity();
-
+            log.info("Parse data...");
             StringBuilder message = new StringBuilder();
             JSONObject obj = new JSONObject(EntityUtils.toString(entity));
 
@@ -93,7 +99,7 @@ class Weather {
             message.append(String.format("• Видимость %s м\n", df.format(obj.getInt("visibility"))));
 
             weather = message.toString();
-
+            log.info("Parsing finish!");
         } catch (IOException e) {
             e.printStackTrace();
         }
