@@ -39,6 +39,7 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+        UserInstance.setBot(this);
         log.info("New message incoming");
         Long chatId = 0L;
         int messageId = 0;
@@ -51,14 +52,7 @@ public class Bot extends TelegramLongPollingBot {
             text = update.getCallbackQuery().getData();
             chatId = update.getCallbackQuery().getMessage().getChatId();
         }
-        execute(getAnswer(text, chatId, messageId));
-    }
-
-    private List<SendMessage> getAnswer(String text, long userId, int messageId) {
-        log.info("Executing...");
-        UserInstance instance = getUserInstance(userId);
-        log.info("Action userInstance got");
-        return instance.getMessage(text, messageId);
+        getUserInstance(chatId).sendAnswer(text);
     }
 
     private UserInstance getUserInstance(long userId) {
@@ -68,19 +62,6 @@ public class Bot extends TelegramLongPollingBot {
             instances.put(userId, userInstance);
         }
         return userInstance;
-    }
-
-    private void execute(List<SendMessage> messages) {
-        try {
-            for (SendMessage message : messages) {
-                log.info("Step 1");
-                execute(message);
-                log.info("Step 2");
-            }
-        } catch (TelegramApiException ex) {
-            ex.printStackTrace();
-        }
-        log.info("Finish!");
     }
 
     @Override
