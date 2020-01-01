@@ -79,7 +79,9 @@ class UserInstance {
 
     private Consumer<String> currentLvl;
     private Consumer<String> defaultLvl;
-    private Consumer<String> mainLvl;
+    private Consumer<String> menuLvl;
+    private Consumer<String> infoLvl;
+    private Consumer<String> homeControlLvl;
 
     static {
         LOGGER = Logger.getLogger(Bot.class.getName());
@@ -102,26 +104,81 @@ class UserInstance {
             if (s.toLowerCase().equals("меню") || s.equals("/start")) {
                 execute(new ReplyKeyboardMessage(chatId, menuMsg, menuButtons)
                         .setNumOfColumns(2));
-                currentLvl = mainLvl;
+                currentLvl = menuLvl;
             } else
                 execute(new Message(chatId, String.format(unknownCmdMain, s)));
 
         };
 
-        mainLvl = s -> {
+        menuLvl = s -> {
             switch (s) {
                 case "Управление домом":
                     if (service.isExists(chatId))
                         execute(goToHomeControlLevel());
-                    else
+                    else {
                         execute(new ReplyKeyboardMessage(chatId, tokenNotFound, tokenGenBtn)
                                 .hasBackButton(true));
+                        // getTokenLvl
+                    }
                     break;
                 case "Информация":
                     execute(new ReplyKeyboardMessage(chatId, infoMsg, infoButtons)
                             .setNumOfColumns(2)
                             .hasBackButton(true));
+                    currentLvl = infoLvl;
                     break;
+                default:
+                    execute(new Message(chatId, String.format(defaultSection, s)));
+            }
+        };
+
+        infoLvl = s -> {
+            switch (s) {
+                case "Погода":
+                    String weather = weatherService.getWeather();
+                    String answer;
+
+                    if (weather == null) answer = "Ошибка при получении погоды";
+                    else answer = weather;
+
+                    execute(new Message(chatId, answer));
+                    break;
+                case "Время":
+                    execute(new Message(chatId, String.format("Химкинское время %s",
+                            LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
+                    break;
+                case "Назад":
+                    execute(new ReplyKeyboardMessage(chatId, menuMsg, menuButtons)
+                            .setNumOfColumns(2));
+                    currentLvl = menuLvl;
+                    break;
+                default:
+                    execute(new Message(chatId, String.format(defaultSection, s)));
+            }
+        };
+
+        homeControlLvl = s -> {
+            switch (s) {
+                case "Устройства":
+//                    messages.add(goToDevices(null));
+                    break;
+                case "Датчики":
+                    // Запрашиваем с raspberry pi все подключенные датчики и выводим их как кнопки
+                    List<String> inputsBtns = new ArrayList<>();
+                    execute(new ReplyKeyboardMessage(chatId, sensorsMsg, inputsBtns)
+                            .hasBackButton(true)
+                            .hasAddButton(true));
+                    break;
+                case "Сгенерировать токен":
+                    execute(new Message(chatId, tokenSuccessGen));
+                    // Сообщение с токеном
+                    execute(new ReplyKeyboardMessage(chatId, service.createToken(chatId), new String[]{})
+                            .hasBackButton(true));
+                    break;
+                case "Назад":
+                    execute(new ReplyKeyboardMessage(chatId, menuMsg, menuButtons)
+                            .setNumOfColumns(2));
+                    currentLvl = menuLvl;
                 default:
                     execute(new Message(chatId, String.format(defaultSection, s)));
             }
@@ -352,21 +409,15 @@ class UserInstance {
     }
 
     // LEVELS
-    private Message goToHomeControlLevel() {
-        Message msg;
+    private ReplyKeyboardMessage goToHomeControlLevel() {
         if (service.isChannelExist(chatId)) {
-            msg = new ReplyKeyboardMessage(chatId, homeControl, homeControlBtns)
+            return new ReplyKeyboardMessage(chatId, homeControl, homeControlBtns)
                     .setNumOfColumns(2)
                     .hasBackButton(true);
-            level = 2;
-            subLevel = 1;
         } else {
-            msg = new ReplyKeyboardMessage(chatId, channelNotFound, menuButtons)
+            return new ReplyKeyboardMessage(chatId, channelNotFound, menuButtons)
                     .setNumOfColumns(2);
-            level = 1;
-            subLevel = 0;
         }
-        return msg;
     }
 
     /*private Message goToDevices(String text) {
