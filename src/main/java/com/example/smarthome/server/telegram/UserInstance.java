@@ -70,7 +70,7 @@ class UserInstance {
 
     /* ************************************ TEMP VARIABLES ************************************************** */
     private Map<String, Integer> outputsMap;
-    //private DeviceCreator creator;
+//    private DeviceCreator creator;
 
     private int level = 0;
     private int subLevel = 0;
@@ -82,6 +82,7 @@ class UserInstance {
     private Consumer<String> menuLvl;
     private Consumer<String> infoLvl;
     private Consumer<String> homeControlLvl;
+    private Consumer<String> devicesLvl;
 
     static {
         LOGGER = Logger.getLogger(Bot.class.getName());
@@ -114,11 +115,10 @@ class UserInstance {
             switch (s) {
                 case "Управление домом":
                     if (service.isExists(chatId))
-                        execute(goToHomeControlLevel());
+                        goToHomeControlLevel();
                     else {
                         execute(new ReplyKeyboardMessage(chatId, tokenNotFound, tokenGenBtn)
                                 .hasBackButton(true));
-                        // getTokenLvl
                     }
                     break;
                 case "Информация":
@@ -160,10 +160,9 @@ class UserInstance {
         homeControlLvl = s -> {
             switch (s) {
                 case "Устройства":
-//                    messages.add(goToDevices(null));
+                    goToDevices(null);
                     break;
                 case "Датчики":
-                    // Запрашиваем с raspberry pi все подключенные датчики и выводим их как кнопки
                     List<String> inputsBtns = new ArrayList<>();
                     execute(new ReplyKeyboardMessage(chatId, sensorsMsg, inputsBtns)
                             .hasBackButton(true)
@@ -181,6 +180,48 @@ class UserInstance {
                     currentLvl = menuLvl;
                 default:
                     execute(new Message(chatId, String.format(defaultSection, s)));
+            }
+        };
+
+        devicesLvl = s -> {
+            if (s.equals("Добавить")) {
+                /*creator = new DeviceCreator();
+                messages.add(creator.goToStepOne());*/
+            } else if (outputsMap.containsValue(Integer.parseInt(s))) {
+                try {
+                    Output output = getOutput(Integer.valueOf(s));
+
+                    if (output == null) goToDevices("Устройство не найдено");
+                    else {
+                        String currState = getDigitalState(output.getOutputId()) ? "включено" : "выключено";
+                        String inversion = output.getReverse() ? "включена" : "выключена";
+                        String signalType = "";
+                        switch (output.getType()) {
+                            case "digital":
+                                signalType = "цифовой";
+                                break;
+                            case "pwm":
+                                signalType = "ШИМ";
+                        }
+                        new ReplyKeyboardMessage(chatId, String.format("<b>%s</b>\n" +
+                                        "Текущее состояние: <i>%s</i>\n" +
+                                        "Тип сигнала: <i>%s</i>\n" +
+                                        "Инверсия: <i>%s</i>\n" +
+                                        "GPIO-пин: <i>%d</i>",
+                                output.getName(), currState, signalType, inversion,
+                                output.getGpio()), onOrOff)
+                                .setNumOfColumns(2)
+                                .hasBackButton(true)
+                                .hasRemoveButton(true);
+                        outputId = output.getOutputId();
+
+                    }
+                } catch (ChannelNotFoundException e) {
+                    goToHomeControlLevel();
+                    e.printStackTrace();
+                }
+            } else {
+                execute(new Message(chatId, String.format(defaultSection, s)));
             }
         };
     }
@@ -409,28 +450,28 @@ class UserInstance {
     }
 
     // LEVELS
-    private ReplyKeyboardMessage goToHomeControlLevel() {
+    private void goToHomeControlLevel() {
         if (service.isChannelExist(chatId)) {
-            return new ReplyKeyboardMessage(chatId, homeControl, homeControlBtns)
+            execute(new ReplyKeyboardMessage(chatId, homeControl, homeControlBtns)
                     .setNumOfColumns(2)
-                    .hasBackButton(true);
+                    .hasBackButton(true));
+            currentLvl = homeControlLvl;
         } else {
-            return new ReplyKeyboardMessage(chatId, channelNotFound, menuButtons)
-                    .setNumOfColumns(2);
+            execute(new ReplyKeyboardMessage(chatId, channelNotFound, menuButtons)
+                    .setNumOfColumns(2));
+            currentLvl = menuLvl;
         }
     }
 
-    /*private Message goToDevices(String text) {
-        Message answer;
+    private void goToDevices(String text) {
         try {
-            if (outputsMap == null)
-                outputsMap = new HashMap<>();
+            if (outputsMap == null) outputsMap = new HashMap<>();
 
             for (Output output : getOutputs()) {
                 if (!outputsMap.containsKey(output.getName()))
                     outputsMap.put(output.getName(), output.getOutputId());
             }
-            // Таблица <имя_устройства> -> <id>
+            // Таблица <имя_устройства> - <id>
             Map<String, String> map = new HashMap<>();
             for (Map.Entry<String, Integer> entry : outputsMap.entrySet())
                 map.put(entry.getKey(), String.valueOf(entry.getValue()));
@@ -440,17 +481,13 @@ class UserInstance {
                 answerText = text;
             else answerText = devicesMsg;
 
-            answer = new Message(chatId, answerText, map)
-                    .setNumOfColumns(3);
-
-            level = 3;
-            subLevel = 1;
+            execute(new InlineKeyboardMessage(chatId, answerText, map)
+                    .setNumOfColumns(3));
+            currentLvl = devicesLvl;
         } catch (ChannelNotFoundException e) {
             LOGGER.log(Level.WARNING, e.getMessage());
-            answer = goToHomeControlLevel();
+            goToHomeControlLevel();
         }
-
-        return answer;
     }
 
     // ПОЛУЧЕНИЕ И ОТПРАВКА ДАННЫХ С Raspberry PI
@@ -459,7 +496,7 @@ class UserInstance {
      ************************* ПОЛУЧЕНИЕ И ОТПРАВКА ДАННЫХ С Raspberry PI *******************************************
      ************************************************************************************************************** */
 
-    /*private boolean getDigitalState(@NonNull Integer outputId) throws ChannelNotFoundException {
+    private boolean getDigitalState(@NonNull Integer outputId) throws ChannelNotFoundException {
         JSONObject request = new JSONObject()
                 .put("type", "request")
                 .put("body", new JSONObject()
@@ -592,10 +629,6 @@ class UserInstance {
     }
 
     // **************************************************************************************************************
-
-    private SendMessage createMsg(long chatId) {
-        return new SendMessage().setChatId(chatId).setParseMode("HTML");
-    }
 
     /* **************************************************************************************************************
      ************************************** СОЗДАНИЕ УСТРОЙСТВА *****************************************************
