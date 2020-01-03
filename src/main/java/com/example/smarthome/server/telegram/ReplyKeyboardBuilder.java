@@ -10,6 +10,7 @@ import java.util.List;
 public class ReplyKeyboardBuilder {
     private long chatId;
     private String text;
+    private boolean oneTimeKeyboard;
 
     private List<KeyboardRow> keyboard = new ArrayList<>();
     private KeyboardRow row = new KeyboardRow();
@@ -25,6 +26,11 @@ public class ReplyKeyboardBuilder {
 
     public ReplyKeyboardBuilder setText(String text) {
         this.text = text;
+        return this;
+    }
+
+    public ReplyKeyboardBuilder hasOneTimeKeyboard(boolean b) {
+        this.oneTimeKeyboard = b;
         return this;
     }
 
@@ -45,14 +51,14 @@ public class ReplyKeyboardBuilder {
     }
 
     public SendMessage build() {
-        SendMessage message = new SendMessage();
-
-        message.setChatId(chatId);
-        message.setText(text);
+        SendMessage message = new SendMessage()
+                .setChatId(chatId)
+                .setText(text)
+                .setParseMode("HTML");
 
         ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup()
                 .setResizeKeyboard(true)
-                .setOneTimeKeyboard(false)
+                .setOneTimeKeyboard(oneTimeKeyboard)
                 .setSelective(true);
 
         keyboardMarkup.setKeyboard(keyboard);

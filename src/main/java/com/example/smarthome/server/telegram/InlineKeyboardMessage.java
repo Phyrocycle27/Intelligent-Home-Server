@@ -1,12 +1,12 @@
 package com.example.smarthome.server.telegram;
 
-import java.util.Map;
+import java.util.List;
 
 public class InlineKeyboardMessage extends Message {
-    private Map<String, String> buttons;
+    private List<CallbackButton> buttons;
     private int numOfColumns = 1;
 
-    public InlineKeyboardMessage(long chatId, String text, Map<String, String> buttons) {
+    public InlineKeyboardMessage(long chatId, String text, List<CallbackButton> buttons) {
         super(chatId, text);
         this.buttons = buttons;
     }
@@ -15,7 +15,7 @@ public class InlineKeyboardMessage extends Message {
         return numOfColumns;
     }
 
-    public Map<String, String> getButtons() {
+    public List<CallbackButton> getButtons() {
         return buttons;
     }
 

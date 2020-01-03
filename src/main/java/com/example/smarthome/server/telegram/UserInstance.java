@@ -5,22 +5,30 @@ import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import io.netty.channel.Channel;
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
+import org.telegram.telegrambots.meta.api.methods.AnswerInlineQuery;
+import org.telegram.telegrambots.meta.api.methods.AnswerPreCheckoutQuery;
+import org.telegram.telegrambots.meta.api.methods.AnswerShippingQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.inlinequery.result.InlineQueryResult;
+import org.telegram.telegrambots.meta.api.objects.inlinequery.result.InlineQueryResultGame;
+import org.telegram.telegrambots.meta.api.objects.payments.ShippingOption;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.function.Predicate;
 
 class UserInstance {
     // ***************************** MAIN *******************************************************
@@ -28,19 +36,23 @@ class UserInstance {
             "наберите команду \"меню\" чтобы воспользоваться ботом";
 
     // ********************************* DEFAULT IN SECTION *************************************
-    private static final String defaultSection = "Команды '%s' нет в данном разделе. Пожалуйста, " +
+    private static final String unknownCmdSection = "Команды '%s' нет в данном разделе. Пожалуйста, " +
             "выберите один из предложенных вариантов";
 
     // ************************************* MENU ***********************************************
     private static final String menuMsg = "Нажмите \"Управление домом\" чтобы перейти к управлению умным домом и " +
             "просмотру информации с датчиков или нажмите \"Информация\", чтобы узнать точное время или погоду";
-    private static final String[] menuButtons = new String[]{"Управление домом", "Информация"};
-
+    private static final List<CallbackButton> menuButtons = new ArrayList<CallbackButton>() {{
+        add(new CallbackButton("Управление домом", "home_control"));
+        add(new CallbackButton("Информация", "information"));
+    }};
     // ************************************* INFO ************************************************
     private static final String infoMsg = "Выберите \"Погода\" чтобы узнать погоду в совём городе " +
             "или нажмите \"Время\"чтобы узнать точное время в вашем городе";
-    private static final String[] infoButtons = new String[]{"Погода", "Время"};
-
+    private static final List<CallbackButton> infoButtons = new ArrayList<CallbackButton>() {{
+        add(new CallbackButton("Погода", "weather"));
+        add(new CallbackButton("Время", "time"));
+    }};
     // *********************************** HOME CONTROL ***************************************
     private static final String channelNotFound = "Ваша Raspberry PI не подключена к серверу\n" +
             "Введите, пожалуйста, свой токен в соответствующем разделе в приложении чтобы Ваше устройство могло " +
@@ -50,42 +62,45 @@ class UserInstance {
     private static final String[] typesOfSignal = new String[]{"Цифровой", "ШИМ"};
     private static final String[] yesOrNo = new String[]{"Да", "Нет"};
     private static final String[] onOrOff = new String[]{"Включить", "Выключить"};
-    private static final String[] homeControlBtns = new String[]{"Устройства", "Датчики"};
+    private static final List<CallbackButton> homeControlButtons = new ArrayList<CallbackButton>() {{
+        add(new CallbackButton("Устройства", "devices"));
+        add(new CallbackButton("Датчики", "sensors"));
+    }};
     private static final String sensorsMsg = "Нажмите на существующий датчик или добавьте новый";
     private static final String devicesMsg = "Нажмите на существующее устройство или добавьте новое";
     // ****************************************** TOKEN ***********************************************************
     private static final String tokenAlreadyHaveGot = "Похоже, Ваша Raspberry PI не подключена к серверу";
     private static final String tokenSuccessGen = "Ваш токен успешно сгенерирован!\nОн требуется для подключения Вашей " +
             "Raspberry PI к серверу.\nПожалуйста, скопируйте и вставьте Ваш токен в соответствующий раздел в приложении." +
-            "\n\n\u2B07\u2B07\u2B07 ВАШ ТОКЕН \u2B07\u2B07\u2B07";
+            "\n\n\u21E7\u21E7\u21E7 ВАШ ТОКЕН \u21E7\u21E7\u21E7";
     private static final String tokenNotFound = "Похоже, что у Вас нет токена...\nЧтобы управлять домом через этого телеграм " +
             "бота Вам нужен уникальный токен, который Ваша Raspberry PI будет использовать для подключения у серверу";
-    private static final String[] tokenGenBtn = new String[]{"Сгенерировать токен"};
+    private static final List<CallbackButton> tokenGenButton = new ArrayList<CallbackButton>() {{
+        add(new CallbackButton("Сгенерировать токен", "token_gen"));
+    }};
 
     // ******************************** STATIC FINAL VARIABLES **********************************************
-    private static final Logger LOGGER;
+    public static final Logger log;
     private static final Weather weatherService;
     private static final DeviceAccessService service;
     private static Bot bot;
 
     /* ************************************ TEMP VARIABLES ************************************************** */
-    private Map<String, Integer> outputsMap;
 //    private DeviceCreator creator;
-
-    private int level = 0;
-    private int subLevel = 0;
-    private int outputId;
     private long chatId;
 
-    private Consumer<String> currentLvl;
-    private Consumer<String> defaultLvl;
-    private Consumer<String> menuLvl;
-    private Consumer<String> infoLvl;
-    private Consumer<String> homeControlLvl;
-    private Consumer<String> devicesLvl;
+    // Scenery
+    private Consumer<IncomingMessage> currentLvl;
+    private Predicate<IncomingMessage> defaultLvl;
+    private Consumer<IncomingMessage> menuLvl;
+    private Consumer<IncomingMessage> infoLvl;
+    private Consumer<IncomingMessage> homeControlLvl;
+    private Consumer<IncomingMessage> devicesLvl;
+    private Consumer<IncomingMessage> deviceControlLvl;
+    private Consumer<IncomingMessage> deviceCreationLvl;
 
     static {
-        LOGGER = Logger.getLogger(Bot.class.getName());
+        log = LoggerFactory.getLogger(Bot.class);
         weatherService = new Weather();
         service = DeviceAccessService.getInstance();
     }
@@ -93,7 +108,6 @@ class UserInstance {
     UserInstance(long chatId) {
         this.chatId = chatId;
         init();
-        currentLvl = defaultLvl;
     }
 
     public static void setBot(Bot bot) {
@@ -101,287 +115,194 @@ class UserInstance {
     }
 
     private void init() {
-        defaultLvl = s -> {
-            if (s.toLowerCase().equals("меню") || s.equals("/start")) {
-                execute(new ReplyKeyboardMessage(chatId, menuMsg, menuButtons)
+        defaultLvl = msg -> {
+            log.info("Default level");
+            if (msg.getText().toLowerCase().equals("меню") || msg.getText().equals("/start")) {
+                execute(new InlineKeyboardMessage(chatId, menuMsg, menuButtons)
+                        .setMessageId(msg.getId())
                         .setNumOfColumns(2));
                 currentLvl = menuLvl;
-            } else
-                execute(new Message(chatId, String.format(unknownCmdMain, s)));
-
+                return true;
+            } else {
+                return false;
+            }
         };
 
-        menuLvl = s -> {
-            switch (s) {
-                case "Управление домом":
+        menuLvl = msg -> {
+            log.info("Menu level");
+            switch (msg.getText()) {
+                case "home_control":
                     if (service.isExists(chatId))
-                        goToHomeControlLevel();
+                        goToHomeControlLevel(msg);
                     else {
-                        execute(new ReplyKeyboardMessage(chatId, tokenNotFound, tokenGenBtn)
+                        execute(new InlineKeyboardMessage(chatId, tokenNotFound, tokenGenButton)
+                                .setMessageId(msg.getId())
                                 .hasBackButton(true));
+                        currentLvl = homeControlLvl;
                     }
                     break;
-                case "Информация":
-                    execute(new ReplyKeyboardMessage(chatId, infoMsg, infoButtons)
+                case "information":
+                    execute(new InlineKeyboardMessage(chatId, infoMsg, infoButtons)
+                            .setMessageId(msg.getId())
                             .setNumOfColumns(2)
                             .hasBackButton(true));
                     currentLvl = infoLvl;
                     break;
                 default:
-                    execute(new Message(chatId, String.format(defaultSection, s)));
+                    if (!msg.getCallbackId().isEmpty()) {
+                        execute(new AnswerCallback(msg.getCallbackId(), "Кнопка недействительна"));
+                        delete(msg.getId());
+                    }
             }
         };
 
-        infoLvl = s -> {
-            switch (s) {
-                case "Погода":
+        infoLvl = msg -> {
+            log.info("Info level");
+            switch (msg.getText()) {
+                case "weather":
                     String weather = weatherService.getWeather();
                     String answer;
 
                     if (weather == null) answer = "Ошибка при получении погоды";
                     else answer = weather;
 
-                    execute(new Message(chatId, answer));
+                    try {
+                        execute(new InlineKeyboardMessage(chatId, answer, infoButtons)
+                                .setMessageId(msg.getId())
+                                .setNumOfColumns(2)
+                                .hasBackButton(true));
+                    } catch (RuntimeException e) {
+                        log.error(e.getMessage());
+                        execute(new AnswerCallback(msg.getCallbackId(), "\u2705"));
+                    }
                     break;
-                case "Время":
-                    execute(new Message(chatId, String.format("Химкинское время %s",
-                            LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
+                case "time":
+                    try {
+                        execute(new InlineKeyboardMessage(chatId, String.format("Химкинское время %s",
+                                LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))), infoButtons)
+                                .setMessageId(msg.getId())
+                                .setNumOfColumns(2)
+                                .hasBackButton(true));
+                    } catch (RuntimeException e) {
+                        log.error(e.getMessage());
+                        execute(new AnswerCallback(msg.getCallbackId(), "\u2705"));
+                    }
                     break;
                 case "Назад":
-                    execute(new ReplyKeyboardMessage(chatId, menuMsg, menuButtons)
+                    execute(new InlineKeyboardMessage(chatId, menuMsg, menuButtons)
+                            .setMessageId(msg.getId())
                             .setNumOfColumns(2));
                     currentLvl = menuLvl;
                     break;
                 default:
-                    execute(new Message(chatId, String.format(defaultSection, s)));
+                    if (!msg.getCallbackId().isEmpty()) {
+                        execute(new AnswerCallback(msg.getCallbackId(), "Команда не найдена в разделе"));
+                        delete(msg.getId());
+                    }
             }
         };
 
-        homeControlLvl = s -> {
-            switch (s) {
-                case "Устройства":
-                    goToDevices(null);
+        homeControlLvl = msg -> {
+            log.info("HomeControl level");
+            switch (msg.getText()) {
+                case "devices":
+                    goToDevices(null, msg);
                     break;
-                case "Датчики":
-                    List<String> inputsBtns = new ArrayList<>();
-                    execute(new ReplyKeyboardMessage(chatId, sensorsMsg, inputsBtns)
-                            .hasBackButton(true)
-                            .hasAddButton(true));
-                    break;
-                case "Сгенерировать токен":
-                    execute(new Message(chatId, tokenSuccessGen));
+                case "token_gen":
+                    execute(new Message(chatId, service.createToken(chatId))
+                            .setMessageId(msg.getId()));
                     // Сообщение с токеном
-                    execute(new ReplyKeyboardMessage(chatId, service.createToken(chatId), new String[]{})
+                    execute(new InlineKeyboardMessage(chatId, tokenSuccessGen, null)
                             .hasBackButton(true));
                     break;
                 case "Назад":
-                    execute(new ReplyKeyboardMessage(chatId, menuMsg, menuButtons)
+                    execute(new InlineKeyboardMessage(chatId, menuMsg, menuButtons)
+                            .setMessageId(msg.getId())
                             .setNumOfColumns(2));
                     currentLvl = menuLvl;
+                    break;
                 default:
-                    execute(new Message(chatId, String.format(defaultSection, s)));
+                    if (!msg.getCallbackId().isEmpty()) {
+                        execute(new AnswerCallback(msg.getCallbackId(), "Команда не найдена в разделе"));
+                        delete(msg.getId());
+                    }
             }
         };
 
-        devicesLvl = s -> {
-            if (s.equals("Добавить")) {
+        devicesLvl = msg -> {
+            log.info("Devices level");
+            if (msg.getText().equals("Добавить")) {
                 /*creator = new DeviceCreator();
                 messages.add(creator.goToStepOne());*/
-            } else if (outputsMap.containsValue(Integer.parseInt(s))) {
+            } else if (msg.getText().equals("Назад")) {
+                goToHomeControlLevel(msg);
+            }
+            // Если ответ содержит только число, то пытаемся получить устройство с таким id
+            else if (msg.getText().matches("[-+]?\\d+")) {
                 try {
-                    Output output = getOutput(Integer.valueOf(s));
-
-                    if (output == null) goToDevices("Устройство не найдено");
-                    else {
-                        String currState = getDigitalState(output.getOutputId()) ? "включено" : "выключено";
-                        String inversion = output.getReverse() ? "включена" : "выключена";
-                        String signalType = "";
-                        switch (output.getType()) {
-                            case "digital":
-                                signalType = "цифовой";
-                                break;
-                            case "pwm":
-                                signalType = "ШИМ";
-                        }
-                        new ReplyKeyboardMessage(chatId, String.format("<b>%s</b>\n" +
-                                        "Текущее состояние: <i>%s</i>\n" +
-                                        "Тип сигнала: <i>%s</i>\n" +
-                                        "Инверсия: <i>%s</i>\n" +
-                                        "GPIO-пин: <i>%d</i>",
-                                output.getName(), currState, signalType, inversion,
-                                output.getGpio()), onOrOff)
-                                .setNumOfColumns(2)
-                                .hasBackButton(true)
-                                .hasRemoveButton(true);
-                        outputId = output.getOutputId();
-
-                    }
+                    goToDevice(msg, Integer.parseInt(msg.getText()));
+                    currentLvl = deviceControlLvl;
                 } catch (ChannelNotFoundException e) {
-                    goToHomeControlLevel();
-                    e.printStackTrace();
+                    log.error(e.getMessage());
+                    goToHomeControlLevel(msg);
                 }
             } else {
-                execute(new Message(chatId, String.format(defaultSection, s)));
+                execute(new Message(chatId, String.format(unknownCmdSection, msg.getText())));
+            }
+        };
+
+        deviceControlLvl = msg -> {
+            String[] arr = msg.getText().split("[_]");
+            String cmd = arr[0];
+            int deviceId = 0;
+            if (arr.length > 1) {
+                deviceId = Integer.parseInt(arr[1]);
+            }
+
+            switch (cmd) {
+                case "off":
+                    try {
+                        setDigitalState(deviceId, false);
+                        goToDevice(msg, deviceId);
+                        execute(new AnswerCallback(msg.getCallbackId(), "Устройство успешно выключено"));
+                    } catch (ChannelNotFoundException e) {
+                        log.error(e.getMessage());
+                        goToHomeControlLevel(msg);
+                    }
+                    break;
+                case "on":
+                    try {
+                        setDigitalState(deviceId, true);
+                        goToDevice(msg, deviceId);
+                        execute(new AnswerCallback(msg.getCallbackId(), "Устройство успешно включено"));
+                    } catch (ChannelNotFoundException e) {
+                        log.error(e.getMessage());
+                        goToHomeControlLevel(msg);
+                    }
+                    break;
+                case "remove":
+                    try {
+                        deleteOutput(Integer.parseInt(arr[1]));
+                        goToDevices("Устройство успешно удалено", msg);
+                    } catch (ChannelNotFoundException e) {
+                        log.error(e.getMessage());
+                        goToHomeControlLevel(msg);
+                    }
+                    break;
+                case "Назад":
+                    goToDevices(null, msg);
+                    break;
+                default:
+                    execute(new Message(chatId, unknownCmdSection));
             }
         };
     }
 
-    void sendAnswer(String incoming) {
-        // если пользователь нам прислал команду "меню" или "/start", то отправляем ему главное меню
-        currentLvl.accept(incoming);
-        // а вот тут-то мы и прорабатываем весь сценарий бота и его команды
-        /*switch (level) {
-            /* ***********************************
-             __________________   ____________
-            | Управление домом | | Информация |
-             ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯   ¯¯¯¯¯¯¯¯¯¯¯¯
-            *********************************** */
-            /*case 1:
-                switch (incoming) {
-                    case "Управление домом":
-                        if (service.isExists(chatId)) {
-                            messages.add(goToHomeControlLevel());
-                        } else {
-                            messages.add(new Message(chatId, tokenNotFound, tokenGenBtn)
-                                    .hasBackButton(true));
-                            subLevel = 1;
-                            level = 2;
-                        }
-                        break;
-                    case "Информация":
-                        messages.add(new Message(chatId, infoMsg, infoButtons)
-                                .setNumOfColumns(2)
-                                .hasBackButton(true));
-                        subLevel = 2;
-                        level = 2;
-                        break;
-                    default:
-                        messages.add(new Message(chatId, String.format(defaultSection, incoming)));
-                }
-                break;
-            case 2:
-                if (incoming.equals("Назад")) {
-                    messages.add(new Message(chatId, menuMsg, menuButtons)
-                            .setNumOfColumns(2));
-                    subLevel = 0;
-                    level = 1;
-                }
-                switch (subLevel) {
-                    /* *******************************************************************************
-                     _____________________   _____________________           _____________________
-                    |     Устройства      | |       Датчики       |         | Сгенерировать токен |
-                     ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯   ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯    OR     ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-                     _____________________________________________           _____________________
-                    |                    Назад                    |         |        Назад        |
-                     ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯           ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-                    ***************************************************************************** */
-                    /*case 1:
-                        switch (incoming) {
-                            case "Устройства":
-                                messages.add(goToDevices(null));
-                                break;
-                            case "Датчики":
-                                // Запрашиваем с raspberry pi все подключенные датчики и выводим их как кнопки
-                                List<String> inputsBtns = new ArrayList<>();
-                                messages.add(new Message(chatId, sensorsMsg, inputsBtns)
-                                        .hasBackButton(true)
-                                        .hasAddButton(true));
-                                level = 3;
-                                subLevel = 2;
-                                break;
-                            case "Сгенерировать токен":
-                                messages.add(new Message(chatId, tokenSuccessGen));
-                                // Сообщение с токеном
-                                messages.add(new Message(chatId, service.createToken(chatId))
-                                        .hasBackButton(true));
-                                break;
-                            default:
-                                messages.add(new Message(chatId, String.format(defaultSection, incoming)));
-                        }
-                        break;
-
-                    /* ************************
-                       ________   ________
-                      | Время  | | Погода |
-                       ¯¯¯¯¯¯¯¯   ¯¯¯¯¯¯¯¯
-                       ___________________
-                      |        Назад      |
-                       ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-                     ******************** */
-                    /*case 2:
-                        switch (incoming) {
-                            case "Погода":
-                                String weather = weatherService.getWeather();
-                                String answer;
-
-                                if (weather == null) answer = "Ошибка при получении погоды";
-                                else answer = weather;
-
-                                messages.add(new Message(chatId, answer));
-                                break;
-                            case "Время":
-                                messages.add(new Message(chatId, String.format("Химкинское время %s",
-                                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
-                                break;
-                            default:
-                                messages.add(new Message(chatId, String.format(defaultSection, incoming)));
-                        }
-                        break;
-                }
-                break;
-            case 3:
-                if (incoming.equals("Назад")) {
-                    messages.add(goToHomeControlLevel());
-                    outputsMap = null;
-                    break;
-                }
-                // Устройства
-                if (subLevel == 1) {
-                    if (incoming.equals("Добавить")) {
-                        creator = new DeviceCreator();
-                        messages.add(creator.goToStepOne());
-                    } else if (outputsMap.containsValue(Integer.parseInt(incoming))) {
-                        try {
-                            Output output = getOutput(Integer.valueOf(incoming));
-
-                            if (output == null)
-                                messages.add(goToDevices("Устройство не найдено"));
-                            else {
-                                String currState = getDigitalState(output.getOutputId()) ? "включено" : "выключено";
-                                String inversion = output.getReverse() ? "включена" : "выключена";
-                                String signalType = "";
-                                switch (output.getType()) {
-                                    case "digital":
-                                        signalType = "цифовой";
-                                        break;
-                                    case "pwm":
-                                        signalType = "ШИМ";
-                                }
-                                new Message(chatId, String.format("<b>%s</b>\n" +
-                                                "Текущее состояние: <i>%s</i>\n" +
-                                                "Тип сигнала: <i>%s</i>\n" +
-                                                "Инверсия: <i>%s</i>\n" +
-                                                "GPIO-пин: <i>%d</i>",
-                                        output.getName(), currState, signalType, inversion,
-                                        output.getGpio()), onOrOff)
-                                        .setNumOfColumns(2)
-                                        .hasBackButton(true)
-                                        .hasRemoveButton(true);
-                                level = 4;
-                                subLevel = 2;
-                                outputId = output.getOutputId();
-                            }
-
-                        } catch (ChannelNotFoundException e) {
-                            goToHomeControlLevel();
-                            e.printStackTrace();
-                        }
-                    } else {
-                        messages.add(new Message(chatId, String.format(defaultSection, incoming)));
-                    }
-                    // Датчики
-                }
-                break;
+    void sendAnswer(IncomingMessage msg) {
+        if (!defaultLvl.test(msg)) {
+            currentLvl.accept(msg);
+        }
+        /*swich (level) {
             case 4:
                 switch (subLevel) {
                     case 1:
@@ -410,83 +331,88 @@ class UserInstance {
                                 break;
                         }
                         break;
-                    case 2:
-                        if (incoming.equals("Включить")) {
-                            try {
-                                messages.add(new Message(chatId, "Устройство успешно включено"));
-                                setDigitalState(outputId, true);
-                            } catch (ChannelNotFoundException e) {
-                                e.printStackTrace();
-                            }
-                        } else if (incoming.equals("Выключить")) {
-                            try {
-                                messages.add(new Message(chatId, "Устройство успешно выключено"));
-                                setDigitalState(outputId, false);
-                            } catch (ChannelNotFoundException e) {
-                                e.printStackTrace();
-                            }
-                        } else {
-                            switch (incoming) {
-                                case "Удалить":
-                                    try {
-                                        deleteOutput(outputId);
-                                        messages.add(goToDevices("Устройство успешно удалено"));
-                                    } catch (ChannelNotFoundException e) {
-                                        goToHomeControlLevel();
-                                        e.printStackTrace();
-                                    }
-                                    break;
-                                case "Назад":
-                                    messages.add(goToDevices(null));
-                                    outputId = 0;
-                                    break;
-                                default:
-                                    messages.add(new Message(chatId, defaultSection));
-                            }
-                        }
-                }
-                break;
-        }*/
+                    */
     }
 
     // LEVELS
-    private void goToHomeControlLevel() {
+    private void goToHomeControlLevel(IncomingMessage msg) {
         if (service.isChannelExist(chatId)) {
-            execute(new ReplyKeyboardMessage(chatId, homeControl, homeControlBtns)
+            execute(new InlineKeyboardMessage(chatId, homeControl, homeControlButtons)
                     .setNumOfColumns(2)
+                    .setMessageId(msg.getId())
                     .hasBackButton(true));
             currentLvl = homeControlLvl;
         } else {
-            execute(new ReplyKeyboardMessage(chatId, channelNotFound, menuButtons)
-                    .setNumOfColumns(2));
-            currentLvl = menuLvl;
+            execute(new AnswerCallback(msg.getCallbackId(), channelNotFound).setAlert(true));
+            if (currentLvl != menuLvl) {
+                execute(new InlineKeyboardMessage(chatId, menuMsg, menuButtons)
+                        .setMessageId(msg.getId())
+                        .setNumOfColumns(2));
+                currentLvl = menuLvl;
+            }
         }
     }
 
-    private void goToDevices(String text) {
+    private void goToDevices(String text, IncomingMessage msg) {
         try {
-            if (outputsMap == null) outputsMap = new HashMap<>();
+            List<CallbackButton> devices = new ArrayList<>();
 
             for (Output output : getOutputs()) {
-                if (!outputsMap.containsKey(output.getName()))
-                    outputsMap.put(output.getName(), output.getOutputId());
+                devices.add(new CallbackButton(output.getName(), String.valueOf(output.getOutputId())));
             }
-            // Таблица <имя_устройства> - <id>
-            Map<String, String> map = new HashMap<>();
-            for (Map.Entry<String, Integer> entry : outputsMap.entrySet())
-                map.put(entry.getKey(), String.valueOf(entry.getValue()));
-
             String answerText;
-            if (text != null)
-                answerText = text;
-            else answerText = devicesMsg;
+            if (devices.isEmpty()) {
+                answerText = "Устройства не обнаружены. Вы можете добавить их прямо сейчас";
+            } else answerText = devicesMsg;
 
-            execute(new InlineKeyboardMessage(chatId, answerText, map)
-                    .setNumOfColumns(3));
+            if (text != null) execute(new AnswerCallback(msg.getCallbackId(), text));
+
+            execute(new InlineKeyboardMessage(chatId, answerText, devices)
+                    .hasAddButton(true)
+                    .hasBackButton(true)
+                    .setMessageId(msg.getId())
+                    .setNumOfColumns(1));
             currentLvl = devicesLvl;
         } catch (ChannelNotFoundException e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
-            goToHomeControlLevel();
+            log.warn(e.getMessage());
+            goToHomeControlLevel(msg);
+        }
+    }
+
+    private void goToDevice(IncomingMessage msg, int deviceId) throws ChannelNotFoundException {
+        Output output = getOutput(deviceId);
+
+        if (output == null) goToDevices("Устройство c таким id не найдено", msg);
+        else {
+            boolean currState = getDigitalState(output.getOutputId());
+            String currStateText = currState ? "включено" : "выключено";
+            String inversion = output.getReverse() ? "включена" : "выключена";
+            String signalType = "";
+
+            switch (output.getType()) {
+                case "digital":
+                    signalType = "цифовой";
+                    break;
+                case "pwm":
+                    signalType = "ШИМ";
+            }
+
+            List<CallbackButton> buttons = new ArrayList<CallbackButton>() {{
+                if(currState) add(new CallbackButton("Выключить", "off_" + output.getOutputId()));
+                else add(new CallbackButton("Включить", "on_" + output.getOutputId()));
+                add(new CallbackButton("Удалить", "remove_" + output.getOutputId()));
+            }};
+
+            execute(new InlineKeyboardMessage(chatId, String.format("<b>%s</b>\n" +
+                            "Текущее состояние: <i>%s</i>\n" +
+                            "Тип сигнала: <i>%s</i>\n" +
+                            "Инверсия: <i>%s</i>\n" +
+                            "GPIO-пин: <i>%d</i>",
+                    output.getName(), currStateText, signalType, inversion,
+                    output.getGpio()), buttons)
+                    .setNumOfColumns(2)
+                    .setMessageId(msg.getId())
+                    .hasBackButton(true));
         }
     }
 
@@ -507,6 +433,7 @@ class UserInstance {
     }
 
     private void setDigitalState(@NonNull Integer outputId, boolean state) throws ChannelNotFoundException {
+        log.info("Id: " + outputId + " signal: " + state);
         JSONObject request = new JSONObject()
                 .put("type", "request")
                 .put("body", new JSONObject()
@@ -569,7 +496,6 @@ class UserInstance {
                     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             return output;
         } else {
-            // удаляем это выход из нашего hashMap
             return null;
         }
     }
@@ -659,9 +585,9 @@ class UserInstance {
                     return goToStepThree(creationOutput.getType());
             }
             return null;
-        }*/
+        }
 
-    /*private Message goToStepOne() {
+    private Message goToStepOne() {
         Message msg = new Message(chatId, "Пожалуйста, введите имя нового устройства")
                 .hasBackButton(true);
         level = 4;
@@ -796,9 +722,21 @@ class UserInstance {
         return Arrays.binarySearch(arr, s) >= 0;
     }
 }*/
-    private void execute(Message msg) {
-        LOGGER.log(Level.INFO, msg.getText());
-        SendMessage answer = new SendMessage(msg.getChatId(), msg.getText());
+    private void delete(int messageId) {
+        log.info("Removing message...");
+        DeleteMessage message = new DeleteMessage(chatId, messageId);
+        try {
+            bot.execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void execute(AnswerCallback callback) {
+        AnswerCallbackQuery answer = new AnswerCallbackQuery()
+                .setCallbackQueryId(callback.getCallbackId())
+                .setText(callback.getText())
+                .setShowAlert(callback.isAlert());
         try {
             bot.execute(answer);
         } catch (TelegramApiException e) {
@@ -806,19 +744,47 @@ class UserInstance {
         }
     }
 
-    private void execute(ReplyKeyboardMessage msg) {
-        LOGGER.log(Level.INFO, msg.getText());
-        ReplyKeyboardBuilder builder = ReplyKeyboardBuilder.create(chatId);
-
-        List<String> buttons = msg.getButtons();
-        for (int i = 1; i <= buttons.size(); i++) {
-            builder.button(buttons.get(i - 1));
-            if (i % msg.getNumOfColumns() == 0) {
-                builder.endRow();
-                builder.row();
+    private void execute(Message msg) {
+        log.info("Sending message...");
+        if (msg.getMessageId() == 0) {
+            SendMessage answer = new SendMessage(msg.getChatId(), msg.getText())
+                    .setParseMode("HTML");
+            try {
+                bot.execute(answer);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
+        } else {
+            EditMessageText answer = new EditMessageText()
+                    .setChatId(msg.getChatId())
+                    .setText(msg.getText())
+                    .setMessageId(msg.getMessageId())
+                    .setParseMode("HTML");
+            try {
+                bot.execute(answer);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
             }
         }
-        builder.endRow();
+    }
+
+    private void execute(InlineKeyboardMessage msg) throws RuntimeException {
+        log.info("Sending message...");
+        InlineKeyboardBuilder builder = InlineKeyboardBuilder.create(chatId);
+
+        if (msg.getButtons() != null) {
+            Iterator<CallbackButton> buttons = msg.getButtons().iterator();
+            while (buttons.hasNext()) {
+                for (int i = 0; i < msg.getNumOfColumns(); i++) {
+                    if (buttons.hasNext()) {
+                        CallbackButton button = buttons.next();
+                        builder.button(button.getText(), button.getCallbackText());
+                    } else break;
+                }
+                builder.endRow().row();
+            }
+            builder.endRow();
+        }
 
         if (msg.isRemoveButton())
             builder.row().button("Удалить").endRow();
@@ -830,12 +796,24 @@ class UserInstance {
             builder.button("Добавить");
         builder.endRow();
 
-        SendMessage answer = builder.setText(msg.getText()).build();
-        try {
-            bot.execute(answer);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
+        builder.setText(msg.getText());
+
+        if (msg.getMessageId() == 0) {
+            SendMessage answer = builder.buildNew();
+            try {
+                bot.execute(answer);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
+        } else {
+            EditMessageText answer = builder.setMessageId(msg.getMessageId()).buildEdited();
+            try {
+                bot.execute(answer);
+            } catch (TelegramApiRequestException e) {
+                throw new RuntimeException();
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
         }
     }
-    // **************************************************************************************************************
 }

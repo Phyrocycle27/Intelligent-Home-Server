@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram;
 
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -15,7 +16,7 @@ public class InlineKeyboardBuilder {
     private String text;
 
     private List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-    private List<InlineKeyboardButton> row = null;
+    private List<InlineKeyboardButton> row = new ArrayList<>();
 
     private InlineKeyboardBuilder() {
     }
@@ -46,6 +47,11 @@ public class InlineKeyboardBuilder {
         return this;
     }
 
+    public InlineKeyboardBuilder button(String text) {
+        row.add(new InlineKeyboardButton().setText(text).setCallbackData(text));
+        return this;
+    }
+
     public InlineKeyboardBuilder endRow() {
         this.keyboard.add(this.row);
         this.row = null;
@@ -53,11 +59,11 @@ public class InlineKeyboardBuilder {
     }
 
     public EditMessageText buildEdited() {
-        EditMessageText message = new EditMessageText();
-
-        message.setChatId(chatId);
-        message.setMessageId(messageId);
-        message.setText(text);
+        EditMessageText message = new EditMessageText()
+                .setChatId(chatId)
+                .setMessageId(messageId)
+                .setText(text)
+                .setParseMode("HTML");
 
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
 
@@ -68,10 +74,10 @@ public class InlineKeyboardBuilder {
     }
 
     public SendMessage buildNew() {
-        SendMessage message = new SendMessage();
-
-        message.setChatId(chatId);
-        message.setText(text);
+        SendMessage message = new SendMessage()
+                .setChatId(chatId)
+                .setText(text)
+                .setParseMode("HTML");
 
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
 

@@ -1,11 +1,15 @@
 package com.example.smarthome.server.telegram;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.List;
 
+@Getter
 public class ReplyKeyboardMessage extends Message {
     private List<String> buttons;
     private int numOfColumns = 1;
+    private boolean oneTimeKeyboard;
 
     public ReplyKeyboardMessage(long chatId, String text, List<String> buttons) {
         super(chatId, text);
@@ -22,14 +26,6 @@ public class ReplyKeyboardMessage extends Message {
         return this;
     }
 
-    public int getNumOfColumns() {
-        return numOfColumns;
-    }
-
-    public List<String> getButtons() {
-        return buttons;
-    }
-
     public ReplyKeyboardMessage hasAddButton(boolean b) {
         super.hasAddButton(b);
         return this;
@@ -42,6 +38,11 @@ public class ReplyKeyboardMessage extends Message {
 
     public ReplyKeyboardMessage hasRemoveButton(boolean b) {
         super.hasRemoveButton(b);
+        return this;
+    }
+
+    public ReplyKeyboardMessage hasOneTimeKeyboard(boolean b) {
+        this.oneTimeKeyboard = b;
         return this;
     }
 
