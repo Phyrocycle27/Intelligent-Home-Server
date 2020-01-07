@@ -142,10 +142,8 @@ class UserInstance {
                     currentLvl = infoLvl;
                     break;
                 default:
-                    if (!msg.getCallbackId().isEmpty()) {
+                    if (!msg.getCallbackId().isEmpty())
                         execute(new AnswerCallback(msg.getCallbackId(), "Кнопка недействительна"));
-                        delete(msg.getId());
-                    }
             }
         };
 
@@ -185,10 +183,8 @@ class UserInstance {
                     goToMain(msg.getId());
                     break;
                 default:
-                    if (!msg.getCallbackId().isEmpty()) {
+                    if (!msg.getCallbackId().isEmpty())
                         execute(new AnswerCallback(msg.getCallbackId(), "Команда не найдена в разделе"));
-                        delete(msg.getId());
-                    }
             }
         };
 
@@ -209,10 +205,8 @@ class UserInstance {
                     goToMain(msg.getId());
                     break;
                 default:
-                    if (!msg.getCallbackId().isEmpty()) {
+                    if (!msg.getCallbackId().isEmpty())
                         execute(new AnswerCallback(msg.getCallbackId(), "Команда не найдена в разделе"));
-                        delete(msg.getId());
-                    }
             }
         };
 
@@ -235,10 +229,8 @@ class UserInstance {
                     goToHomeControlLevel(msg);
                 }
             } else {
-                if (!msg.getCallbackId().isEmpty()) {
+                if (!msg.getCallbackId().isEmpty())
                     execute(new AnswerCallback(msg.getCallbackId(), "Команда не найдена в разделе"));
-                    delete(msg.getId());
-                }
             }
         };
 
@@ -255,7 +247,7 @@ class UserInstance {
                     try {
                         setDigitalState(deviceId, false);
                         goToDevice(msg, deviceId);
-                        execute(new AnswerCallback(msg.getCallbackId(), "Устройство успешно выключено"));
+                        execute(new AnswerCallback(msg.getCallbackId(), "Устройство выключено"));
                     } catch (ChannelNotFoundException e) {
                         log.error(e.getMessage());
                         goToHomeControlLevel(msg);
@@ -265,7 +257,7 @@ class UserInstance {
                     try {
                         setDigitalState(deviceId, true);
                         goToDevice(msg, deviceId);
-                        execute(new AnswerCallback(msg.getCallbackId(), "Устройство успешно включено"));
+                        execute(new AnswerCallback(msg.getCallbackId(), "Устройство включено"));
                     } catch (ChannelNotFoundException e) {
                         log.error(e.getMessage());
                         goToHomeControlLevel(msg);
@@ -285,10 +277,8 @@ class UserInstance {
                     goToDevices(null, msg);
                     break;
                 default:
-                    if (!msg.getCallbackId().isEmpty()) {
+                    if (!msg.getCallbackId().isEmpty())
                         execute(new AnswerCallback(msg.getCallbackId(), "Команда не найдена в разделе"));
-                        delete(msg.getId());
-                    }
             }
         };
 
@@ -301,7 +291,11 @@ class UserInstance {
 
     void sendAnswer(IncomingMessage msg) {
         if (!defaultLvl.test(msg)) {
-            currentLvl.accept(msg);
+            if (currentLvl != null) {
+                currentLvl.accept(msg);
+            } else {
+                delete(msg.getId());
+            }
         }
     }
 
@@ -349,7 +343,7 @@ class UserInstance {
                     .hasAddButton(true)
                     .hasBackButton(true)
                     .setMessageId(msg.getId())
-                    .setNumOfColumns(1));
+                    .setNumOfColumns(2));
             currentLvl = devicesLvl;
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());
@@ -407,7 +401,7 @@ class UserInstance {
                         .put("method", "GET")
                         .put("uri", "http://localhost:8080/outputs/control/digital?id=" + outputId));
 
-        return JsonRequester.execute(request, getChannel()).getJSONObject("body").getBoolean("digitalState");
+        return JsonRequester.execute(request, getChannel()).getJSONObject("body").getJSONObject("entity").getBoolean("digitalState");
     }
 
     private int getPwmSignal(@NonNull Integer outputId) throws ChannelNotFoundException {
@@ -417,7 +411,7 @@ class UserInstance {
                         .put("method", "GET")
                         .put("uri", "http://localhost:8080/outputs/control/pwm?id=" + outputId));
 
-        return JsonRequester.execute(request, getChannel()).getJSONObject("body").getInt("pwmSignal");
+        return JsonRequester.execute(request, getChannel()).getJSONObject("body").getJSONObject("entity").getInt("pwmSignal");
     }
 
     private void setDigitalState(@NonNull Integer outputId, boolean state) throws ChannelNotFoundException {
@@ -451,11 +445,10 @@ class UserInstance {
                 .put("type", "request")
                 .put("body", new JSONObject()
                         .put("method", "POST")
-                        .put("uri", "http://localhost:8080/outputs")
+                        .put("uri", "http://localhost:8080/outputs/create")
                         .put("request_body", new JSONObject(newOutput)));
 
-        JSONObject response = JsonRequester.execute(request, getChannel())
-                .getJSONObject("body");
+        JsonRequester.execute(request, getChannel());
     }
 
     // GET
@@ -474,6 +467,7 @@ class UserInstance {
                 .getJSONObject("body");
 
         if (response.getInt("code") == 200) {
+            response = response.getJSONObject("entity");
             output.setOutputId(response.getInt("outputId"));
             output.setName(response.getString("name"));
             output.setGpio(response.getInt("gpio"));
@@ -499,16 +493,14 @@ class UserInstance {
                         .put("method", "GET")
                         .put("uri", "http://localhost:8080/outputs/all"));
         // ***********************************************************
-        JSONObject response = JsonRequester.execute(reqest, getChannel())
-                .getJSONObject("body");
+        JSONArray response = JsonRequester.execute(reqest, getChannel())
+                .getJSONObject("body").getJSONArray("entity");
 
-        if (response.keySet().contains("_embedded")) {
+        if (response.length() != 0) {
             // Создаём из объектов массива JSON объекты Output
             // и вносим их в List outputs
-            JSONArray array = response.getJSONObject("_embedded")
-                    .getJSONArray("outputList");
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject outputJson = array.getJSONObject(i);
+            for (int i = 0; i < response.length(); i++) {
+                JSONObject outputJson = response.getJSONObject(i);
                 Output output = new Output();
 
                 output.setName(outputJson.getString("name"));
@@ -521,8 +513,8 @@ class UserInstance {
     }
 
     // GET LIST CONTAINS NUMBERS OF FREE GPIOS
-    private String[] getAvailableOutputs(String type) throws ChannelNotFoundException {
-        String[] gpios;
+    private List<String> getAvailableOutputs(String type) throws ChannelNotFoundException {
+        List<String> gpios = new ArrayList<>();
 
         JSONObject request = new JSONObject()
                 .put("type", "request")
@@ -532,10 +524,10 @@ class UserInstance {
 
         JSONArray array = JsonRequester.execute(request, getChannel())
                 .getJSONObject("body")
+                .getJSONObject("entity")
                 .getJSONArray("available_gpios");
-        gpios = new String[array.length()];
         for (int i = 0; i < array.length(); i++) {
-            gpios[i] = String.valueOf(array.getInt(i));
+            gpios.add(String.valueOf(array.getInt(i)));
         }
 
         return gpios;
@@ -569,20 +561,13 @@ class UserInstance {
 
         private void init() {
             stepOne = msg -> {
-                setDeviceName(msg.getText());
+                setDeviceName(msg);
                 delete(lastMessageId);
-                goToStepTwo(msg);
             };
 
-            stepTwo = msg -> {
-                setDeviceSignalType(msg.getText());
-                goToStepThree(msg);
-            };
+            stepTwo = this::setDeviceSignalType;
 
-            stepThree = msg -> {
-                setDeviceGpio(msg);
-                goToStepFour(msg);
-            };
+            stepThree = this::setDeviceGpio;
 
             stepFour = this::setDeviceReverse;
         }
@@ -608,8 +593,9 @@ class UserInstance {
         }
 
         // Step one - SET UP DEVICE NAME
-        private void setDeviceName(String name) {
-            creationOutput.setName(name);
+        private void setDeviceName(IncomingMessage msg) {
+            creationOutput.setName(msg.getText());
+            goToStepTwo(msg);
         }
 
         private void goToStepTwo(IncomingMessage msg) {
@@ -622,11 +608,12 @@ class UserInstance {
         }
 
         // Step two - SET UP SIGNAL TYPE
-        private void setDeviceSignalType(String signalType) {
-            switch (signalType) {
+        private void setDeviceSignalType(IncomingMessage msg) {
+            switch (msg.getText()) {
                 case "pwm":
                 case "digital":
-                    creationOutput.setType(signalType);
+                    creationOutput.setType(msg.getText());
+                    goToStepThree(msg);
                     break;
             }
         }
@@ -652,8 +639,9 @@ class UserInstance {
         // Step three - SET UP GPIO
         private void setDeviceGpio(IncomingMessage msg) {
             try {
-                if (contains(msg.getText(), getAvailableOutputs(creationOutput.getType()))) {
+                if (getAvailableOutputs(creationOutput.getType()).contains(msg.getText())) {
                     creationOutput.setGpio(Integer.valueOf(msg.getText()));
+                    goToStepFour(msg);
                 }
             } catch (NumberFormatException e) {
                 log.error(e.getMessage());
@@ -676,15 +664,19 @@ class UserInstance {
             switch (msg.getText()) {
                 case "yes":
                     creationOutput.setReverse(true);
+                    createDevice(msg);
                     break;
                 case "no":
                     creationOutput.setReverse(false);
+                    createDevice(msg);
                     break;
             }
-            log.info(creationOutput.toString());
+        }
+
+        private void createDevice(IncomingMessage msg) {
             try {
                 createOutput(creationOutput);
-                goToDevices("Устройство успешно создано", msg);
+                goToDevices("Устройство создано", msg);
             } catch (ChannelNotFoundException e) {
                 log.error(e.getMessage());
                 goToHomeControlLevel(msg);
@@ -692,10 +684,6 @@ class UserInstance {
                 creationOutput = null;
                 creator = null;
             }
-        }
-
-        private boolean contains(String s, String[] arr) {
-            return Arrays.binarySearch(arr, s) >= 0;
         }
     }
 
@@ -787,10 +775,10 @@ class UserInstance {
             try {
                 bot.execute(answer);
             } catch (TelegramApiRequestException e) {
-                e.printStackTrace();
+                log.error(e.getMessage());
                 throw new RuntimeException();
             } catch (TelegramApiException e) {
-                e.printStackTrace();
+                log.error(e.getMessage());
             }
         }
     }

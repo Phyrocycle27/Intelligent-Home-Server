@@ -93,7 +93,7 @@ class Weather {
             // Давление
             int hPa = main.getInt("pressure");
             message.append(String.format(Locale.ENGLISH, "• Давление %.2f мм рт.ст.\n",
-                    hPa * 0.750063));
+                    hPa * 0.750063 -  17.2));
 
             // Видимость
             message.append(String.format("• Видимость %s м\n", df.format(obj.getInt("visibility"))));
