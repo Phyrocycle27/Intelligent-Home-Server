@@ -1,22 +1,20 @@
-package com.example.smarthome.server.telegram;
+package com.example.smarthome.server.telegram.objects;
+
+import lombok.Getter;
 
 import java.util.List;
 
+@Getter
 public class InlineKeyboardMessage extends Message {
     private List<CallbackButton> buttons;
     private int numOfColumns = 1;
+    private boolean addButton = false;
+    private boolean removeButton = false;
+    private boolean backButton = false;
 
     public InlineKeyboardMessage(long chatId, String text, List<CallbackButton> buttons) {
         super(chatId, text);
         this.buttons = buttons;
-    }
-
-    public int getNumOfColumns() {
-        return numOfColumns;
-    }
-
-    public List<CallbackButton> getButtons() {
-        return buttons;
     }
 
     public InlineKeyboardMessage setNumOfColumns(int numOfColumns) {
@@ -25,17 +23,17 @@ public class InlineKeyboardMessage extends Message {
     }
 
     public InlineKeyboardMessage hasAddButton(boolean b) {
-        super.hasAddButton(b);
+        addButton = b;
         return this;
     }
 
     public InlineKeyboardMessage hasBackButton(boolean b) {
-        super.hasBackButton(b);
+        backButton = b;
         return this;
     }
 
     public InlineKeyboardMessage hasRemoveButton(boolean b) {
-        super.hasRemoveButton(b);
+        removeButton = b;
         return this;
     }
 

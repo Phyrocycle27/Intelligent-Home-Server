@@ -20,11 +20,7 @@ public class Main {
     private static final String PROXY_HOST = "127.0.0.1";
     private static final Integer PROXY_PORT = 9050;
     private static final int SERVER_PORT = 3141;
-    public static final Logger log;
-
-    static {
-        log = LoggerFactory.getLogger(Main.class);
-    }
+    public static final Logger log = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) throws IOException {
         log.debug("Application started");
@@ -40,7 +36,6 @@ public class Main {
         new Server(SERVER_PORT); // starting the netty server
 
         // *********** TELEGRAM THREAD START ********
-//        new Telegram(PROXY_HOST, PROXY_PORT);
-        new Telegram();
+        new Telegram(PROXY_HOST, PROXY_PORT);
     }
 }

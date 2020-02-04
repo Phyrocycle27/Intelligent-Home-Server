@@ -1,4 +1,4 @@
-package com.example.smarthome.server.telegram;
+package com.example.smarthome.server.telegram.objects;
 
 import lombok.Getter;
 
@@ -17,7 +17,7 @@ public class AnswerCallback {
         this.callbackId = callbackId;
     }
 
-    public AnswerCallback setAlert(boolean b) {
+    public AnswerCallback hasAlert(boolean b) {
         this.alert = b;
         return this;
     }

@@ -1,4 +1,4 @@
-package com.example.smarthome.server.telegram;
+package com.example.smarthome.server.telegram.objects;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
