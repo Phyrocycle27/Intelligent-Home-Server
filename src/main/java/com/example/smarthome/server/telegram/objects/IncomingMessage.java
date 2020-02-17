@@ -9,4 +9,5 @@ public class IncomingMessage {
     private Integer id;
     private String text;
     private String callbackId;
+    private MessageType type;
 }

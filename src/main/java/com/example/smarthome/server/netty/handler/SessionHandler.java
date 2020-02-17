@@ -33,6 +33,7 @@ public class SessionHandler extends ChannelInboundHandlerAdapter {
 
     private static void removeChannel(Channel channel) {
         tokenToChannel.remove(channelToToken.get(channel));
+        channelToToken.remove(channel);
     }
 
     @Override

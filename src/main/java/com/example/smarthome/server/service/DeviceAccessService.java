@@ -14,7 +14,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,7 +45,7 @@ public class DeviceAccessService {
         String tokenStr = SecureTokenGenerator.nextToken();
 
         Token token = new Token(0, tokenStr, null);
-        TelegramUser user = new TelegramUser(userId, "admin", token);
+        TelegramUser user = new TelegramUser(userId, "admin", LocalDateTime.now(), token);
 
         token.setUsers(new HashSet<TelegramUser>(){{
             add(user);
@@ -55,21 +57,37 @@ public class DeviceAccessService {
         return tokenStr;
     }
 
-    // не добавлена в продакшн
-    public void addUser(long newUserId, String newUserRole, long userId, String userRole)
-            throws UserAlreadyExistsException, UserNotFoundException {
+    public void addUser(long userId, long newUserId, String userRole) throws UserAlreadyExistsException {
 
         if (isExists(newUserId)) throw new UserAlreadyExistsException(newUserId);
-        if (!isExists(userId)) throw new UserNotFoundException(userId);
 
         Token token = usersRepo.getOne(userId).getToken();
-        TelegramUser user = new TelegramUser(newUserId, newUserRole, token);
+        TelegramUser user = new TelegramUser(newUserId, userRole, LocalDateTime.now(), token);
 
         usersRepo.save(user);
     }
 
+    public List<TelegramUser> getUsers(long userId) {
+        Token token = usersRepo.getOne(userId).getToken();
+        return usersRepo.findByToken(token);
+    }
+
+    public void deleteUser(long userId) {
+        usersRepo.deleteById(userId);
+    }
+
+    public TelegramUser getUser(long userId) {
+        return usersRepo.getOne(userId);
+    }
+
     public Channel getChannel(long userId) throws ChannelNotFoundException {
-        Channel ch = SessionHandler.getChannel(usersRepo.getOne(userId).getToken().getToken());
+        Channel ch = null;
+        try {
+            ch = SessionHandler.getChannel(usersRepo.findById(userId).orElseThrow(
+                    () -> new UserNotFoundException(userId)).getToken().getToken());
+        } catch (UserNotFoundException e) {
+            e.printStackTrace();
+        }
 
         if (ch == null) throw new ChannelNotFoundException(userId);
         return ch;

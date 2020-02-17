@@ -45,7 +45,6 @@ public class Telegram implements Runnable {
             options.setProxyType(DefaultBotOptions.ProxyType.SOCKS5);
             options.setProxyHost(PROXY_HOST);
             options.setProxyPort(PROXY_PORT);
-
             bot = new Bot(options);
         } else bot = new Bot();
 

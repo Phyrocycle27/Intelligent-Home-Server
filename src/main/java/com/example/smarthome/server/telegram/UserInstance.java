@@ -2,9 +2,14 @@ package com.example.smarthome.server.telegram;
 
 import com.example.smarthome.server.connection.JsonRequester;
 import com.example.smarthome.server.entity.Output;
+import com.example.smarthome.server.entity.TelegramUser;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
+import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.objects.*;
+import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
+import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
+import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import io.netty.channel.Channel;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -44,7 +49,8 @@ class UserInstance {
     private static final String homeControl = "Выберите Устройства, чтобы управлять устройствами или добавить новое, или " +
             "выберите Датчики чтобы посмотреть показания или добавить новый датчик";
     private static final String devicesNotFound = "Устройства не обнаружены. Вы можете добавить их прямо сейчас";
-    private static final String removeConfirmation = "Вы действительно хотите удалить это устройство?";
+    private static final String removeConfirmationDevice = "Вы действительно хотите удалить это устройство?";
+    private static final String removeConfirmationUser = "Вы действительно хотите удалить этого пользователя?";
     private static final String deviceOff = "Устройство выключено";
     private static final String deviceOn = "Устройство включено";
     private static final String deviceDeleted = "Устройство удалено";
@@ -59,6 +65,7 @@ class UserInstance {
     private static final List<CallbackButton> homeControlButtons = new ArrayList<CallbackButton>() {{
         add(new CallbackButton("Устройства", "devices"));
         add(new CallbackButton("Датчики", "sensors"));
+        add(new CallbackButton("Пользователи", "users"));
     }};
     private static final String sensorsMsg = "Нажмите на существующий датчик или добавьте новый";
     private static final String devicesMsg = "Нажмите на существующее устройство или добавьте новое";
@@ -90,6 +97,7 @@ class UserInstance {
     private Consumer<IncomingMessage> currentLvl;
     /**
      * Уровень по умолчанию
+     *
      * @apiNote Уровень, который обрабатывает команду /start. Позволяет перейти на уровень menu
      */
     private Predicate<IncomingMessage> defaultLvl;
@@ -103,6 +111,7 @@ class UserInstance {
     private Consumer<IncomingMessage> infoLvl;
     /**
      * Выбор перехода: датчики или устройства
+     *
      * @apiNote На этот уровень пользователя будет также перебрасывать тогда, когда оборвётся соединение с его
      * Raspberry PI
      */
@@ -123,7 +132,11 @@ class UserInstance {
     /**
      * Подтверждение удаления устройства
      */
-    private Consumer<IncomingMessage> confirmDeviceRemove;
+    private Consumer<IncomingMessage> confirmRemove;
+
+    private Consumer<IncomingMessage> usersLvl;
+    private Consumer<IncomingMessage> userLvl;
+    private Consumer<IncomingMessage> userAdditionLvl;
 
     static {
         log = LoggerFactory.getLogger(Bot.class);
@@ -145,7 +158,7 @@ class UserInstance {
             log.info("Default level");
             if (msg.getText().equals("/start")) {
                 if (lastMessageId != 0) {
-                    goToMain(lastMessageId);
+                    goToMain(0);
                     lastMessageId = 0;
                 } else goToMain(0);
                 return true;
@@ -223,23 +236,85 @@ class UserInstance {
 
         homeControlLvl = msg -> {
             log.info("HomeControl level");
-            switch (msg.getText()) {
-                case "devices":
-                    goToDevices(null, msg);
-                    break;
-                case "sensors":
-                    break;
-                case "token_gen":
-                    MessageExecutor.execute(bot, new Message(chatId, tokenSuccessGen).setMessageId(msg.getId()));
-                    MessageExecutor.execute(bot, new Message(chatId, service.createToken(chatId)));
-                    goToMain(0);
-                    break;
-                case "back":
-                    goToMain(msg.getId());
-                    break;
-                default:
-                    if (!msg.getCallbackId().isEmpty())
+            if (msg.getType() == MessageType.CALLBACK)
+                switch (msg.getText()) {
+                    case "devices":
+                        goToDevicesLevel(null, msg);
+                        break;
+                    case "users":
+                        goToUsersLevel(msg.getId(), null);
+                        break;
+                    case "token_gen":
+                        MessageExecutor.execute(bot, new Message(chatId, tokenSuccessGen).setMessageId(msg.getId()));
+                        MessageExecutor.execute(bot, new Message(chatId, service.createToken(chatId)));
+                        goToMain(0);
+                        break;
+                    case "back":
+                        goToMain(msg.getId());
+                        break;
+                    default:
                         MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                }
+        };
+
+        usersLvl = msg -> {
+            log.info("Users level");
+            if (msg.getType() == MessageType.CALLBACK)
+                switch (msg.getText()) {
+                    case "add":
+                        MessageExecutor.execute(bot, new InlineKeyboardMessage(chatId, "Отправьте контакт " +
+                                "пользователя, которого хотите добавить", null)
+                                .hasBackButton(true).setMessageId(msg.getId()));
+                        currentLvl = userAdditionLvl;
+                        lastMessageId = msg.getId();
+                        break;
+                    case "back":
+                        goToHomeControlLevel(msg);
+                        break;
+                    default:
+                        goToUserLevel(msg.getId(), Long.parseLong(msg.getText()));
+                }
+        };
+
+        userLvl = msg -> {
+            log.info("User level");
+            if (msg.getType() == MessageType.CALLBACK) {
+                if (msg.getText().equals("back")) {
+                    goToUsersLevel(msg.getId(), null);
+                    return;
+                }
+
+                String[] arr = msg.getText().split("[_]");
+                String cmd = arr[0];
+                long userId = Long.parseLong(arr[1]);
+
+                if (cmd.equals("remove")) {
+                    MessageExecutor.execute(bot, new InlineKeyboardMessage(chatId, removeConfirmationUser,
+                            new ArrayList<CallbackButton>() {{
+                                add(new CallbackButton("Подтвердить", "confirmRemove_user_" + userId));
+                                add(new CallbackButton("Отмена", "cancel_user_" + userId));
+                            }})
+                            .setMessageId(msg.getId())
+                            .setNumOfColumns(2));
+                    currentLvl = confirmRemove;
+                }
+            }
+        };
+
+        userAdditionLvl = msg -> {
+            log.info("User addition level");
+            if (msg.getType() == MessageType.CALLBACK && msg.getText().equals("back")) {
+                goToUsersLevel(lastMessageId, null);
+            } else if (msg.getType() == MessageType.CONTACT) {
+                try {
+                    service.addUser(chatId, Long.parseLong(msg.getText()), "user");
+                    goToUsersLevel(0, "Пользователь добавлен");
+                } catch (UserAlreadyExistsException e) {
+                    goToUsersLevel(0, "Данный пользователь уже имеет доступ");
+                } finally {
+                    MessageExecutor.delete(bot, chatId, lastMessageId);
+                    lastMessageId = 0;
+                }
             }
         };
 
@@ -255,10 +330,10 @@ class UserInstance {
             // Если ответ содержит только число, то пытаемся получить устройство с таким id
             else if (msg.getText().matches("[-+]?\\d+")) {
                 try {
-                    goToDevice(msg, Integer.parseInt(msg.getText()));
+                    goToDeviceLevel(msg, Integer.parseInt(msg.getText()));
                     currentLvl = deviceControlLvl;
                 } catch (ChannelNotFoundException e) {
-                    log.error(e.getMessage());
+                    log.warn(e.getMessage());
                     goToHomeControlLevel(msg);
                 }
             } else {
@@ -268,80 +343,93 @@ class UserInstance {
         };
 
         deviceControlLvl = msg -> {
-            String[] arr = msg.getText().split("[_]");
-            String cmd = arr[0];
-            int deviceId = 0;
-            if (arr.length > 1) {
-                deviceId = Integer.parseInt(arr[1]);
-            }
+            if (msg.getType() == MessageType.CALLBACK) {
+                if (msg.getText().equals("back")) {
+                    goToDevicesLevel(null, msg);
+                    return;
+                }
 
-            switch (cmd) {
-                case "off":
-                    try {
-                        setDigitalState(deviceId, false);
-                        goToDevice(msg, deviceId);
-                        MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), deviceOff));
-                    } catch (ChannelNotFoundException e) {
-                        log.error(e.getMessage());
-                        goToHomeControlLevel(msg);
-                    }
-                    break;
-                case "on":
-                    try {
-                        setDigitalState(deviceId, true);
-                        goToDevice(msg, deviceId);
-                        MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), deviceOn));
-                    } catch (ChannelNotFoundException e) {
-                        log.error(e.getMessage());
-                        goToHomeControlLevel(msg);
-                    }
-                    break;
-                case "remove":
-                    int finalDeviceId = deviceId;
-                    MessageExecutor.execute(bot, new InlineKeyboardMessage(chatId, removeConfirmation,
-                            new ArrayList<CallbackButton>() {{
-                                add(new CallbackButton("Подтвердить", "confirmRemove_" + finalDeviceId));
-                                add(new CallbackButton("Отмена", "cancel_" + finalDeviceId));
-                            }})
-                        .setMessageId(msg.getId()));
-                    currentLvl = confirmDeviceRemove;
-                    break;
-                case "back":
-                    goToDevices(null, msg);
-                    break;
-                default:
-                    if (!msg.getCallbackId().isEmpty())
+                String[] arr = msg.getText().split("[_]");
+                String cmd = arr[0];
+                int deviceId = Integer.parseInt(arr[1]);
+
+                switch (cmd) {
+                    case "off":
+                        try {
+                            setDigitalState(deviceId, false);
+                            goToDeviceLevel(msg, deviceId);
+                            MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), deviceOff));
+                        } catch (ChannelNotFoundException e) {
+                            log.warn(e.getMessage());
+                            goToHomeControlLevel(msg);
+                        }
+                        break;
+                    case "on":
+                        try {
+                            setDigitalState(deviceId, true);
+                            goToDeviceLevel(msg, deviceId);
+                            MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), deviceOn));
+                        } catch (ChannelNotFoundException e) {
+                            log.warn(e.getMessage());
+                            goToHomeControlLevel(msg);
+                        }
+                        break;
+                    case "remove":
+                        MessageExecutor.execute(bot, new InlineKeyboardMessage(chatId, removeConfirmationDevice,
+                                new ArrayList<CallbackButton>() {{
+                                    add(new CallbackButton("Подтвердить", "confirmRemove_device_" + deviceId));
+                                    add(new CallbackButton("Отмена", "cancel_device_" + deviceId));
+                                }})
+                                .setMessageId(msg.getId()));
+                        currentLvl = confirmRemove;
+                        break;
+                    default:
                         MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                }
             }
         };
 
-        confirmDeviceRemove = msg -> {
+        confirmRemove = msg -> {
+            log.info("Remove confirmation level");
             String[] arr = msg.getText().split("[_]");
             String cmd = arr[0];
-            int deviceId = 0;
-            if (arr.length > 1) {
-                deviceId = Integer.parseInt(arr[1]);
-            }
+            String type = arr[1];
 
-            if (cmd.equals("confirmRemove")) {
-                try {
-                    deleteOutput(deviceId);
-                    goToDevices(deviceDeleted, msg);
-                } catch (ChannelNotFoundException e) {
-                    log.error(e.getMessage());
-                    goToHomeControlLevel(msg);
-                }
-            } else if (cmd.equals("cancel")) {
-                try {
-                    goToDevice(msg, deviceId);
-                    currentLvl = deviceControlLvl;
-                } catch (ChannelNotFoundException e) {
-                    goToHomeControlLevel(msg);
-                }
+            switch (type) {
+                case "device":
+                    int deviceId = Integer.parseInt(arr[2]);
+                    if (cmd.equals("confirmRemove")) {
+                        try {
+                            deleteOutput(deviceId);
+                            goToDevicesLevel(deviceDeleted, msg);
+                        } catch (ChannelNotFoundException e) {
+                            log.warn(e.getMessage());
+                            goToHomeControlLevel(msg);
+                        }
+                    } else if (cmd.equals("cancel")) {
+                        try {
+                            goToDeviceLevel(msg, deviceId);
+                            currentLvl = deviceControlLvl;
+                        } catch (ChannelNotFoundException e) {
+                            log.warn(e.getMessage());
+                            goToHomeControlLevel(msg);
+                        }
+                    }
+                    break;
+                case "user":
+                    long userId = Long.parseLong(arr[2]);
+                    if (cmd.equals("confirmRemove")) {
+                        service.deleteUser(userId);
+                        goToUsersLevel(msg.getId(), "Пользователь удалён");
+                    } else if (cmd.equals("cancel")) {
+                        goToUserLevel(msg.getId(), userId);
+                    }
+                    break;
             }
         };
 
         deviceCreationLvl = msg -> {
+            log.info("Device creation level");
             if (msg.getText().equals("back")) {
                 creator.goToPrev(msg);
             } else creator.currCreationLvl.accept(msg);
@@ -382,7 +470,36 @@ class UserInstance {
         }
     }
 
-    private void goToDevices(String text, IncomingMessage msg) {
+    public void goToUsersLevel(int messageId, String s) {
+        String text = s == null ? "Список пользователей, имеющих доступ к вашему дому" : s;
+        List<CallbackButton> users = new ArrayList<>();
+
+        for (TelegramUser user : service.getUsers(chatId)) {
+            users.add(new CallbackButton(bot.getUsername(user.getUserId()), String.valueOf(user.getUserId())));
+        }
+
+        MessageExecutor.execute(bot, new InlineKeyboardMessage(chatId, text, users)
+                .hasAddButton(true)
+                .hasBackButton(true)
+                .setMessageId(messageId));
+        currentLvl = usersLvl;
+    }
+
+    public void goToUserLevel(int messageId, long userId) {
+        TelegramUser user = service.getUser(userId);
+        MessageExecutor.execute(bot, new InlineKeyboardMessage(chatId, String.format(
+                "<i>%s</i>\nУровень доступа: %s\nДата добавления: %s",
+                bot.getUsername(userId), user.getRole(), user.getAdditionDate()
+                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))),
+                new ArrayList<CallbackButton>() {{
+                    add(new CallbackButton("Удалить", "remove_" + userId));
+                }})
+                .setMessageId(messageId)
+                .hasBackButton(true));
+        currentLvl = userLvl;
+    }
+
+    private void goToDevicesLevel(String text, IncomingMessage msg) {
         try {
             List<CallbackButton> devices = new ArrayList<>();
 
@@ -408,10 +525,10 @@ class UserInstance {
         }
     }
 
-    private void goToDevice(IncomingMessage msg, int deviceId) throws ChannelNotFoundException {
+    private void goToDeviceLevel(IncomingMessage msg, int deviceId) throws ChannelNotFoundException {
         Output output = getOutput(deviceId);
 
-        if (output == null) goToDevices("Устройство c таким id не найдено", msg);
+        if (output == null) goToDevicesLevel("Устройство c таким id не найдено", msg);
         else {
             boolean currState = getDigitalState(output.getOutputId());
             String currStateText = currState ? "включено" : "выключено";
@@ -621,7 +738,7 @@ class UserInstance {
 
         private void goToPrev(IncomingMessage msg) {
             if (currCreationLvl == stepOne) {
-                goToDevices(null, msg);
+                goToDevicesLevel(null, msg);
             } else if (currCreationLvl == stepTwo) {
                 start(msg);
             } else if (currCreationLvl == stepThree) {
@@ -670,7 +787,7 @@ class UserInstance {
             try {
                 MessageExecutor.execute(bot, new InlineKeyboardMessage(chatId,
                         "Теперь выберите пин, к которому вы хотите " +
-                        "подключить новое устройство", new ArrayList<CallbackButton>() {{
+                                "подключить новое устройство", new ArrayList<CallbackButton>() {{
                     for (String s : getAvailableOutputs(creationOutput.getType()))
                         add(new CallbackButton(s, s));
                 }})
@@ -679,7 +796,7 @@ class UserInstance {
                         .hasBackButton(true));
                 currCreationLvl = stepThree;
             } catch (ChannelNotFoundException e) {
-                log.error(e.getMessage());
+                log.warn(e.getMessage());
                 goToHomeControlLevel(msg);
                 creationOutput = null;
             }
@@ -695,7 +812,7 @@ class UserInstance {
             } catch (NumberFormatException e) {
                 log.error(e.getMessage());
             } catch (ChannelNotFoundException e) {
-                log.error(e.getMessage());
+                log.warn(e.getMessage());
                 goToHomeControlLevel(msg);
             }
         }
@@ -726,9 +843,9 @@ class UserInstance {
         private void createDevice(IncomingMessage msg) {
             try {
                 createOutput(creationOutput);
-                goToDevices("Устройство создано", msg);
+                goToDevicesLevel("Устройство создано", msg);
             } catch (ChannelNotFoundException e) {
-                log.error(e.getMessage());
+                log.warn(e.getMessage());
                 goToHomeControlLevel(msg);
             } finally {
                 creationOutput = null;

@@ -1,7 +1,10 @@
-package com.example.smarthome.server.telegram.objects;
+package com.example.smarthome.server.telegram.objects.inlinemsg;
 
+import com.example.smarthome.server.telegram.objects.Message;
+import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -14,7 +17,11 @@ public class InlineKeyboardMessage extends Message {
 
     public InlineKeyboardMessage(long chatId, String text, List<CallbackButton> buttons) {
         super(chatId, text);
-        this.buttons = buttons;
+        if (buttons == null) {
+            this.buttons = new ArrayList<>();
+        } else {
+            this.buttons = buttons;
+        }
     }
 
     public InlineKeyboardMessage setNumOfColumns(int numOfColumns) {
