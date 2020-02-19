@@ -16,12 +16,14 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
-class Weather {
+public class Weather {
+
     private static final String URL =
             "https://api.openweathermap.org/data/2.5/weather?appid=3156e4747f7d07492a0c3a19b388ed8f&id=550280&lang=ru" +
                     "&units=metric";
     private static final DecimalFormat df;
     private static final HttpClient client;
+    private static Weather instance;
     public static final Logger log;
 
     static {
@@ -38,7 +40,17 @@ class Weather {
         log = LoggerFactory.getLogger(Weather.class);
     }
 
-    String getWeather() {
+    private Weather() {
+    }
+
+    public static Weather getInstance() {
+        if (instance == null) {
+            instance = new Weather();
+        }
+        return instance;
+    }
+
+    public String getWeather() {
         log.info("Build request..");
         HttpUriRequest request = new HttpGet(URL);
 

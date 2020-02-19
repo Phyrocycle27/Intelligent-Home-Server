@@ -10,30 +10,39 @@ import org.telegram.telegrambots.meta.api.methods.groupadministration.GetChat;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import org.telegram.telegrambots.meta.updateshandlers.SentCallback;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class Bot extends TelegramLongPollingBot {
-        private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
-        private final static String USER_NAME = "intelligent_home_bot";
+
+    private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
+    private final static String USER_NAME = "intelligent_home_bot";
 //    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
 //    private final static String USER_NAME = "intelligent_home_beta_bot";
-    public static final Logger log;
-    private static Map<Long, UserInstance> instances;
+    public static final Logger log = LoggerFactory.getLogger(Bot.class);
+    private static Map<Long, UserInstance> instances = new HashMap<>();
 
-    static {
-        log = LoggerFactory.getLogger(Bot.class);
-        instances = new HashMap<>();
-    }
+    private static Bot instance;
 
-    Bot() {
-    }
-
-
-    Bot(DefaultBotOptions options) {
+    private Bot(DefaultBotOptions options) {
         super(options);
+    }
+
+    private Bot() {
+    }
+
+    public static Bot getInstance(DefaultBotOptions options) {
+        if (instance == null) {
+            if (options != null) {
+                instance = new Bot(options);
+            } else instance = new Bot();
+        }
+        return instance;
+    }
+
+    public static Bot getInstance() {
+        return getInstance(null);
     }
 
     @Override
@@ -85,12 +94,12 @@ public class Bot extends TelegramLongPollingBot {
         return userInstance;
     }
 
-    public String getUsername(long userId) {
+    public String getUserName(long userId) {
         try {
             Chat chat = sendApiMethod(new GetChat().setChatId(userId));
             String firstName = chat.getFirstName();
             String lastName = chat.getLastName();
-            return firstName + (lastName != null? " " + lastName: "");
+            return firstName + (lastName != null ? " " + lastName : "");
         } catch (TelegramApiException e) {
             log.warn(e.getMessage());
         }

@@ -10,6 +10,7 @@ import com.example.smarthome.server.telegram.objects.*;
 import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
+import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import io.netty.channel.Channel;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -26,7 +27,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-class UserInstance {
+public class UserInstance {
     // ************************************* MENU ***********************************************
     private static final String menuMsg = "Нажмите \"Управление домом\" чтобы перейти к управлению умным домом и " +
             "просмотру информации с датчиков или нажмите \"Информация\", чтобы узнать точное время или погоду";
@@ -87,14 +88,29 @@ class UserInstance {
 
     /* ************************************ TEMP VARIABLES ************************************************** */
     private DeviceCreator creator;
+
+    public long getChatId() {
+        return chatId;
+    }
+
     private long chatId;
     private int lastMessageId;
 
     // Scenery
+
+    public void setCurrentLvl(AnswerCreator currentLvl) {
+        this.currentLvl_2 = currentLvl;
+    }
+
+    public AnswerCreator getCurrentLvl() {
+        return this.currentLvl_2;
+    }
+
     /**
      * Текущее состояние чата пользователя
      */
     private Consumer<IncomingMessage> currentLvl;
+    private AnswerCreator currentLvl_2;
     /**
      * Уровень по умолчанию
      *
@@ -140,7 +156,7 @@ class UserInstance {
 
     static {
         log = LoggerFactory.getLogger(Bot.class);
-        weatherService = new Weather();
+        weatherService = Weather.getInstance();
         service = DeviceAccessService.getInstance();
     }
 
@@ -475,7 +491,7 @@ class UserInstance {
         List<CallbackButton> users = new ArrayList<>();
 
         for (TelegramUser user : service.getUsers(chatId)) {
-            users.add(new CallbackButton(bot.getUsername(user.getUserId()), String.valueOf(user.getUserId())));
+            users.add(new CallbackButton(bot.getUserName(user.getUserId()), String.valueOf(user.getUserId())));
         }
 
         MessageExecutor.execute(bot, new InlineKeyboardMessage(chatId, text, users)
@@ -489,7 +505,7 @@ class UserInstance {
         TelegramUser user = service.getUser(userId);
         MessageExecutor.execute(bot, new InlineKeyboardMessage(chatId, String.format(
                 "<i>%s</i>\nУровень доступа: %s\nДата добавления: %s",
-                bot.getUsername(userId), user.getRole(), user.getAdditionDate()
+                bot.getUserName(userId), user.getRole(), user.getAdditionDate()
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))),
                 new ArrayList<CallbackButton>() {{
                     add(new CallbackButton("Удалить", "remove_" + userId));
