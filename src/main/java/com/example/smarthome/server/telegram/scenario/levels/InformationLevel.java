@@ -26,7 +26,12 @@ public class InformationLevel implements AnswerCreator {
     private static final Weather weatherService = Weather.getInstance();
     private static final Bot bot = Bot.getInstance();
 
+    // ************************************* MESSAGES *************************************************
+    private static final String infoMsg = "Выберите \"Погода\" чтобы узнать погоду в совём городе " +
+            "или нажмите \"Время\"чтобы узнать точное время в вашем городе";
     private static final String buttonInvalid = "Кнопка недействительна";
+
+    // ************************************** BUTTONS *************************************************
     private static final List<CallbackButton> infoButtons = new ArrayList<CallbackButton>() {{
         add(new CallbackButton("Погода", "weather"));
         add(new CallbackButton("Время", "time"));
@@ -51,10 +56,7 @@ public class InformationLevel implements AnswerCreator {
                     else answer = weather;
 
                     try {
-                        MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), answer, infoButtons)
-                                .setMessageId(msg.getId())
-                                .setNumOfColumns(2)
-                                .hasBackButton(true));
+                        updateInformationMessage(user, msg, answer);
                     } catch (RuntimeException e) {
                         log.error(e.getMessage());
                         MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), "\u2705"));
@@ -62,23 +64,35 @@ public class InformationLevel implements AnswerCreator {
                     break;
                 case "time":
                     try {
-                        MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(),
-                                String.format("Химкинское время %s", LocalDateTime.now()
-                                        .format(DateTimeFormatter.ofPattern("HH:mm:ss"))), infoButtons)
-                                .setMessageId(msg.getId())
-                                .setNumOfColumns(2)
-                                .hasBackButton(true));
+                        updateInformationMessage(user, msg, String.format("Химкинское время %s",
+                                LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))));
                     } catch (RuntimeException e) {
                         log.error(e.getMessage());
                         MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), "\u2705"));
                     }
                     break;
                 case "back":
-                    // goToMain(msg.getId());
+                    MenuLevel.goToMain(user, msg);
                     break;
                 default:
                     if (!msg.getCallbackId().isEmpty())
                         MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
+    }
+
+    public static void updateInformationMessage(UserInstance user, IncomingMessage msg, String s) {
+        MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), s, infoButtons)
+                .setMessageId(msg.getId())
+                .setNumOfColumns(2)
+                .hasBackButton(true));
+    }
+
+    public static void goToInformationLevel(UserInstance user, IncomingMessage msg) {
+        MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), infoMsg, infoButtons)
+                .setMessageId(msg.getId())
+                .setNumOfColumns(2)
+                .hasBackButton(true));
+
+        user.setCurrentLvl(instance);
     }
 }

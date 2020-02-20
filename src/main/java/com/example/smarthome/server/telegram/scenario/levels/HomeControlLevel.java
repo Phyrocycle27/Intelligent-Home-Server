@@ -27,6 +27,8 @@ public class HomeControlLevel implements AnswerCreator {
     private static final String tokenSuccessGen = "Ваш токен успешно сгенерирован!\nОн требуется для подключения Вашей " +
             "Raspberry PI к серверу.\nПожалуйста, скопируйте и вставьте Ваш токен в соответствующий раздел в приложении." +
             "\n\n\u21E7\u21E7\u21E7 ВАШ ТОКЕН \u21E7\u21E7\u21E7";
+    private static final String tokenNotFound = "Похоже, что у Вас нет токена...\nЧтобы управлять домом через этого телеграм " +
+            "бота Вам нужен уникальный токен, который Ваша Raspberry PI будет использовать для подключения у серверу";
     private static final String channelNotFound = "Ваша Raspberry PI не подключена к серверу\n" +
             "Введите, пожалуйста, свой токен в соответствующем разделе в приложении чтобы Ваше устройство могло " +
             "подключиться к серверу";
@@ -38,6 +40,9 @@ public class HomeControlLevel implements AnswerCreator {
         add(new CallbackButton("Устройства", "devices"));
         add(new CallbackButton("Датчики", "sensors"));
         add(new CallbackButton("Пользователи", "users"));
+    }};
+    private static final List<CallbackButton> tokenGenButton = new ArrayList<CallbackButton>() {{
+        add(new CallbackButton("Сгенерировать токен", "token_gen"));
     }};
 
     private HomeControlLevel() {
@@ -55,37 +60,50 @@ public class HomeControlLevel implements AnswerCreator {
                     // goToDevicesLevel(null, msg);
                     break;
                 case "users":
-                    // goToUsersLevel(msg.getId(), null);
+                    UsersLevel.goToUsersLevel(user, msg);
                     break;
                 case "token_gen":
-                    MessageExecutor.execute(bot, new Message(user.getChatId(), tokenSuccessGen)
-                            .setMessageId(msg.getId()));
-                    MessageExecutor.execute(bot, new Message(user.getChatId(),
-                            service.createToken(user.getChatId())));
-                    MenuLevel.getInstance().goToMain(user, msg);
+                    sendToken(user, msg);
+                    MenuLevel.goToMain(user, msg);
                     break;
                 case "back":
-                    MenuLevel.getInstance().goToMain(user, msg);
+                    MenuLevel.goToMain(user, msg);
                     break;
                 default:
                     MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
     }
 
-    public void goToHomeControlLevel(UserInstance user, IncomingMessage msg) {
-        if (service.isChannelExist(user.getChatId())) {
-            MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), homeControl, homeControlButtons)
-                    .setNumOfColumns(2)
+    public static void goToHomeControlLevel(UserInstance user, IncomingMessage msg) {
+        if (service.isExists(user.getChatId())) {
+            if (service.isChannelExist(user.getChatId())) {
+                MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), homeControl, homeControlButtons)
+                        .setNumOfColumns(2)
+                        .setMessageId(msg.getId())
+                        .hasBackButton(true));
+
+                user.setCurrentLvl(instance);
+            } else {
+                MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), channelNotFound)
+                        .hasAlert(true));
+
+                if (user.getCurrentLvl() != MenuLevel.getInstance())
+                    MenuLevel.goToMain(user, msg);
+            }
+        } else {
+            MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), tokenNotFound,
+                    tokenGenButton)
                     .setMessageId(msg.getId())
                     .hasBackButton(true));
-            user.setCurrentLvl(instance);
-        } else {
-            MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), channelNotFound)
-                    .hasAlert(true));
 
-            if (user.getCurrentLvl() != MenuLevel.getInstance()) {
-                MenuLevel.getInstance().goToMain(user, msg);
-            }
+            user.setCurrentLvl(HomeControlLevel.getInstance());
         }
+    }
+
+    private void sendToken(UserInstance user, IncomingMessage msg) {
+        MessageExecutor.execute(bot, new Message(user.getChatId(), tokenSuccessGen)
+                .setMessageId(msg.getId()));
+        MessageExecutor.execute(bot, new Message(user.getChatId(),
+                service.createToken(user.getChatId())));
     }
 }

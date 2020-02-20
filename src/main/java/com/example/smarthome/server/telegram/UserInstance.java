@@ -106,6 +106,14 @@ public class UserInstance {
         return this.currentLvl_2;
     }
 
+    public int getLastMessageId() {
+        return lastMessageId;
+    }
+
+    public void setLastMessageId(int lastMessageId) {
+        this.lastMessageId = lastMessageId;
+    }
+
     /**
      * Текущее состояние чата пользователя
      */

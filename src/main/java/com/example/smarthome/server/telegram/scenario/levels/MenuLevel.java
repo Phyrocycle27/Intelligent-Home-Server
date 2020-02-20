@@ -21,20 +21,15 @@ public class MenuLevel implements AnswerCreator {
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
     private static final Bot bot = Bot.getInstance();
 
-    // ************************************* MESSAGES ************************************************
-    private static final String tokenNotFound = "Похоже, что у Вас нет токена...\nЧтобы управлять домом через этого телеграм " +
-            "бота Вам нужен уникальный токен, который Ваша Raspberry PI будет использовать для подключения у серверу";
-    private static final String infoMsg = "Выберите \"Погода\" чтобы узнать погоду в совём городе " +
-            "или нажмите \"Время\"чтобы узнать точное время в вашем городе";
+    // ************************************* MESSAGES *************************************************
     private static final String buttonInvalid = "Кнопка недействительна";
+    private static final String menuMsg = "Нажмите \"Управление домом\" чтобы перейти к управлению умным домом и " +
+            "просмотру информации с датчиков или нажмите \"Информация\", чтобы узнать точное время или погоду";
 
     // ************************************** BUTTONS *************************************************
-    private static final List<CallbackButton> tokenGenButton = new ArrayList<CallbackButton>() {{
-        add(new CallbackButton("Сгенерировать токен", "token_gen"));
-    }};
-    private static final List<CallbackButton> infoButtons = new ArrayList<CallbackButton>() {{
-        add(new CallbackButton("Погода", "weather"));
-        add(new CallbackButton("Время", "time"));
+    private static final List<CallbackButton> menuButtons = new ArrayList<CallbackButton>() {{
+        add(new CallbackButton("Управление домом", "home_control"));
+        add(new CallbackButton("Информация", "information"));
     }};
 
     private MenuLevel() {
@@ -49,22 +44,10 @@ public class MenuLevel implements AnswerCreator {
         if (msg.getType() == MessageType.CALLBACK)
             switch (msg.getText()) {
                 case "home_control":
-                    if (service.isExists(user.getChatId())) {
-                        // goToHomeControlLevel(msg);
-                    } else {
-                        MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), tokenNotFound,
-                                tokenGenButton)
-                                .setMessageId(msg.getId())
-                                .hasBackButton(true));
-                        user.setCurrentLvl(HomeControlLevel.getInstance());
-                    }
+                    HomeControlLevel.goToHomeControlLevel(user, msg);
                     break;
                 case "information":
-                    MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), infoMsg, infoButtons)
-                            .setMessageId(msg.getId())
-                            .setNumOfColumns(2)
-                            .hasBackButton(true));
-                    user.setCurrentLvl(InformationLevel.getInstance());
+                    InformationLevel.goToInformationLevel(user, msg);
                     break;
                 default:
                     if (!msg.getCallbackId().isEmpty())
@@ -72,7 +55,11 @@ public class MenuLevel implements AnswerCreator {
             }
     }
 
-    public void goToMain(UserInstance user, IncomingMessage msg) {
+    public static void goToMain(UserInstance user, IncomingMessage msg) {
+        MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), menuMsg, menuButtons)
+                .setMessageId(msg.getId())
+                .setNumOfColumns(2));
 
+        user.setCurrentLvl(instance);
     }
 }
