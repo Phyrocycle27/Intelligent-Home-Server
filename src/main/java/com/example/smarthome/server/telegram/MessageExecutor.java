@@ -1,6 +1,6 @@
 package com.example.smarthome.server.telegram;
 
-import com.example.smarthome.server.telegram.objects.*;
+import com.example.smarthome.server.telegram.objects.Message;
 import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardBuilder;

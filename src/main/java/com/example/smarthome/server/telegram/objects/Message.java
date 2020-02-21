@@ -4,6 +4,8 @@ import lombok.Getter;
 
 @Getter
 public class Message {
+
+
     private String text;
     private long chatId;
     private int messageId;

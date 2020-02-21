@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels;
 
 import com.example.smarthome.server.telegram.Bot;
-import com.example.smarthome.server.telegram.MessageExecutor;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.Weather;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -17,6 +16,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.scenario.levels.MenuLevel.goToMenuLevel;
 
 public class InformationLevel implements AnswerCreator {
 
@@ -56,7 +58,7 @@ public class InformationLevel implements AnswerCreator {
                         updateInformationMessage(user, msg, weather != null ? weather : errorGettingWeatherInfo);
                     } catch (RuntimeException e) {
                         log.error(e.getMessage());
-                        MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), "\u2705"));
+                        execute(bot, new AnswerCallback(msg.getCallbackId(), "\u2705"));
                     }
                     break;
                 case "time":
@@ -65,27 +67,27 @@ public class InformationLevel implements AnswerCreator {
                                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))));
                     } catch (RuntimeException e) {
                         log.error(e.getMessage());
-                        MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), "\u2705"));
+                        execute(bot, new AnswerCallback(msg.getCallbackId(), "\u2705"));
                     }
                     break;
                 case "back":
-                    MenuLevel.goToMenuLevel(user, msg);
+                    goToMenuLevel(user, msg);
                     break;
                 default:
                     if (!msg.getCallbackId().isEmpty())
-                        MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                        execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
     }
 
     public static void updateInformationMessage(UserInstance user, IncomingMessage msg, String s) {
-        MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), s, infoButtons)
+        execute(bot, new InlineKeyboardMessage(user.getChatId(), s, infoButtons)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
                 .hasBackButton(true));
     }
 
     public static void goToInformationLevel(UserInstance user, IncomingMessage msg) {
-        MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), infoMsg, infoButtons)
+        execute(bot, new InlineKeyboardMessage(user.getChatId(), infoMsg, infoButtons)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
                 .hasBackButton(true));

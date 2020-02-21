@@ -5,10 +5,7 @@ import com.example.smarthome.server.service.DeviceAccessService;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.ssl.SslHandler;
-import io.netty.util.CharsetUtil;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

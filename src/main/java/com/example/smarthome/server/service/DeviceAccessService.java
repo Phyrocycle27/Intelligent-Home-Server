@@ -41,13 +41,13 @@ public class DeviceAccessService {
         return instance;
     }
 
-    public String createToken(long userId)  {
+    public String createToken(long userId) {
         String tokenStr = SecureTokenGenerator.nextToken();
 
         Token token = new Token(0, tokenStr, null);
         TelegramUser user = new TelegramUser(userId, "admin", LocalDateTime.now(), token);
 
-        token.setUsers(new HashSet<TelegramUser>(){{
+        token.setUsers(new HashSet<TelegramUser>() {{
             add(user);
         }});
 
@@ -107,7 +107,6 @@ public class DeviceAccessService {
         return usersRepo.existsById(userId);
     }
 
-    // For Netty authHandler
     public boolean isExists(String token) {
         return !tokensRepo.findByToken(token).isEmpty();
     }

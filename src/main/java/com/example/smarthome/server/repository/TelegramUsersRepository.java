@@ -9,5 +9,6 @@ import java.util.List;
 
 @Repository
 public interface TelegramUsersRepository extends JpaRepository<TelegramUser, Long> {
+
     List<TelegramUser> findByToken(Token token);
 }

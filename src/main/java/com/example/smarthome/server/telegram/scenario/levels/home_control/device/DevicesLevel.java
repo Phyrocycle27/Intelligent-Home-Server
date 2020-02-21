@@ -1,0 +1,91 @@
+package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
+
+import com.example.smarthome.server.entity.Output;
+import com.example.smarthome.server.exceptions.ChannelNotFoundException;
+import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.UserInstance;
+import com.example.smarthome.server.telegram.objects.IncomingMessage;
+import com.example.smarthome.server.telegram.objects.MessageType;
+import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
+import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
+import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
+import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.example.smarthome.server.connection.ClientAPI.getChannel;
+import static com.example.smarthome.server.connection.ClientAPI.getOutputs;
+import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceLevel.goToDeviceLevel;
+
+public class DevicesLevel implements AnswerCreator {
+
+    private static final DevicesLevel instance = new DevicesLevel();
+
+    private static final Logger log = LoggerFactory.getLogger(DevicesLevel.class);
+    private static final Bot bot = Bot.getInstance();
+
+    // ************************************* MESSAGES *************************************************
+    private static final String buttonInvalid = "Кнопка недействительна";
+    private static final String devicesNotFound = "Устройства не обнаружены. Вы можете добавить их прямо сейчас";
+    private static final String devicesMsg = "Нажмите на существующее устройство или добавьте новое";
+
+    private DevicesLevel() {
+    }
+
+    public static DevicesLevel getInstance() {
+        return instance;
+    }
+
+    @Override
+    public void create(UserInstance user, IncomingMessage msg) {
+        if (msg.getType() == MessageType.CALLBACK) {
+            String[] arr = msg.getText().split("_");
+            String cmd = arr[0];
+
+            switch (cmd) {
+                case "add":
+                    // creator = new DeviceCreator();
+                    // creator.start(msg);
+                    // currentLvl = deviceCreationLvl;
+                    break;
+                case "back":
+                    goToHomeControlLevel(user, msg);
+                    break;
+                case "device":
+                    int deviceId = Integer.parseInt(arr[1]);
+                    goToDeviceLevel(user, msg, deviceId);
+                    user.setCurrentLvl(DeviceLevel.getInstance());
+                    break;
+                default:
+                    execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+            }
+        }
+    }
+
+    public static void goToDevicesLevel(UserInstance user, IncomingMessage msg) {
+        try {
+            List<CallbackButton> devices = new ArrayList<>();
+
+            for (Output output : getOutputs(getChannel(user.getChatId()))) {
+                devices.add(new CallbackButton(output.getName(), "device_" + output.getOutputId()));
+            }
+
+            execute(bot, new InlineKeyboardMessage(user.getChatId(),
+                    devices.isEmpty() ? devicesNotFound : devicesMsg, devices)
+                    .hasAddButton(true)
+                    .hasBackButton(true)
+                    .setMessageId(msg.getId())
+                    .setNumOfColumns(2));
+
+            user.setCurrentLvl(instance);
+        } catch (ChannelNotFoundException e) {
+            log.warn(e.getMessage());
+            goToHomeControlLevel(user, msg);
+        }
+    }
+}

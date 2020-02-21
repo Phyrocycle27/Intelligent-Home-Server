@@ -3,12 +3,15 @@ package com.example.smarthome.server.telegram.scenario.levels.administration_use
 import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
-import com.example.smarthome.server.telegram.MessageExecutor;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+
+import static com.example.smarthome.server.telegram.MessageExecutor.delete;
+import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
 
 public class UserAdditionLevel implements AnswerCreator {
 
@@ -31,23 +34,23 @@ public class UserAdditionLevel implements AnswerCreator {
     @Override
     public void create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK && msg.getText().equals("back")) {
-            UsersLevel.goToUsersLevel(user, msg);
+            goToUsersLevel(user, msg);
         } else if (msg.getType() == MessageType.CONTACT) {
             try {
                 service.addUser(user.getChatId(), Long.parseLong(msg.getText()), "user");
-                UsersLevel.goToUsersLevel(user, msg);
+                goToUsersLevel(user, msg);
                 // пользователь успешно добавлен (AnswerCallback)
             } catch (UserAlreadyExistsException e) {
-                UsersLevel.goToUsersLevel(user, msg);
+                goToUsersLevel(user, msg);
             } finally {
-                MessageExecutor.delete(bot, user.getChatId(), user.getLastMessageId());
+                delete(bot, user.getChatId(), user.getLastMessageId());
                 user.setLastMessageId(0);
             }
         }
     }
 
     public static void goToUserAdditionLevel(UserInstance user, IncomingMessage msg) {
-        MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), sendUserContact, null)
+        execute(bot, new InlineKeyboardMessage(user.getChatId(), sendUserContact, null)
                 .hasBackButton(true).setMessageId(msg.getId()));
         user.setCurrentLvl(UserAdditionLevel.getInstance());
         user.setLastMessageId(msg.getId());

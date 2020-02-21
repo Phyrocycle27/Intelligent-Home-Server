@@ -1,8 +1,7 @@
-package com.example.smarthome.server.telegram.scenario.levels;
+package com.example.smarthome.server.telegram.scenario.levels.home_control;
 
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
-import com.example.smarthome.server.telegram.MessageExecutor;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.Message;
@@ -11,10 +10,15 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
-import com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel;
+import com.example.smarthome.server.telegram.scenario.levels.MenuLevel;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.scenario.levels.MenuLevel.goToMenuLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
 
 public class HomeControlLevel implements AnswerCreator {
 
@@ -58,41 +62,41 @@ public class HomeControlLevel implements AnswerCreator {
         if (msg.getType() == MessageType.CALLBACK)
             switch (msg.getText()) {
                 case "devices":
-                    // goToDevicesLevel(null, msg);
+                    goToDevicesLevel(user, msg);
                     break;
                 case "users":
-                    UsersLevel.goToUsersLevel(user, msg);
+                    goToUsersLevel(user, msg);
                     break;
                 case "token_gen":
                     sendToken(user, msg);
-                    MenuLevel.goToMenuLevel(user, msg);
+                    goToMenuLevel(user, msg);
                     break;
                 case "back":
-                    MenuLevel.goToMenuLevel(user, msg);
+                    goToMenuLevel(user, msg);
                     break;
                 default:
-                    MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                    execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
     }
 
     public static void goToHomeControlLevel(UserInstance user, IncomingMessage msg) {
         if (service.isExists(user.getChatId())) {
             if (service.isChannelExist(user.getChatId())) {
-                MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), homeControl, homeControlButtons)
+                execute(bot, new InlineKeyboardMessage(user.getChatId(), homeControl, homeControlButtons)
                         .setNumOfColumns(2)
                         .setMessageId(msg.getId())
                         .hasBackButton(true));
 
                 user.setCurrentLvl(instance);
             } else {
-                MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), channelNotFound)
+                execute(bot, new AnswerCallback(msg.getCallbackId(), channelNotFound)
                         .hasAlert(true));
 
                 if (user.getCurrentLvl() != MenuLevel.getInstance())
-                    MenuLevel.goToMenuLevel(user, msg);
+                    goToMenuLevel(user, msg);
             }
         } else {
-            MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), tokenNotFound,
+            execute(bot, new InlineKeyboardMessage(user.getChatId(), tokenNotFound,
                     tokenGenButton)
                     .setMessageId(msg.getId())
                     .hasBackButton(true));
@@ -102,9 +106,9 @@ public class HomeControlLevel implements AnswerCreator {
     }
 
     private void sendToken(UserInstance user, IncomingMessage msg) {
-        MessageExecutor.execute(bot, new Message(user.getChatId(), tokenSuccessGen)
+        execute(bot, new Message(user.getChatId(), tokenSuccessGen)
                 .setMessageId(msg.getId()));
-        MessageExecutor.execute(bot, new Message(user.getChatId(),
+        execute(bot, new Message(user.getChatId(),
                 service.createToken(user.getChatId())));
     }
 }

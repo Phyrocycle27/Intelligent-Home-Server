@@ -2,7 +2,6 @@ package com.example.smarthome.server.telegram.scenario.levels.administration_use
 
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
-import com.example.smarthome.server.telegram.MessageExecutor;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
@@ -10,6 +9,10 @@ import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMes
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 
 import java.util.ArrayList;
+
+import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserLevel.goToUserLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
 
 public class UserConfirmRemoveLevel implements AnswerCreator {
 
@@ -38,14 +41,14 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
 
         if (cmd.equals("confirmRemove")) {
             service.deleteUser(userId);
-            UsersLevel.goToUsersLevel(user, msg);
+            goToUsersLevel(user, msg);
         } else if (cmd.equals("cancel")) {
-            UserLevel.goToUserLevel(user, msg, userId);
+            goToUserLevel(user, msg, userId);
         }
     }
 
     public static void goToUserConfirmRemoveLevel(UserInstance user, IncomingMessage msg, long userId) {
-        MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), removeConfirmationUser,
+        execute(bot, new InlineKeyboardMessage(user.getChatId(), removeConfirmationUser,
                 new ArrayList<CallbackButton>() {{
                     add(new CallbackButton("Подтвердить", "confirmRemove_" + userId));
                     add(new CallbackButton("Отмена", "cancel_" + userId));

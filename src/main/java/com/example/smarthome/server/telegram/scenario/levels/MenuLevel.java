@@ -2,7 +2,6 @@ package com.example.smarthome.server.telegram.scenario.levels;
 
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
-import com.example.smarthome.server.telegram.MessageExecutor;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -13,6 +12,10 @@ import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.scenario.levels.InformationLevel.goToInformationLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 
 public class MenuLevel implements AnswerCreator {
 
@@ -44,19 +47,19 @@ public class MenuLevel implements AnswerCreator {
         if (msg.getType() == MessageType.CALLBACK)
             switch (msg.getText()) {
                 case "home_control":
-                    HomeControlLevel.goToHomeControlLevel(user, msg);
+                    goToHomeControlLevel(user, msg);
                     break;
                 case "information":
-                    InformationLevel.goToInformationLevel(user, msg);
+                    goToInformationLevel(user, msg);
                     break;
                 default:
                     if (!msg.getCallbackId().isEmpty())
-                        MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                        execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
     }
 
     public static void goToMenuLevel(UserInstance user, IncomingMessage msg) {
-        MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), menuMsg, menuButtons)
+        execute(bot, new InlineKeyboardMessage(user.getChatId(), menuMsg, menuButtons)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2));
 

@@ -3,17 +3,20 @@ package com.example.smarthome.server.telegram.scenario.levels.administration_use
 import com.example.smarthome.server.entity.TelegramUser;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
-import com.example.smarthome.server.telegram.MessageExecutor;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
-import com.example.smarthome.server.telegram.scenario.levels.HomeControlLevel;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserAdditionLevel.goToUserAdditionLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserLevel.goToUserLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 
 public class UsersLevel implements AnswerCreator {
 
@@ -37,13 +40,13 @@ public class UsersLevel implements AnswerCreator {
         if (msg.getType() == MessageType.CALLBACK)
             switch (msg.getText()) {
                 case "add":
-                    UserAdditionLevel.goToUserAdditionLevel(user, msg);
+                    goToUserAdditionLevel(user, msg);
                     break;
                 case "back":
-                    HomeControlLevel.goToHomeControlLevel(user, msg);
+                    goToHomeControlLevel(user, msg);
                     break;
                 default:
-                    UserLevel.goToUserLevel(user, msg, Long.parseLong(msg.getText()));
+                    goToUserLevel(user, msg, Long.parseLong(msg.getText()));
             }
     }
 
@@ -54,7 +57,7 @@ public class UsersLevel implements AnswerCreator {
             users.add(new CallbackButton(bot.getUserName(user.getUserId()), String.valueOf(user.getUserId())));
         }
 
-        MessageExecutor.execute(bot, new InlineKeyboardMessage(userInstance.getChatId(), allowedUsersMessage, users)
+        execute(bot, new InlineKeyboardMessage(userInstance.getChatId(), allowedUsersMessage, users)
                 .hasAddButton(true)
                 .hasBackButton(true)
                 .setMessageId(msg.getId()));

@@ -18,7 +18,7 @@ public class Bot extends TelegramLongPollingBot {
 
     private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
     private final static String USER_NAME = "intelligent_home_bot";
-//    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
+    //    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
 //    private final static String USER_NAME = "intelligent_home_beta_bot";
     public static final Logger log = LoggerFactory.getLogger(Bot.class);
     private static Map<Long, UserInstance> instances = new HashMap<>();
@@ -47,7 +47,6 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        UserInstance.setBot(this);
         log.info("New message incoming");
         long chatId = 0;
         int msgId = 0;
