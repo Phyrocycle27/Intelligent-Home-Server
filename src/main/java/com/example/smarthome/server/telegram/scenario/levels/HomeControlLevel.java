@@ -11,6 +11,7 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,10 +65,10 @@ public class HomeControlLevel implements AnswerCreator {
                     break;
                 case "token_gen":
                     sendToken(user, msg);
-                    MenuLevel.goToMain(user, msg);
+                    MenuLevel.goToMenuLevel(user, msg);
                     break;
                 case "back":
-                    MenuLevel.goToMain(user, msg);
+                    MenuLevel.goToMenuLevel(user, msg);
                     break;
                 default:
                     MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
@@ -88,7 +89,7 @@ public class HomeControlLevel implements AnswerCreator {
                         .hasAlert(true));
 
                 if (user.getCurrentLvl() != MenuLevel.getInstance())
-                    MenuLevel.goToMain(user, msg);
+                    MenuLevel.goToMenuLevel(user, msg);
             }
         } else {
             MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), tokenNotFound,
@@ -96,7 +97,7 @@ public class HomeControlLevel implements AnswerCreator {
                     .setMessageId(msg.getId())
                     .hasBackButton(true));
 
-            user.setCurrentLvl(HomeControlLevel.getInstance());
+            user.setCurrentLvl(instance);
         }
     }
 

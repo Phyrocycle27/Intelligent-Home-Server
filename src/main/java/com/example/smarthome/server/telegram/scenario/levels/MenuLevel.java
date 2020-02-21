@@ -55,7 +55,7 @@ public class MenuLevel implements AnswerCreator {
             }
     }
 
-    public static void goToMain(UserInstance user, IncomingMessage msg) {
+    public static void goToMenuLevel(UserInstance user, IncomingMessage msg) {
         MessageExecutor.execute(bot, new InlineKeyboardMessage(user.getChatId(), menuMsg, menuButtons)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2));

@@ -30,6 +30,7 @@ public class InformationLevel implements AnswerCreator {
     private static final String infoMsg = "Выберите \"Погода\" чтобы узнать погоду в совём городе " +
             "или нажмите \"Время\"чтобы узнать точное время в вашем городе";
     private static final String buttonInvalid = "Кнопка недействительна";
+    private static final String errorGettingWeatherInfo = "Ошибка при получении информаци о погоде";
 
     // ************************************** BUTTONS *************************************************
     private static final List<CallbackButton> infoButtons = new ArrayList<CallbackButton>() {{
@@ -50,13 +51,9 @@ public class InformationLevel implements AnswerCreator {
             switch (msg.getText()) {
                 case "weather":
                     String weather = weatherService.getWeather();
-                    String answer;
-
-                    if (weather == null) answer = "";
-                    else answer = weather;
 
                     try {
-                        updateInformationMessage(user, msg, answer);
+                        updateInformationMessage(user, msg, weather != null ? weather : errorGettingWeatherInfo);
                     } catch (RuntimeException e) {
                         log.error(e.getMessage());
                         MessageExecutor.execute(bot, new AnswerCallback(msg.getCallbackId(), "\u2705"));
@@ -72,7 +69,7 @@ public class InformationLevel implements AnswerCreator {
                     }
                     break;
                 case "back":
-                    MenuLevel.goToMain(user, msg);
+                    MenuLevel.goToMenuLevel(user, msg);
                     break;
                 default:
                     if (!msg.getCallbackId().isEmpty())
