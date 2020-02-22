@@ -20,6 +20,7 @@ import static com.example.smarthome.server.connection.ClientAPI.getChannel;
 import static com.example.smarthome.server.connection.ClientAPI.getOutputs;
 import static com.example.smarthome.server.telegram.MessageExecutor.execute;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceCreationLevel.goToDeviceCreationLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceLevel.goToDeviceLevel;
 
 public class DevicesLevel implements AnswerCreator {
@@ -49,9 +50,7 @@ public class DevicesLevel implements AnswerCreator {
 
             switch (cmd) {
                 case "add":
-                    // creator = new DeviceCreator();
-                    // creator.start(msg);
-                    // currentLvl = deviceCreationLvl;
+                    goToDeviceCreationLevel(user, msg);
                     break;
                 case "back":
                     goToHomeControlLevel(user, msg);
