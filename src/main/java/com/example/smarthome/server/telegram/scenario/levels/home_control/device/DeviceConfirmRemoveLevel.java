@@ -2,6 +2,7 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control.devic
 
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -52,9 +53,11 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
                         case "confirmRemove":
                             deleteOutput(getChannel(user.getChatId()), deviceId);
                             goToDevicesLevel(user, msg);
+                            EmojiCallback.success(msg.getCallbackId());
                             break;
                         case "cancel":
                             goToDeviceLevel(user, msg, deviceId);
+                            EmojiCallback.back(msg.getCallbackId());
                             break;
                     }
                 } catch (ChannelNotFoundException e) {

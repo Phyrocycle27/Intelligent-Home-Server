@@ -2,6 +2,7 @@ package com.example.smarthome.server.telegram.scenario.levels.administration_use
 
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
@@ -42,8 +43,10 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
         if (cmd.equals("confirmRemove")) {
             service.deleteUser(userId);
             goToUsersLevel(user, msg);
+            EmojiCallback.success(msg.getCallbackId());
         } else if (cmd.equals("cancel")) {
             goToUserLevel(user, msg, userId);
+            EmojiCallback.back(msg.getCallbackId());
         }
     }
 

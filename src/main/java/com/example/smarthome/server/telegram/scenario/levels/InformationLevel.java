@@ -1,6 +1,8 @@
 package com.example.smarthome.server.telegram.scenario.levels;
 
+import com.example.smarthome.server.exceptions.MessageNotModified;
 import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.Weather;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -50,32 +52,27 @@ public class InformationLevel implements AnswerCreator {
     @Override
     public void create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK)
-            switch (msg.getText()) {
-                case "weather":
-                    String weather = weatherService.getWeather();
+            try {
+                switch (msg.getText()) {
+                    case "weather":
+                        String weather = weatherService.getWeather();
 
-                    try {
                         updateInformationMessage(user, msg, weather != null ? weather : errorGettingWeatherInfo);
-                    } catch (RuntimeException e) {
-                        log.error(e.getMessage());
-                        execute(bot, new AnswerCallback(msg.getCallbackId(), "\u2705"));
-                    }
-                    break;
-                case "time":
-                    try {
+                        break;
+                    case "time":
                         updateInformationMessage(user, msg, String.format("Химкинское время %s",
                                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))));
-                    } catch (RuntimeException e) {
-                        log.error(e.getMessage());
-                        execute(bot, new AnswerCallback(msg.getCallbackId(), "\u2705"));
-                    }
-                    break;
-                case "back":
-                    goToMenuLevel(user, msg);
-                    break;
-                default:
-                    if (!msg.getCallbackId().isEmpty())
-                        execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                        break;
+                    case "back":
+                        goToMenuLevel(user, msg);
+                        EmojiCallback.back(msg.getCallbackId());
+                        break;
+                    default:
+                        if (!msg.getCallbackId().isEmpty())
+                            execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                }
+            } catch (MessageNotModified e) {
+                log.error(e.getMessage());
             }
     }
 
@@ -84,6 +81,8 @@ public class InformationLevel implements AnswerCreator {
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
                 .hasBackButton(true));
+
+        EmojiCallback.success(msg.getCallbackId());
     }
 
     public static void goToInformationLevel(UserInstance user, IncomingMessage msg) {

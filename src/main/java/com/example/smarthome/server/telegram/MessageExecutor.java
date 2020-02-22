@@ -1,5 +1,6 @@
 package com.example.smarthome.server.telegram;
 
+import com.example.smarthome.server.exceptions.MessageNotModified;
 import com.example.smarthome.server.telegram.objects.Message;
 import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
@@ -19,6 +20,8 @@ import java.util.Iterator;
 public class MessageExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MessageExecutor.class);
+
+    private static final String notModified = "Bad Request: message is not modified";
 
     public static void execute(Bot bot, AnswerCallback callback) {
         AnswerCallbackQuery answer = new AnswerCallbackQuery()
@@ -56,7 +59,7 @@ public class MessageExecutor {
         }
     }
 
-    public static void execute(Bot bot, InlineKeyboardMessage msg) throws RuntimeException {
+    public static void execute(Bot bot, InlineKeyboardMessage msg) {
         log.info("Sending message...");
         InlineKeyboardBuilder builder = InlineKeyboardBuilder.create(msg.getChatId()).setText(msg.getText());
 
@@ -96,8 +99,9 @@ public class MessageExecutor {
             try {
                 bot.execute(answer);
             } catch (TelegramApiRequestException e) {
-                log.error(e.getMessage());
-                throw new RuntimeException();
+                if (e.getApiResponse().startsWith(notModified)) {
+                    throw new MessageNotModified();
+                }
             } catch (TelegramApiException e) {
                 log.error(e.getMessage());
             }

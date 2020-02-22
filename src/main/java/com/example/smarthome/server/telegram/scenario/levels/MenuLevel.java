@@ -2,6 +2,7 @@ package com.example.smarthome.server.telegram.scenario.levels;
 
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -48,9 +49,11 @@ public class MenuLevel implements AnswerCreator {
             switch (msg.getText()) {
                 case "home_control":
                     goToHomeControlLevel(user, msg);
+                    EmojiCallback.next(msg.getCallbackId());
                     break;
                 case "information":
                     goToInformationLevel(user, msg);
+                    EmojiCallback.next(msg.getCallbackId());
                     break;
                 default:
                     if (!msg.getCallbackId().isEmpty())

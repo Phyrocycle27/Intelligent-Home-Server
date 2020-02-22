@@ -3,6 +3,7 @@ package com.example.smarthome.server.telegram.scenario.levels.administration_use
 import com.example.smarthome.server.entity.TelegramUser;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -41,12 +42,15 @@ public class UsersLevel implements AnswerCreator {
             switch (msg.getText()) {
                 case "add":
                     goToUserAdditionLevel(user, msg);
+                    EmojiCallback.next(msg.getCallbackId());
                     break;
                 case "back":
                     goToHomeControlLevel(user, msg);
+                    EmojiCallback.back(msg.getCallbackId());
                     break;
                 default:
                     goToUserLevel(user, msg, Long.parseLong(msg.getText()));
+                    EmojiCallback.next(msg.getCallbackId());
             }
     }
 

@@ -3,6 +3,7 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control.devic
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -55,22 +56,19 @@ public class DeviceLevel implements AnswerCreator {
                 switch (cmd) {
                     case "back":
                         goToDevicesLevel(user, msg);
+                        EmojiCallback.back(msg.getCallbackId());
                         break;
                     case "off":
-                        deviceId = Integer.parseInt(arr[1]);
-                        setDigitalState(getChannel(user.getChatId()), deviceId, false);
-                        goToDeviceLevel(user, msg, deviceId);
-                        execute(bot, new AnswerCallback(msg.getCallbackId(), deviceOff));
-                        break;
                     case "on":
                         deviceId = Integer.parseInt(arr[1]);
-                        setDigitalState(getChannel(user.getChatId()), deviceId, true);
+                        setDigitalState(getChannel(user.getChatId()), deviceId, cmd.equals("on"));
                         goToDeviceLevel(user, msg, deviceId);
-                        execute(bot, new AnswerCallback(msg.getCallbackId(), deviceOn));
+                        EmojiCallback.success(msg.getCallbackId());
                         break;
                     case "remove":
                         deviceId = Integer.parseInt(arr[1]);
                         goToDeviceConfirmRemoveLevel(user, msg, deviceId);
+                        EmojiCallback.next(msg.getCallbackId());
                         break;
                     default:
                         execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));

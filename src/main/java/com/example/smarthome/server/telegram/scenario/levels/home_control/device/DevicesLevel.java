@@ -3,6 +3,7 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control.devic
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -51,14 +52,17 @@ public class DevicesLevel implements AnswerCreator {
             switch (cmd) {
                 case "add":
                     goToDeviceCreationLevel(user, msg);
+                    EmojiCallback.next(msg.getCallbackId());
                     break;
                 case "back":
                     goToHomeControlLevel(user, msg);
+                    EmojiCallback.back(msg.getCallbackId());
                     break;
                 case "device":
                     int deviceId = Integer.parseInt(arr[1]);
                     goToDeviceLevel(user, msg, deviceId);
                     user.setCurrentLvl(DeviceLevel.getInstance());
+                    EmojiCallback.next(msg.getCallbackId());
                     break;
                 default:
                     execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));

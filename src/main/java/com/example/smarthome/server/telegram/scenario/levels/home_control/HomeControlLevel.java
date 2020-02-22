@@ -2,6 +2,7 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control;
 
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.Message;
@@ -63,16 +64,20 @@ public class HomeControlLevel implements AnswerCreator {
             switch (msg.getText()) {
                 case "devices":
                     goToDevicesLevel(user, msg);
+                    EmojiCallback.next(msg.getCallbackId());
                     break;
                 case "users":
                     goToUsersLevel(user, msg);
+                    EmojiCallback.next(msg.getCallbackId());
                     break;
                 case "token_gen":
                     sendToken(user, msg);
                     goToMenuLevel(user, msg);
+                    EmojiCallback.back(msg.getCallbackId());
                     break;
                 case "back":
                     goToMenuLevel(user, msg);
+                    EmojiCallback.back(msg.getCallbackId());
                     break;
                 default:
                     execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));

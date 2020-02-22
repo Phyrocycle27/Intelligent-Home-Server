@@ -3,8 +3,10 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control.devic
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
+import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import org.slf4j.Logger;
@@ -123,6 +125,8 @@ public class DeviceCreator {
                     .setMessageId(msg.getId())
                     .setNumOfColumns(6)
                     .hasBackButton(true));
+            EmojiCallback.next(msg.getCallbackId());
+
             currCreationLvl = stepThree;
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());
@@ -153,20 +157,15 @@ public class DeviceCreator {
                 .setNumOfColumns(2)
                 .setMessageId(msg.getId())
                 .hasBackButton(true));
+        EmojiCallback.next(msg.getCallbackId());
         currCreationLvl = stepFour;
     }
 
     // Step four - SET UP INVERSION
     private void setDeviceReverse(IncomingMessage msg) {
-        switch (msg.getText()) {
-            case "yes":
-                creationOutput.setReverse(true);
-                createDevice(msg);
-                break;
-            case "no":
-                creationOutput.setReverse(false);
-                createDevice(msg);
-                break;
+        if (msg.getType() == MessageType.CALLBACK) {
+            creationOutput.setReverse(msg.getText().equals("yes"));
+            createDevice(msg);
         }
     }
 
@@ -174,6 +173,7 @@ public class DeviceCreator {
         try {
             createOutput(getChannel(user.getChatId()), creationOutput);
             goToDevicesLevel(user, msg);
+            EmojiCallback.success(msg.getCallbackId());
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());
             goToHomeControlLevel(user, msg);
