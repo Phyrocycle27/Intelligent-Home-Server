@@ -14,9 +14,7 @@ public class UserInstance {
     private DeviceCreator deviceCreator;
     private long chatId;
     private int lastMessageId;
-    /**
-     * Текущее состояние чата пользователя
-     */
+
     private AnswerCreator currentLvl;
 
     UserInstance(long chatId) {

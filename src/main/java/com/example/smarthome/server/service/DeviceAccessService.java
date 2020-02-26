@@ -2,6 +2,7 @@ package com.example.smarthome.server.service;
 
 import com.example.smarthome.server.entity.TelegramUser;
 import com.example.smarthome.server.entity.Token;
+import com.example.smarthome.server.entity.UserRole;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
@@ -45,7 +46,7 @@ public class DeviceAccessService {
         String tokenStr = SecureTokenGenerator.nextToken();
 
         Token token = new Token(0, tokenStr, null);
-        TelegramUser user = new TelegramUser(userId, "admin", LocalDateTime.now(), token);
+        TelegramUser user = new TelegramUser(userId, UserRole.CREATOR.name(), LocalDateTime.now(), token);
 
         token.setUsers(new HashSet<TelegramUser>() {{
             add(user);
@@ -57,12 +58,12 @@ public class DeviceAccessService {
         return tokenStr;
     }
 
-    public void addUser(long userId, long newUserId, String userRole) throws UserAlreadyExistsException {
+    public void addUser(long userId, long newUserId, UserRole userRole) throws UserAlreadyExistsException {
 
         if (isExists(newUserId)) throw new UserAlreadyExistsException(newUserId);
 
         Token token = usersRepo.getOne(userId).getToken();
-        TelegramUser user = new TelegramUser(newUserId, userRole, LocalDateTime.now(), token);
+        TelegramUser user = new TelegramUser(newUserId, userRole.name(), LocalDateTime.now(), token);
 
         usersRepo.save(user);
     }
@@ -76,8 +77,8 @@ public class DeviceAccessService {
         usersRepo.deleteById(userId);
     }
 
-    public TelegramUser getUser(long userId) {
-        return usersRepo.getOne(userId);
+    public TelegramUser getUser(long userId) throws UserNotFoundException {
+        return usersRepo.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
     }
 
     public Channel getChannel(long userId) throws ChannelNotFoundException {
@@ -112,6 +113,7 @@ public class DeviceAccessService {
     }
 
     private static class SecureTokenGenerator {
+
         private static final String CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
         private static final int SECURE_TOKEN_LENGTH = 32;

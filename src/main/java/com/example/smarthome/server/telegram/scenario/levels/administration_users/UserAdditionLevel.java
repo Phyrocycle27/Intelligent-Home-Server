@@ -1,5 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.administration_users;
 
+import com.example.smarthome.server.entity.UserRole;
 import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
@@ -35,11 +36,12 @@ public class UserAdditionLevel implements AnswerCreator {
     @Override
     public void create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK && msg.getText().equals("back")) {
+
             goToUsersLevel(user, msg);
             EmojiCallback.back(msg.getCallbackId());
         } else if (msg.getType() == MessageType.CONTACT) {
             try {
-                service.addUser(user.getChatId(), Long.parseLong(msg.getText()), "user");
+                service.addUser(user.getChatId(), Long.parseLong(msg.getText()), UserRole.USER);
                 goToUsersLevel(user, msg);
             } catch (UserAlreadyExistsException e) {
                 goToUsersLevel(user, msg);
