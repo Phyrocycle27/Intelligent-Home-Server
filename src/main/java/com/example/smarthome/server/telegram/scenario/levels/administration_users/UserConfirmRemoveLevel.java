@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.administration_users;
 
 import com.example.smarthome.server.service.DeviceAccessService;
-import com.example.smarthome.server.telegram.Bot;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -20,7 +19,6 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
     private static final UserConfirmRemoveLevel instance = new UserConfirmRemoveLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
-    private static final Bot bot = Bot.getInstance();
 
     // ************************************* MESSAGES *************************************************
     private static final String removeConfirmationUser = "Вы действительно хотите удалить этого пользователя?";
@@ -51,7 +49,7 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
     }
 
     public static void goToUserConfirmRemoveLevel(UserInstance user, IncomingMessage msg, long userId) {
-        execute(bot, new InlineKeyboardMessage(user.getChatId(), removeConfirmationUser,
+        execute(new InlineKeyboardMessage(user.getChatId(), removeConfirmationUser,
                 new ArrayList<CallbackButton>() {{
                     add(new CallbackButton("Подтвердить", "confirmRemove_" + userId));
                     add(new CallbackButton("Отмена", "cancel_" + userId));

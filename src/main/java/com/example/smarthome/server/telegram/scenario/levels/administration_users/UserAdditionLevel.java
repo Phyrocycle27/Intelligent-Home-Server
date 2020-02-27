@@ -3,7 +3,6 @@ package com.example.smarthome.server.telegram.scenario.levels.administration_use
 import com.example.smarthome.server.entity.UserRole;
 import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.service.DeviceAccessService;
-import com.example.smarthome.server.telegram.Bot;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -20,7 +19,6 @@ public class UserAdditionLevel implements AnswerCreator {
     private static final UserAdditionLevel instance = new UserAdditionLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
-    private static final Bot bot = Bot.getInstance();
 
     // ************************************* MESSAGES *************************************************
     private static final String sendUserContact = "Отправьте контакт пользователя, которого хотите добавить";
@@ -46,14 +44,14 @@ public class UserAdditionLevel implements AnswerCreator {
             } catch (UserAlreadyExistsException e) {
                 goToUsersLevel(user, msg);
             } finally {
-                delete(bot, user.getChatId(), user.getLastMessageId());
+                delete(user.getChatId(), user.getLastMessageId());
                 user.setLastMessageId(0);
             }
         }
     }
 
     public static void goToUserAdditionLevel(UserInstance user, IncomingMessage msg) {
-        execute(bot, new InlineKeyboardMessage(user.getChatId(), sendUserContact, null)
+        execute(new InlineKeyboardMessage(user.getChatId(), sendUserContact, null)
                 .hasBackButton(true).setMessageId(msg.getId()));
         user.setCurrentLvl(UserAdditionLevel.getInstance());
         user.setLastMessageId(msg.getId());

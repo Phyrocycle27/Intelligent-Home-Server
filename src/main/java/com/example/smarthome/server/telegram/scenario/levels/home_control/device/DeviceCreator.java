@@ -2,13 +2,13 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control.devic
 
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
-import com.example.smarthome.server.telegram.Bot;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
+import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +25,6 @@ import static com.example.smarthome.server.telegram.scenario.levels.home_control
 public class DeviceCreator {
 
     private static final Logger log = LoggerFactory.getLogger(DeviceCreator.class);
-    private static final Bot bot = Bot.getInstance();
 
     // ************************************* BUTTONS *************************************************
     private static final List<CallbackButton> typesOfSignal = new ArrayList<CallbackButton>() {{
@@ -37,12 +36,23 @@ public class DeviceCreator {
         add(new CallbackButton("Нет", "no"));
     }};
 
+    public void setCurrCreationLvl(AnswerCreator currCreationLvl) {
+        this.currCreationLvl_2 = currCreationLvl;
+    }
+
+    private AnswerCreator currCreationLvl_2;
+
     private Consumer<IncomingMessage> currCreationLvl;
     private Consumer<IncomingMessage> stepOne;
     private Consumer<IncomingMessage> stepTwo;
     private Consumer<IncomingMessage> stepThree;
     private Consumer<IncomingMessage> stepFour;
     private UserInstance user;
+
+    public Output getCreationOutput() {
+        return creationOutput;
+    }
+
     private Output creationOutput;
 
     DeviceCreator(UserInstance user) {
@@ -58,7 +68,7 @@ public class DeviceCreator {
     private void init() {
         stepOne = msg -> {
             setDeviceName(msg);
-            delete(bot, user.getChatId(), user.getLastMessageId());
+            delete(user.getChatId(), user.getLastMessageId());
         };
 
         stepTwo = this::setDeviceSignalType;
@@ -81,7 +91,7 @@ public class DeviceCreator {
     }
 
     void start(IncomingMessage msg) {
-        execute(bot, new InlineKeyboardMessage(user.getChatId(), "Пожалуйста, введите имя нового устройства", null)
+        execute(new InlineKeyboardMessage(user.getChatId(), "Пожалуйста, введите имя нового устройства", null)
                 .setMessageId(msg.getId())
                 .hasBackButton(true));
         user.setLastMessageId(msg.getId());
@@ -95,7 +105,7 @@ public class DeviceCreator {
     }
 
     private void goToStepTwo(IncomingMessage msg) {
-        execute(bot, new InlineKeyboardMessage(user.getChatId(), "Выберите тип сигнала, который " +
+        execute(new InlineKeyboardMessage(user.getChatId(), "Выберите тип сигнала, который " +
                 "может принимать устройство", typesOfSignal)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
@@ -116,7 +126,7 @@ public class DeviceCreator {
 
     private void goToStepThree(IncomingMessage msg) {
         try {
-            execute(bot, new InlineKeyboardMessage(user.getChatId(),
+            execute(new InlineKeyboardMessage(user.getChatId(),
                     "Теперь выберите пин, к которому вы хотите " +
                             "подключить новое устройство", new ArrayList<CallbackButton>() {{
                 for (String s : getAvailableOutputs(getChannel(user.getChatId()), creationOutput.getType()))
@@ -152,7 +162,7 @@ public class DeviceCreator {
     }
 
     private void goToStepFour(IncomingMessage msg) {
-        execute(bot, new InlineKeyboardMessage(user.getChatId(),
+        execute(new InlineKeyboardMessage(user.getChatId(),
                 "Сделать инверсию сигнала для данного устройства?", yesOrNo)
                 .setNumOfColumns(2)
                 .setMessageId(msg.getId())

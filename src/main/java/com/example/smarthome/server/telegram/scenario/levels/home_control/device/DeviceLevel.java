@@ -1,8 +1,10 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
 
 import com.example.smarthome.server.entity.Output;
+import com.example.smarthome.server.entity.UserRole;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
-import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.exceptions.UserNotFoundException;
+import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -28,7 +30,7 @@ public class DeviceLevel implements AnswerCreator {
     private static final DeviceLevel instance = new DeviceLevel();
 
     private static final Logger log = LoggerFactory.getLogger(DeviceLevel.class);
-    private static final Bot bot = Bot.getInstance();
+    private static final DeviceAccessService service = DeviceAccessService.getInstance();
 
     // ************************************* MESSAGES *************************************************
     private static final String removeConfirmationDevice = "Вы действительно хотите удалить это устройство?";
@@ -71,7 +73,7 @@ public class DeviceLevel implements AnswerCreator {
                         EmojiCallback.next(msg.getCallbackId());
                         break;
                     default:
-                        execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                        execute(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
                 }
             } catch (ChannelNotFoundException e) {
                 log.warn(e.getMessage());
@@ -102,10 +104,12 @@ public class DeviceLevel implements AnswerCreator {
                 List<CallbackButton> buttons = new ArrayList<CallbackButton>() {{
                     if (currState) add(new CallbackButton("Выключить", "off_" + output.getOutputId()));
                     else add(new CallbackButton("Включить", "on_" + output.getOutputId()));
-                    add(new CallbackButton("Удалить", "remove_" + output.getOutputId()));
+                    if (UserRole.valueOf(service.getUser(user.getChatId()).getRole().toUpperCase()).getCode() > 0) {
+                        add(new CallbackButton("Удалить", "remove_" + output.getOutputId()));
+                    }
                 }};
 
-                execute(bot, new InlineKeyboardMessage(user.getChatId(), String.format("<b>%s</b>\n" +
+                execute(new InlineKeyboardMessage(user.getChatId(), String.format("<b>%s</b>\n" +
                                 "Текущее состояние: <i>%s</i>\n" +
                                 "Тип сигнала: <i>%s</i>\n" +
                                 "Инверсия: <i>%s</i>\n" +
@@ -118,6 +122,8 @@ public class DeviceLevel implements AnswerCreator {
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());
             goToHomeControlLevel(user, msg);
+        } catch (UserNotFoundException e) {
+            e.printStackTrace();
         }
     }
 }

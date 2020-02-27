@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels;
 
 import com.example.smarthome.server.exceptions.MessageNotModified;
-import com.example.smarthome.server.telegram.Bot;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.Weather;
@@ -28,7 +27,6 @@ public class InformationLevel implements AnswerCreator {
 
     private static final Logger log = LoggerFactory.getLogger(InformationLevel.class.getName());
     private static final Weather weatherService = Weather.getInstance();
-    private static final Bot bot = Bot.getInstance();
 
     // ************************************* MESSAGES *************************************************
     private static final String infoMsg = "Выберите \"Погода\" чтобы узнать погоду в совём городе " +
@@ -69,7 +67,7 @@ public class InformationLevel implements AnswerCreator {
                         break;
                     default:
                         if (!msg.getCallbackId().isEmpty())
-                            execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                            execute(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
                 }
             } catch (MessageNotModified e) {
                 log.error(e.getMessage());
@@ -77,7 +75,7 @@ public class InformationLevel implements AnswerCreator {
     }
 
     public static void updateInformationMessage(UserInstance user, IncomingMessage msg, String s) {
-        execute(bot, new InlineKeyboardMessage(user.getChatId(), s, infoButtons)
+        execute(new InlineKeyboardMessage(user.getChatId(), s, infoButtons)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
                 .hasBackButton(true));
@@ -86,7 +84,7 @@ public class InformationLevel implements AnswerCreator {
     }
 
     public static void goToInformationLevel(UserInstance user, IncomingMessage msg) {
-        execute(bot, new InlineKeyboardMessage(user.getChatId(), infoMsg, infoButtons)
+        execute(new InlineKeyboardMessage(user.getChatId(), infoMsg, infoButtons)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
                 .hasBackButton(true));

@@ -1,8 +1,10 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
 
 import com.example.smarthome.server.entity.Output;
+import com.example.smarthome.server.entity.UserRole;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
-import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.exceptions.UserNotFoundException;
+import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -29,7 +31,7 @@ public class DevicesLevel implements AnswerCreator {
     private static final DevicesLevel instance = new DevicesLevel();
 
     private static final Logger log = LoggerFactory.getLogger(DevicesLevel.class);
-    private static final Bot bot = Bot.getInstance();
+    private static final DeviceAccessService service = DeviceAccessService.getInstance();
 
     // ************************************* MESSAGES *************************************************
     private static final String buttonInvalid = "Кнопка недействительна";
@@ -65,7 +67,7 @@ public class DevicesLevel implements AnswerCreator {
                     EmojiCallback.next(msg.getCallbackId());
                     break;
                 default:
-                    execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                    execute(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
         }
     }
@@ -77,18 +79,24 @@ public class DevicesLevel implements AnswerCreator {
             for (Output output : getOutputs(getChannel(user.getChatId()))) {
                 devices.add(new CallbackButton(output.getName(), "device_" + output.getOutputId()));
             }
-
-            execute(bot, new InlineKeyboardMessage(user.getChatId(),
+            InlineKeyboardMessage answer = new InlineKeyboardMessage(user.getChatId(),
                     devices.isEmpty() ? devicesNotFound : devicesMsg, devices)
-                    .hasAddButton(true)
                     .hasBackButton(true)
                     .setMessageId(msg.getId())
-                    .setNumOfColumns(2));
+                    .setNumOfColumns(2);
+
+            if (UserRole.valueOf(service.getUser(user.getChatId()).getRole().toUpperCase()).getCode() > 0) {
+                answer.hasAddButton(true);
+            }
+
+            execute(answer);
 
             user.setCurrentLvl(instance);
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());
             goToHomeControlLevel(user, msg);
+        } catch (UserNotFoundException e) {
+            e.printStackTrace();
         }
     }
 }

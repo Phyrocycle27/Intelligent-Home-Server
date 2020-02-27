@@ -20,10 +20,11 @@ import java.util.Iterator;
 public class MessageExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MessageExecutor.class);
+    private static final Bot bot = Bot.getInstance();
 
     private static final String notModified = "Bad Request: message is not modified";
 
-    public static void execute(Bot bot, AnswerCallback callback) {
+    public static void execute(AnswerCallback callback) {
         AnswerCallbackQuery answer = new AnswerCallbackQuery()
                 .setCallbackQueryId(callback.getCallbackId())
                 .setText(callback.getText())
@@ -35,7 +36,7 @@ public class MessageExecutor {
         }
     }
 
-    public static void execute(Bot bot, Message msg) {
+    public static void execute(Message msg) {
         log.info("Sending message...");
         if (msg.getMessageId() == 0) {
             SendMessage answer = new SendMessage(msg.getChatId(), msg.getText())
@@ -59,7 +60,7 @@ public class MessageExecutor {
         }
     }
 
-    public static void execute(Bot bot, InlineKeyboardMessage msg) {
+    public static void execute(InlineKeyboardMessage msg) {
         log.info("Sending message...");
         InlineKeyboardBuilder builder = InlineKeyboardBuilder.create(msg.getChatId()).setText(msg.getText());
 
@@ -108,7 +109,7 @@ public class MessageExecutor {
         }
     }
 
-    public static void delete(Bot bot, long chatId, int messageId) {
+    public static void delete(long chatId, int messageId) {
         log.info("Removing message...");
         DeleteMessage message = new DeleteMessage(chatId, messageId);
         try {

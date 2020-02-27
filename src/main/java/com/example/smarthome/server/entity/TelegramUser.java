@@ -22,7 +22,7 @@ public class TelegramUser {
     @Column(unique = true, updatable = false, nullable = false, name = "user_id")
     private long userId;
 
-    @Column(length = 5, nullable = false)
+    @Column(length = 10, nullable = false)
     private String role;
 
     @Column(updatable = false, nullable = false, name = "addition_date")

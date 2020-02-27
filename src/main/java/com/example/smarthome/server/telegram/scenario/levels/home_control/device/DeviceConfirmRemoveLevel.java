@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
 
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
-import com.example.smarthome.server.telegram.Bot;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -26,7 +25,6 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
     private static final DeviceConfirmRemoveLevel instance = new DeviceConfirmRemoveLevel();
 
     private static final Logger log = LoggerFactory.getLogger(DeviceConfirmRemoveLevel.class);
-    private static final Bot bot = Bot.getInstance();
 
     // ************************************* MESSAGES *************************************************
     private static final String removeConfirmationDevice = "Вы действительно хотите удалить это устройство?";
@@ -69,7 +67,7 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
     }
 
     public static void goToDeviceConfirmRemoveLevel(UserInstance user, IncomingMessage msg, int deviceId) {
-        execute(bot, new InlineKeyboardMessage(user.getChatId(), removeConfirmationDevice,
+        execute(new InlineKeyboardMessage(user.getChatId(), removeConfirmationDevice,
                 new ArrayList<CallbackButton>() {{
                     add(new CallbackButton("Подтвердить", "confirmRemove_" + deviceId));
                     add(new CallbackButton("Отмена", "cancel_" + deviceId));

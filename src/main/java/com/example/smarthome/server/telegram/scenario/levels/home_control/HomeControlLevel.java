@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control;
 
 import com.example.smarthome.server.service.DeviceAccessService;
-import com.example.smarthome.server.telegram.Bot;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -26,7 +25,6 @@ public class HomeControlLevel implements AnswerCreator {
     private static final HomeControlLevel instance = new HomeControlLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
-    private static final Bot bot = Bot.getInstance();
 
     // ************************************* MESSAGES ************************************************
     private static final String buttonInvalid = "Кнопка недействительна";
@@ -80,28 +78,28 @@ public class HomeControlLevel implements AnswerCreator {
                     EmojiCallback.back(msg.getCallbackId());
                     break;
                 default:
-                    execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                    execute(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
     }
 
     public static void goToHomeControlLevel(UserInstance user, IncomingMessage msg) {
         if (service.isExists(user.getChatId())) {
             if (service.isChannelExist(user.getChatId())) {
-                execute(bot, new InlineKeyboardMessage(user.getChatId(), homeControl, homeControlButtons)
+                execute(new InlineKeyboardMessage(user.getChatId(), homeControl, homeControlButtons)
                         .setNumOfColumns(2)
                         .setMessageId(msg.getId())
                         .hasBackButton(true));
 
                 user.setCurrentLvl(instance);
             } else {
-                execute(bot, new AnswerCallback(msg.getCallbackId(), channelNotFound)
+                execute(new AnswerCallback(msg.getCallbackId(), channelNotFound)
                         .hasAlert(true));
 
                 if (user.getCurrentLvl() != MenuLevel.getInstance())
                     goToMenuLevel(user, msg);
             }
         } else {
-            execute(bot, new InlineKeyboardMessage(user.getChatId(), tokenNotFound,
+            execute(new InlineKeyboardMessage(user.getChatId(), tokenNotFound,
                     tokenGenButton)
                     .setMessageId(msg.getId())
                     .hasBackButton(true));
@@ -111,9 +109,9 @@ public class HomeControlLevel implements AnswerCreator {
     }
 
     private void sendToken(UserInstance user, IncomingMessage msg) {
-        execute(bot, new Message(user.getChatId(), tokenSuccessGen)
+        execute(new Message(user.getChatId(), tokenSuccessGen)
                 .setMessageId(msg.getId()));
-        execute(bot, new Message(user.getChatId(),
+        execute(new Message(user.getChatId(),
                 service.createToken(user.getChatId())));
     }
 }

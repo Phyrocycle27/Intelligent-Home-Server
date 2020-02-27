@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels;
 
 import com.example.smarthome.server.service.DeviceAccessService;
-import com.example.smarthome.server.telegram.Bot;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -23,7 +22,6 @@ public class MenuLevel implements AnswerCreator {
     private static final MenuLevel instance = new MenuLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
-    private static final Bot bot = Bot.getInstance();
 
     // ************************************* MESSAGES *************************************************
     private static final String buttonInvalid = "Кнопка недействительна";
@@ -57,12 +55,12 @@ public class MenuLevel implements AnswerCreator {
                     break;
                 default:
                     if (!msg.getCallbackId().isEmpty())
-                        execute(bot, new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                        execute(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
     }
 
     public static void goToMenuLevel(UserInstance user, IncomingMessage msg) {
-        execute(bot, new InlineKeyboardMessage(user.getChatId(), menuMsg, menuButtons)
+        execute(new InlineKeyboardMessage(user.getChatId(), menuMsg, menuButtons)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2));
 

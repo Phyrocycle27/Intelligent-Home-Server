@@ -46,7 +46,7 @@ public class DeviceAccessService {
         String tokenStr = SecureTokenGenerator.nextToken();
 
         Token token = new Token(0, tokenStr, null);
-        TelegramUser user = new TelegramUser(userId, UserRole.CREATOR.name(), LocalDateTime.now(), token);
+        TelegramUser user = new TelegramUser(userId, UserRole.CREATOR.getName(), LocalDateTime.now(), token);
 
         token.setUsers(new HashSet<TelegramUser>() {{
             add(user);
@@ -63,7 +63,7 @@ public class DeviceAccessService {
         if (isExists(newUserId)) throw new UserAlreadyExistsException(newUserId);
 
         Token token = usersRepo.getOne(userId).getToken();
-        TelegramUser user = new TelegramUser(newUserId, userRole.name(), LocalDateTime.now(), token);
+        TelegramUser user = new TelegramUser(newUserId, userRole.getName(), LocalDateTime.now(), token);
 
         usersRepo.save(user);
     }
