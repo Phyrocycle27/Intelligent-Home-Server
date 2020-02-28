@@ -9,14 +9,14 @@ public class EmojiCallback {
     private static final Bot bot = Bot.getInstance();
 
     public static void success(String callbackId) {
-        execute(bot, new AnswerCallback(callbackId, "\u2705"));
+        execute(new AnswerCallback(callbackId, "\u2705"));
     }
 
     public static void next(String callbackId) {
-        execute(bot, new AnswerCallback(callbackId, "\u27a1"));
+        execute(new AnswerCallback(callbackId, "\u27a1"));
     }
 
     public static void back(String callbackId) {
-        execute(bot, new AnswerCallback(callbackId, "\u2B05"));
+        execute(new AnswerCallback(callbackId, "\u2B05"));
     }
 }

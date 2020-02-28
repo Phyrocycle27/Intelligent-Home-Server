@@ -3,7 +3,7 @@ package com.example.smarthome.server.telegram;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import com.example.smarthome.server.telegram.scenario.levels.CheckOfStartCommand;
-import com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceCreator;
+import com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

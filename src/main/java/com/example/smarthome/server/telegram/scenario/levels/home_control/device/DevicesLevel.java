@@ -23,7 +23,7 @@ import static com.example.smarthome.server.connection.ClientAPI.getChannel;
 import static com.example.smarthome.server.connection.ClientAPI.getOutputs;
 import static com.example.smarthome.server.telegram.MessageExecutor.execute;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
-import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceCreationLevel.goToDeviceCreationLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceCreationLevel.goToDeviceCreationLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceLevel.goToDeviceLevel;
 
 public class DevicesLevel implements AnswerCreator {

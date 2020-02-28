@@ -1,8 +1,9 @@
-package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
+package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
+import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 
 public class DeviceCreationLevel implements AnswerCreator {
@@ -18,10 +19,10 @@ public class DeviceCreationLevel implements AnswerCreator {
 
     @Override
     public void create(UserInstance user, IncomingMessage msg) {
-        if (msg.getText().equals("back")) {
+        if (msg.getType() == MessageType.CALLBACK && msg.getText().equals("back")) {
             user.getDeviceCreator().goToPrev(msg);
             EmojiCallback.back(msg.getCallbackId());
-        } else user.getDeviceCreator().getCurrCreationLvl().accept(msg);
+        } else user.getDeviceCreator().answer(msg);
     }
 
     public static void goToDeviceCreationLevel(UserInstance user, IncomingMessage msg) {

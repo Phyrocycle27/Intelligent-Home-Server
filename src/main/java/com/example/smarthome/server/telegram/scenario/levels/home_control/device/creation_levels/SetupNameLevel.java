@@ -3,26 +3,24 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control.devic
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
-import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import com.example.smarthome.server.telegram.scenario.MessageProcessor;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.execute;
-import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.SetupSignalTypeLevel.goToSetupSignalTypeLevel;
 
-public class SetupNameLevel implements AnswerCreator {
+public class SetupNameLevel implements MessageProcessor {
 
     private static final SetupNameLevel instance = new SetupNameLevel();
 
     // ************************************* MESSAGES *************************************************
     private static final String enterName = "Пожалуйста, введите имя нового устройства";
 
-    public static SetupNameLevel getInstance() {
-        return instance;
+    private SetupNameLevel() {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
+    public boolean process(UserInstance user, IncomingMessage msg) {
         user.getDeviceCreator().getCreationOutput().setName(msg.getText());
-        goToSetupSignalTypeLevel(user, msg);
+        return true;
     }
 
     public static void goToSetupNameLevel(UserInstance user, IncomingMessage msg) {
