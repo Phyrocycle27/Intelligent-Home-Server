@@ -30,14 +30,17 @@ public class SetupGPIOLevel implements MessageProcessor {
     private SetupGPIOLevel() {
     }
 
+    public static SetupGPIOLevel getInstance() {
+        return instance;
+    }
+
     @Override
-    public boolean process(UserInstance user, IncomingMessage msg) {
+    public Object process(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
             try {
                 if (getAvailableOutputs(getChannel(user.getChatId()), user.getDeviceCreator()
                         .getCreationOutput().getType()).contains(msg.getText())) {
-                    user.getDeviceCreator().getCreationOutput().setGpio(Integer.valueOf(msg.getText()));
-                    return true;
+                    return Integer.valueOf(msg.getText());
                 }
             } catch (NumberFormatException e) {
                 log.error(e.getMessage());
@@ -47,7 +50,7 @@ public class SetupGPIOLevel implements MessageProcessor {
                 user.getDeviceCreator().destroy();
             }
         }
-        return false;
+        return null;
     }
 
     public static void goToSetupGPIOLevel(UserInstance user, IncomingMessage msg) {
@@ -60,9 +63,6 @@ public class SetupGPIOLevel implements MessageProcessor {
                     .setMessageId(msg.getId())
                     .setNumOfColumns(6)
                     .hasBackButton(true));
-            EmojiCallback.next(msg.getCallbackId());
-
-            user.getDeviceCreator().setCurrCreationLvl(instance);
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());
             goToHomeControlLevel(user, msg);

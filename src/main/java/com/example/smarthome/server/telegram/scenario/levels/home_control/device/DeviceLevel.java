@@ -24,6 +24,7 @@ import static com.example.smarthome.server.telegram.MessageExecutor.execute;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceConfirmRemoveLevel.goToDeviceConfirmRemoveLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceEditingLevel.goToDeviceEditingLevel;
 
 public class DeviceLevel implements AnswerCreator {
 
@@ -52,7 +53,7 @@ public class DeviceLevel implements AnswerCreator {
 
             String[] arr = msg.getText().split("[_]");
             String cmd = arr[0];
-            int deviceId;
+            int deviceId = arr.length > 1 ? Integer.parseInt(arr[1]) : 0;
 
             try {
                 switch (cmd) {
@@ -62,14 +63,16 @@ public class DeviceLevel implements AnswerCreator {
                         break;
                     case "off":
                     case "on":
-                        deviceId = Integer.parseInt(arr[1]);
                         setDigitalState(getChannel(user.getChatId()), deviceId, cmd.equals("on"));
                         goToDeviceLevel(user, msg, deviceId);
                         EmojiCallback.success(msg.getCallbackId());
                         break;
                     case "remove":
-                        deviceId = Integer.parseInt(arr[1]);
                         goToDeviceConfirmRemoveLevel(user, msg, deviceId);
+                        EmojiCallback.next(msg.getCallbackId());
+                        break;
+                    case "edit":
+                        goToDeviceEditingLevel(user, msg, deviceId);
                         EmojiCallback.next(msg.getCallbackId());
                         break;
                     default:
@@ -106,6 +109,7 @@ public class DeviceLevel implements AnswerCreator {
                     else add(new CallbackButton("Включить", "on_" + output.getOutputId()));
                     if (UserRole.valueOf(service.getUser(user.getChatId()).getRole().toUpperCase()).getCode() > 0) {
                         add(new CallbackButton("Удалить", "remove_" + output.getOutputId()));
+                        add(new CallbackButton("Редактировать", "edit_" + output.getOutputId()));
                     }
                 }};
 
@@ -118,6 +122,8 @@ public class DeviceLevel implements AnswerCreator {
                         output.getGpio()), buttons)
                         .setMessageId(msg.getId())
                         .hasBackButton(true));
+
+                user.setCurrentLvl(instance);
             }
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());

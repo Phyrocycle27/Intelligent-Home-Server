@@ -29,13 +29,16 @@ public class SetupSignalInversionLevel implements MessageProcessor {
     private SetupSignalInversionLevel() {
     }
 
+    public static SetupSignalInversionLevel getInstance() {
+        return instance;
+    }
+
     @Override
-    public boolean process(UserInstance user, IncomingMessage msg) {
+    public Object process(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
-            user.getDeviceCreator().getCreationOutput().setReverse(msg.getText().equals("yes"));
-            return true;
+            return msg.getText().equals("yes");
         }
-        return false;
+        return null;
     }
 
     public static void goToSetupSignalInversionLevel(UserInstance user, IncomingMessage msg) {
@@ -43,7 +46,5 @@ public class SetupSignalInversionLevel implements MessageProcessor {
                 .setNumOfColumns(2)
                 .setMessageId(msg.getId())
                 .hasBackButton(true));
-        EmojiCallback.next(msg.getCallbackId());
-        user.getDeviceCreator().setCurrCreationLvl(instance);
     }
 }

@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import static com.example.smarthome.server.connection.ClientAPI.createOutput;
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
+import static com.example.smarthome.server.telegram.MessageExecutor.delete;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.SetupGPIOLevel.goToSetupGPIOLevel;
@@ -46,36 +47,60 @@ public class DeviceCreator {
 
     void start(IncomingMessage msg) {
         goToSetupNameLevel(user, msg);
+        user.getDeviceCreator().setCurrCreationLvl(SetupNameLevel.getInstance());
     }
 
     void goToPrev(IncomingMessage msg) {
         if (currCreationLvl.getClass().equals(SetupNameLevel.class)) {
             goToDevicesLevel(user, msg);
+            destroy();
+            EmojiCallback.back(msg.getCallbackId());
         } else if (currCreationLvl.getClass().equals(SetupSignalTypeLevel.class)) {
             goToSetupNameLevel(user, msg);
+            EmojiCallback.back(msg.getCallbackId());
         } else if (currCreationLvl.getClass().equals(SetupGPIOLevel.class)) {
             goToSetupSignalTypeLevel(user, msg);
+            EmojiCallback.back(msg.getCallbackId());
         } else if (currCreationLvl.getClass().equals(SetupSignalInversionLevel.class)) {
             goToSetupGPIOLevel(user, msg);
+            EmojiCallback.back(msg.getCallbackId());
         }
     }
 
-    void answer(IncomingMessage msg) {
+    void process(IncomingMessage msg) {
         if (currCreationLvl.getClass().equals(SetupNameLevel.class)) {
-            if (currCreationLvl.process(user, msg)) {
+            String deviceName = (String) currCreationLvl.process(user, msg);
+
+            if (deviceName != null && !deviceName.isEmpty()) {
+                creationOutput.setName(deviceName);
+                delete(user.getChatId(), user.getLastMessageId());
+                user.setLastMessageId(0);
                 goToSetupSignalTypeLevel(user, msg);
+                user.getDeviceCreator().setCurrCreationLvl(SetupSignalTypeLevel.getInstance());
             }
         } else if (currCreationLvl.getClass().equals(SetupSignalTypeLevel.class)) {
-            if (currCreationLvl.process(user, msg)) {
+            String signalType = (String) currCreationLvl.process(user, msg);
+            if (signalType != null) {
+                creationOutput.setType(signalType);
                 goToSetupGPIOLevel(user, msg);
+                user.getDeviceCreator().setCurrCreationLvl(SetupGPIOLevel.getInstance());
+                EmojiCallback.next(msg.getCallbackId());
             }
         } else if (currCreationLvl.getClass().equals(SetupGPIOLevel.class)) {
-            if (currCreationLvl.process(user, msg)) {
+            Integer gpio = (Integer) currCreationLvl.process(user, msg);
+            if (gpio != null) {
+                creationOutput.setGpio(gpio);
                 goToSetupSignalInversionLevel(user, msg);
+                user.getDeviceCreator().setCurrCreationLvl(SetupSignalInversionLevel.getInstance());
+                EmojiCallback.next(msg.getCallbackId());
             }
         } else if (currCreationLvl.getClass().equals(SetupSignalInversionLevel.class)) {
-            if (currCreationLvl.process(user, msg)) {
+            Boolean inversion = (Boolean) currCreationLvl.process(user, msg);
+            if (inversion != null) {
+                creationOutput.setReverse(inversion);
                 createDevice(msg);
+                destroy();
+                EmojiCallback.success(msg.getCallbackId());
             }
         }
     }
@@ -96,6 +121,7 @@ public class DeviceCreator {
 
     void destroy() {
         creationOutput = null;
+        currCreationLvl = null;
         user.setDeviceCreator(null);
     }
 }

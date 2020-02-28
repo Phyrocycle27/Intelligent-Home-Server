@@ -32,10 +32,10 @@ public class Main {
 
         service.setTokensRepo(ctx.getBean(TokensRepository.class));
         service.setUsersRepo(ctx.getBean(TelegramUsersRepository.class));
-        // *********** NETTY THREAD START **********
+        // *********** NETTY THREAD START ***************
         new Server(SERVER_PORT); // starting the netty server
 
-        // *********** TELEGRAM THREAD START ********
+        // *********** TELEGRAM THREAD START ************
         new Telegram(PROXY_HOST, PROXY_PORT);
     }
 }

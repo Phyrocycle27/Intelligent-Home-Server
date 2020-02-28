@@ -22,12 +22,13 @@ public class DeviceCreationLevel implements AnswerCreator {
         if (msg.getType() == MessageType.CALLBACK && msg.getText().equals("back")) {
             user.getDeviceCreator().goToPrev(msg);
             EmojiCallback.back(msg.getCallbackId());
-        } else user.getDeviceCreator().answer(msg);
+        } else user.getDeviceCreator().process(msg);
     }
 
     public static void goToDeviceCreationLevel(UserInstance user, IncomingMessage msg) {
         user.setDeviceCreator(new DeviceCreator(user));
         user.getDeviceCreator().start(msg);
+        user.setLastMessageId(msg.getId());
         user.setCurrentLvl(instance);
     }
 }

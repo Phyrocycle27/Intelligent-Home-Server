@@ -28,17 +28,20 @@ public class SetupSignalTypeLevel implements MessageProcessor {
     private SetupSignalTypeLevel() {
     }
 
+    public static SetupSignalTypeLevel getInstance() {
+        return instance;
+    }
+
     @Override
-    public boolean process(UserInstance user, IncomingMessage msg) {
+    public Object process(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
                 case "pwm":
                 case "digital":
-                    user.getDeviceCreator().getCreationOutput().setType(msg.getText());
-                    return true;
+                    return msg.getText();
             }
         }
-        return false;
+        return null;
     }
 
     public static void goToSetupSignalTypeLevel(UserInstance user, IncomingMessage msg) {
@@ -46,6 +49,5 @@ public class SetupSignalTypeLevel implements MessageProcessor {
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
                 .hasBackButton(true));
-        user.getDeviceCreator().setCurrCreationLvl(instance);
     }
 }

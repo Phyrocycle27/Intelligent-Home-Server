@@ -4,6 +4,7 @@ import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import com.example.smarthome.server.telegram.scenario.levels.CheckOfStartCommand;
 import com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceCreator;
+import com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceEditor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +13,7 @@ public class UserInstance {
     private static final Logger log = LoggerFactory.getLogger(UserInstance.class);
 
     private DeviceCreator deviceCreator;
+    private DeviceEditor deviceEditor;
     private long chatId;
     private int lastMessageId;
 
@@ -27,6 +29,14 @@ public class UserInstance {
 
     public void setDeviceCreator(DeviceCreator creator) {
         deviceCreator = creator;
+    }
+
+    public DeviceEditor getDeviceEditor() {
+        return deviceEditor;
+    }
+
+    public void setDeviceEditor(DeviceEditor deviceEditor) {
+        this.deviceEditor = deviceEditor;
     }
 
     public long getChatId() {
