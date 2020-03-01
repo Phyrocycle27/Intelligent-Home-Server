@@ -57,12 +57,15 @@ public class DeviceCreator {
             EmojiCallback.back(msg.getCallbackId());
         } else if (currCreationLvl.getClass().equals(SetupSignalTypeLevel.class)) {
             goToSetupNameLevel(user, msg);
+            user.getDeviceCreator().setCurrCreationLvl(SetupNameLevel.getInstance());
             EmojiCallback.back(msg.getCallbackId());
         } else if (currCreationLvl.getClass().equals(SetupGPIOLevel.class)) {
             goToSetupSignalTypeLevel(user, msg);
+            user.getDeviceCreator().setCurrCreationLvl(SetupSignalTypeLevel.getInstance());
             EmojiCallback.back(msg.getCallbackId());
         } else if (currCreationLvl.getClass().equals(SetupSignalInversionLevel.class)) {
             goToSetupGPIOLevel(user, msg);
+            user.getDeviceCreator().setCurrCreationLvl(SetupGPIOLevel.getInstance());
             EmojiCallback.back(msg.getCallbackId());
         }
     }

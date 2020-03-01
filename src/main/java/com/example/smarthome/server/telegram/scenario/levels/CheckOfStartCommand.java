@@ -17,7 +17,7 @@ public class CheckOfStartCommand {
     }
 
     public boolean check(UserInstance userInstance, IncomingMessage msg) {
-        if (msg.getText().equals("/start")) {
+        if (msg.getText() != null && msg.getText().equals("/start")) {
             goToMenuLevel(userInstance, msg);
             return true;
         } else {

@@ -3,6 +3,7 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control.devic
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
+import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.MessageProcessor;
@@ -36,7 +37,9 @@ public class SetupSignalTypeLevel implements MessageProcessor {
     public Object process(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
-//                case "pwm":
+                case "pwm":
+                    execute(new AnswerCallback(msg.getCallbackId(), "Поддержка этого типа сигнала ещё не добавлена"));
+                    break;
                 case "digital":
                     return msg.getText();
             }

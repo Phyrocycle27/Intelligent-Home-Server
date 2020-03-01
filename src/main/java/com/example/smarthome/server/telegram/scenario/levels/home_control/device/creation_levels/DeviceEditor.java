@@ -1,5 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
+import com.example.smarthome.server.connection.ClientAPI;
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.telegram.EmojiCallback;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
 import static com.example.smarthome.server.connection.ClientAPI.getOutput;
 import static com.example.smarthome.server.telegram.MessageExecutor.delete;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceEditingLevel.goToChoice;
 
 public class DeviceEditor {
@@ -46,19 +48,19 @@ public class DeviceEditor {
 
             if (deviceName != null && !deviceName.isEmpty()) {
                 editingOutput.setName(deviceName);
+                update(msg);
+
                 delete(user.getChatId(), user.getLastMessageId());
                 user.setLastMessageId(0);
-                // тут нужно сохранить устройство (отправить на Raspberry Pi)
-                currEditingLvl = null;
-                goToChoice(user, msg);
+
             }
         } else if (currEditingLvl.getClass().equals(SetupSignalInversionLevel.class)) {
             Boolean inversion = (Boolean) currEditingLvl.process(user, msg);
+
             if (inversion != null) {
                 editingOutput.setReverse(inversion);
-                // тут нужно сохранить устройство (отправить на Raspberry Pi)
-                currEditingLvl = null;
-                goToChoice(user, msg);
+                update(msg);
+
                 EmojiCallback.success(msg.getCallbackId());
             }
         }
@@ -66,5 +68,17 @@ public class DeviceEditor {
 
     void destroy() {
         user.setDeviceEditor(null);
+    }
+
+    private void update(IncomingMessage msg) {
+        try {
+            ClientAPI.updateOutput(getChannel(user.getChatId()), editingOutput);
+            currEditingLvl = null;
+            goToChoice(user, msg);
+        } catch (ChannelNotFoundException e) {
+            log.warn(e.getMessage());
+            goToHomeControlLevel(user, msg);
+            destroy();
+        }
     }
 }

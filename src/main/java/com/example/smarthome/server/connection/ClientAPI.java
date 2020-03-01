@@ -3,10 +3,13 @@ package com.example.smarthome.server.connection;
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
+import com.google.gson.*;
 import io.netty.channel.Channel;
 import lombok.NonNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -16,6 +19,17 @@ import java.util.List;
 public class ClientAPI {
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
+    private static final Logger log = LoggerFactory.getLogger(ClientAPI.class);
+    private static final Gson gson = new GsonBuilder()
+            .setDateFormat("yyyy-MM-dd HH:mm:ss")
+            .registerTypeAdapter(LocalDateTime.class, (JsonDeserializer<LocalDateTime>)
+                    (json, type, jsonDeserializationContext) ->
+                            LocalDateTime.parse(json.getAsJsonPrimitive().getAsString(),
+                                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+            .registerTypeAdapter(LocalDateTime.class, (JsonSerializer<LocalDateTime>)
+                    (localDateTime, type, jsonSerializationContext) ->
+                            new JsonPrimitive(localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
+            .create();
 
     public static boolean getDigitalState(Channel ch, @NonNull Integer outputId) throws ChannelNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
@@ -59,6 +73,15 @@ public class ClientAPI {
         JsonRequester.execute(request, ch);
     }
 
+    public static void updateOutput(Channel ch, Output updatedOutput) throws ChannelNotFoundException {
+        JSONObject request = buildRequest(new JSONObject()
+                .put("method", "PUT")
+                .put("uri", "http://localhost:8080/outputs/one/" + updatedOutput.getOutputId())
+                .put("request_body", new JSONObject(gson.toJson(updatedOutput))));
+
+        JsonRequester.execute(request, ch);
+    }
+
     // GET
     public static Output getOutput(Channel ch, Integer outputId) throws ChannelNotFoundException {
         Output output = new Output();
@@ -72,16 +95,7 @@ public class ClientAPI {
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") == 200) {
-            response = response.getJSONObject("entity");
-            output.setOutputId(response.getInt("outputId"));
-            output.setName(response.getString("name"));
-            output.setGpio(response.getInt("gpio"));
-            output.setReverse(response.getBoolean("reverse"));
-            output.setType(response.getString("type"));
-            output.setCreationDate(LocalDateTime.parse(
-                    response.getString("creationDate"),
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            return output;
+            return gson.fromJson(response.getJSONObject("entity").toString(), Output.class);
         } else {
             return null;
         }
