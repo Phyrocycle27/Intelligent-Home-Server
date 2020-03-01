@@ -1,6 +1,5 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
-import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -22,8 +21,8 @@ public class SetupSignalInversionLevel implements MessageProcessor {
 
     // ************************************* BUTTONS **************************************************
     private static final List<CallbackButton> yesOrNo = new ArrayList<CallbackButton>() {{
-        add(new CallbackButton("Да", "yes"));
-        add(new CallbackButton("Нет", "no"));
+        add(new CallbackButton("Да", "true"));
+        add(new CallbackButton("Нет", "false"));
     }};
 
     private SetupSignalInversionLevel() {
@@ -36,7 +35,7 @@ public class SetupSignalInversionLevel implements MessageProcessor {
     @Override
     public Object process(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
-            return msg.getText().equals("yes");
+            return Boolean.valueOf(msg.getText());
         }
         return null;
     }

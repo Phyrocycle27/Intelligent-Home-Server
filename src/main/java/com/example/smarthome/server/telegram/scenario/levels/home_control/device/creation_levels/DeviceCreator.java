@@ -120,8 +120,6 @@ public class DeviceCreator {
     }
 
     void destroy() {
-        creationOutput = null;
-        currCreationLvl = null;
         user.setDeviceCreator(null);
     }
 }

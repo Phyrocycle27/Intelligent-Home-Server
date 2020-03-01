@@ -1,4 +1,4 @@
-package com.example.smarthome.server.entity;
+package com.example.smarthome.server.telegram.objects;
 
 public enum UserRole {
     CREATOR("creator", 2),

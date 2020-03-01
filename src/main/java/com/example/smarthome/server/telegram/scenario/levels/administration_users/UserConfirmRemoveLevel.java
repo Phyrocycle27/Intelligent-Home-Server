@@ -9,6 +9,7 @@ import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMes
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.execute;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserLevel.goToUserLevel;
@@ -19,6 +20,8 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
     private static final UserConfirmRemoveLevel instance = new UserConfirmRemoveLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
+
+    private static final Pattern PATTERN = Pattern.compile("[_]");
 
     // ************************************* MESSAGES *************************************************
     private static final String removeConfirmationUser = "Вы действительно хотите удалить этого пользователя?";
@@ -33,7 +36,7 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
 
     @Override
     public void create(UserInstance user, IncomingMessage msg) {
-        String[] arr = msg.getText().split("[_]");
+        String[] arr = PATTERN.split(msg.getText());
 
         String cmd = arr[0];
         long userId = Long.parseLong(arr[1]);

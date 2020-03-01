@@ -4,22 +4,18 @@ import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import io.netty.channel.*;
 import org.json.JSONObject;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JsonRequester {
-    private static final DeviceAccessService service;
-    private static final Logger LOGGER;
 
-    static {
-        service = DeviceAccessService.getInstance();
-        LOGGER = Logger.getLogger(JsonRequester.class.getName());
-    }
+    private static final DeviceAccessService service = DeviceAccessService.getInstance();
+    private static final Logger log = LoggerFactory.getLogger(JsonRequester.class);
 
     public static JSONObject execute(JSONObject request, Channel ch) throws ChannelNotFoundException {
         JSONObject obj = new JSONObject();
-        LOGGER.log(Level.INFO, "Request is: " + request.toString());
+
+        log.info("Request: " + request.toString());
 
         ChannelFuture f = ch.writeAndFlush(request.toString()).addListener((ChannelFutureListener) channelFuture -> {
 
@@ -32,7 +28,7 @@ public class JsonRequester {
                 public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
                     JSONObject tmp = new JSONObject(msg.toString());
 
-                    LOGGER.log(Level.INFO, "Incoming data: " + tmp.toString());
+                    log.info("Incoming data: " + tmp.toString());
 
                     if (tmp.getString("type").equals("data"))
                         obj.put("body", tmp.getJSONObject("body"));
@@ -56,6 +52,6 @@ public class JsonRequester {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return obj;
+        return obj.getJSONObject("body");
     }
 }

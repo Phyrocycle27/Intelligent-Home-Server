@@ -65,7 +65,6 @@ public class DeviceEditor {
     }
 
     void destroy() {
-        editingOutput = null;
         user.setDeviceEditor(null);
     }
 }

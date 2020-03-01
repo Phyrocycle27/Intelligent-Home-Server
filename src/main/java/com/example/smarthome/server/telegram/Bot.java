@@ -52,7 +52,7 @@ public class Bot extends TelegramLongPollingBot {
         int msgId = 0;
         String callbackId = null;
         String text = null;
-        MessageType type = MessageType.TEXT;
+        MessageType type = null;
 
 
         if (update.hasMessage()) {
@@ -63,6 +63,7 @@ public class Bot extends TelegramLongPollingBot {
             } else if (update.getMessage().hasText()) {
                 chatId = update.getMessage().getChatId();
                 text = update.getMessage().getText();
+                type = MessageType.TEXT;
             }
         } else if (update.hasCallbackQuery()) {
             text = update.getCallbackQuery().getData();

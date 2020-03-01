@@ -36,7 +36,7 @@ public class SetupSignalTypeLevel implements MessageProcessor {
     public Object process(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
-                case "pwm":
+//                case "pwm":
                 case "digital":
                     return msg.getText();
             }

@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.administration_users;
 
 import com.example.smarthome.server.entity.TelegramUser;
-import com.example.smarthome.server.entity.UserRole;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
@@ -9,6 +8,7 @@ import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
+import com.example.smarthome.server.telegram.objects.UserRole;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
@@ -77,6 +77,6 @@ public class UsersLevel implements AnswerCreator {
             e.printStackTrace();
         }
 
-        userInstance.setCurrentLvl(UsersLevel.getInstance());
+        userInstance.setCurrentLvl(instance);
     }
 }

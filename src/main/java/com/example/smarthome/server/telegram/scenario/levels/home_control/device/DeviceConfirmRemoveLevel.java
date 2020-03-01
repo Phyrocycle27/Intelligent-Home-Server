@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.connection.ClientAPI.deleteOutput;
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
@@ -25,6 +26,8 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
     private static final DeviceConfirmRemoveLevel instance = new DeviceConfirmRemoveLevel();
 
     private static final Logger log = LoggerFactory.getLogger(DeviceConfirmRemoveLevel.class);
+
+    private static final Pattern PATTERN = Pattern.compile("[_]");
 
     // ************************************* MESSAGES *************************************************
     private static final String removeConfirmationDevice = "Вы действительно хотите удалить это устройство?";
@@ -40,28 +43,25 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
     public void create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
 
-            String[] arr = msg.getText().split("[_]");
+            String[] arr = PATTERN.split(msg.getText());
             String cmd = arr[0];
+            int deviceId = arr.length > 1 ? Integer.parseInt(arr[1]) : 0;
 
-            if (arr.length > 1) {
-                int deviceId = Integer.parseInt(arr[1]);
-
-                try {
-                    switch (cmd) {
-                        case "confirmRemove":
-                            deleteOutput(getChannel(user.getChatId()), deviceId);
-                            goToDevicesLevel(user, msg);
-                            EmojiCallback.success(msg.getCallbackId());
-                            break;
-                        case "cancel":
-                            goToDeviceLevel(user, msg, deviceId);
-                            EmojiCallback.back(msg.getCallbackId());
-                            break;
-                    }
-                } catch (ChannelNotFoundException e) {
-                    log.warn(e.getMessage());
-                    goToHomeControlLevel(user, msg);
+            try {
+                switch (cmd) {
+                    case "confirmRemove":
+                        deleteOutput(getChannel(user.getChatId()), deviceId);
+                        goToDevicesLevel(user, msg);
+                        EmojiCallback.success(msg.getCallbackId());
+                        break;
+                    case "cancel":
+                        goToDeviceLevel(user, msg, deviceId);
+                        EmojiCallback.back(msg.getCallbackId());
+                        break;
                 }
+            } catch (ChannelNotFoundException e) {
+                log.warn(e.getMessage());
+                goToHomeControlLevel(user, msg);
             }
         }
     }

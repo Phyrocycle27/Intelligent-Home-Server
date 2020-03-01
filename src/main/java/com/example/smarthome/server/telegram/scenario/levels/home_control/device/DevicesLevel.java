@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
 
 import com.example.smarthome.server.entity.Output;
-import com.example.smarthome.server.entity.UserRole;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
@@ -9,6 +8,7 @@ import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
+import com.example.smarthome.server.telegram.objects.UserRole;
 import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
@@ -18,13 +18,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
 import static com.example.smarthome.server.connection.ClientAPI.getOutputs;
 import static com.example.smarthome.server.telegram.MessageExecutor.execute;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
-import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceCreationLevel.goToDeviceCreationLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceLevel.goToDeviceLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceCreationLevel.goToDeviceCreationLevel;
 
 public class DevicesLevel implements AnswerCreator {
 
@@ -32,6 +33,8 @@ public class DevicesLevel implements AnswerCreator {
 
     private static final Logger log = LoggerFactory.getLogger(DevicesLevel.class);
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
+
+    private static final Pattern PATTERN = Pattern.compile("[_]");
 
     // ************************************* MESSAGES *************************************************
     private static final String buttonInvalid = "Кнопка недействительна";
@@ -48,7 +51,7 @@ public class DevicesLevel implements AnswerCreator {
     @Override
     public void create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
-            String[] arr = msg.getText().split("_");
+            String[] arr = PATTERN.split(msg.getText());
             String cmd = arr[0];
 
             switch (cmd) {

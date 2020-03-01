@@ -2,13 +2,13 @@ package com.example.smarthome.server.service;
 
 import com.example.smarthome.server.entity.TelegramUser;
 import com.example.smarthome.server.entity.Token;
-import com.example.smarthome.server.entity.UserRole;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.netty.handler.SessionHandler;
 import com.example.smarthome.server.repository.TelegramUsersRepository;
 import com.example.smarthome.server.repository.TokensRepository;
+import com.example.smarthome.server.telegram.objects.UserRole;
 import io.netty.channel.Channel;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

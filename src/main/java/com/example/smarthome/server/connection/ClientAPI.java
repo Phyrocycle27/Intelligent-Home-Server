@@ -18,48 +18,43 @@ public class ClientAPI {
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
 
     public static boolean getDigitalState(Channel ch, @NonNull Integer outputId) throws ChannelNotFoundException {
-        JSONObject request = new JSONObject()
-                .put("type", "request")
-                .put("body", new JSONObject()
-                        .put("method", "GET")
-                        .put("uri", "http://localhost:8080/outputs/control/digital?id=" + outputId));
+        JSONObject request = buildRequest(new JSONObject()
+                .put("method", "GET")
+                .put("uri", "http://localhost:8080/outputs/control/digital?id=" + outputId));
 
-        return JsonRequester.execute(request, ch).getJSONObject("body").getJSONObject("entity")
+        return JsonRequester.execute(request, ch)
+                .getJSONObject("entity")
                 .getBoolean("digitalState");
     }
 
-    public static void setDigitalState(Channel ch, @NonNull Integer outputId, boolean state) throws ChannelNotFoundException {
-        JSONObject request = new JSONObject()
-                .put("type", "request")
-                .put("body", new JSONObject()
-                        .put("method", "PUT")
-                        .put("uri", "http://localhost:8080/outputs/control/digital")
-                        .put("request_body", new JSONObject()
-                                .put("outputId", outputId)
-                                .put("digitalState", state)));
+    public static void setDigitalState(Channel ch, @NonNull Integer outputId, boolean state)
+            throws ChannelNotFoundException {
+
+        JSONObject request = buildRequest(new JSONObject()
+                .put("method", "PUT")
+                .put("uri", "http://localhost:8080/outputs/control/digital")
+                .put("request_body", new JSONObject()
+                        .put("outputId", outputId)
+                        .put("digitalState", state)));
 
         JsonRequester.execute(request, ch);
     }
 
     // DELETE
     public static void deleteOutput(Channel ch, Integer outputId) throws ChannelNotFoundException {
-        JSONObject request = new JSONObject()
-                .put("type", "request")
-                .put("body", new JSONObject()
-                        .put("method", "DELETE")
-                        .put("uri", "http://localhost:8080/outputs/one/" + outputId));
+        JSONObject request = buildRequest(new JSONObject()
+                .put("method", "DELETE")
+                .put("uri", "http://localhost:8080/outputs/one/" + outputId));
 
         JsonRequester.execute(request, ch);
     }
 
     // CREATE
     public static void createOutput(Channel ch, Output newOutput) throws ChannelNotFoundException {
-        JSONObject request = new JSONObject()
-                .put("type", "request")
-                .put("body", new JSONObject()
-                        .put("method", "POST")
-                        .put("uri", "http://localhost:8080/outputs/create")
-                        .put("request_body", new JSONObject(newOutput)));
+        JSONObject request = buildRequest(new JSONObject()
+                .put("method", "POST")
+                .put("uri", "http://localhost:8080/outputs/create")
+                .put("request_body", new JSONObject(newOutput)));
 
         JsonRequester.execute(request, ch);
     }
@@ -69,15 +64,12 @@ public class ClientAPI {
         Output output = new Output();
 
         // ***********************************************************
-        JSONObject request = new JSONObject()
-                .put("type", "request")
-                .put("body", new JSONObject()
-                        .put("method", "GET")
-                        .put("uri", "http://localhost:8080/outputs/one/" + outputId));
+        JSONObject request = buildRequest(new JSONObject()
+                .put("method", "GET")
+                .put("uri", "http://localhost:8080/outputs/one/" + outputId));
         // ***********************************************************
 
-        JSONObject response = JsonRequester.execute(request, ch)
-                .getJSONObject("body");
+        JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") == 200) {
             response = response.getJSONObject("entity");
@@ -100,14 +92,11 @@ public class ClientAPI {
         List<Output> outputs = new ArrayList<>();
 
         // ***********************************************************
-        JSONObject reqest = new JSONObject()
-                .put("type", "request")
-                .put("body", new JSONObject()
-                        .put("method", "GET")
-                        .put("uri", "http://localhost:8080/outputs/all"));
+        JSONObject request = buildRequest(new JSONObject()
+                .put("method", "GET")
+                .put("uri", "http://localhost:8080/outputs/all"));
         // ***********************************************************
-        JSONArray response = JsonRequester.execute(reqest, ch)
-                .getJSONObject("body").getJSONArray("entity");
+        JSONArray response = JsonRequester.execute(request, ch).getJSONArray("entity");
 
         if (response.length() != 0) {
             // Создаём из объектов массива JSON объекты Output
@@ -129,21 +118,25 @@ public class ClientAPI {
     public static List<String> getAvailableOutputs(Channel ch, String type) throws ChannelNotFoundException {
         List<String> gpios = new ArrayList<>();
 
-        JSONObject request = new JSONObject()
-                .put("type", "request")
-                .put("body", new JSONObject()
-                        .put("method", "GET")
-                        .put("uri", "http://localhost:8080/outputs/available?type=" + type));
+        JSONObject request = buildRequest(new JSONObject()
+                .put("method", "GET")
+                .put("uri", "http://localhost:8080/outputs/available?type=" + type));
 
         JSONArray array = JsonRequester.execute(request, ch)
-                .getJSONObject("body")
                 .getJSONObject("entity")
                 .getJSONArray("available_gpios");
+
         for (int i = 0; i < array.length(); i++) {
             gpios.add(String.valueOf(array.getInt(i)));
         }
 
         return gpios;
+    }
+
+    public static JSONObject buildRequest(JSONObject body) {
+        return new JSONObject()
+                .put("type", "request")
+                .put("body", body);
     }
 
     public static Channel getChannel(long chatId) throws ChannelNotFoundException {

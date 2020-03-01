@@ -2,6 +2,7 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control.devic
 
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
+import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.MessageProcessor;
 import org.slf4j.Logger;
@@ -26,7 +27,10 @@ public class SetupNameLevel implements MessageProcessor {
 
     @Override
     public Object process(UserInstance user, IncomingMessage msg) {
-        return msg.getText();
+        if (msg.getType() == MessageType.TEXT) {
+            return msg.getText();
+        }
+        return null;
     }
 
     public static void goToSetupNameLevel(UserInstance user, IncomingMessage msg) {

@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.administration_users;
 
 import com.example.smarthome.server.entity.TelegramUser;
-import com.example.smarthome.server.entity.UserRole;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
@@ -9,6 +8,7 @@ import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
+import com.example.smarthome.server.telegram.objects.UserRole;
 import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.execute;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserConfirmRemoveLevel.goToUserConfirmRemoveLevel;
@@ -30,6 +31,8 @@ public class UserLevel implements AnswerCreator {
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
     private static final Logger log = LoggerFactory.getLogger(UserLevel.class);
     private static final Bot bot = Bot.getInstance();
+
+    private static final Pattern PATTERN = Pattern.compile("[_]");
 
     // ************************************* MESSAGES *************************************************
     private static final String userNotFound = "Пользователь не найден";
@@ -45,7 +48,7 @@ public class UserLevel implements AnswerCreator {
     public void create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
 
-            String[] arr = msg.getText().split("[_]");
+            String[] arr = PATTERN.split(msg.getText());
             String cmd = arr[0];
 
             switch (cmd) {
@@ -70,7 +73,8 @@ public class UserLevel implements AnswerCreator {
                             bot.getUserName(userId), user.getRole(), user.getAdditionDate()
                                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))),
                     new ArrayList<CallbackButton>() {{
-                        if (service.getUser(userInstance.getChatId()).getRole().equals(UserRole.CREATOR.getName()))
+                        if (service.getUser(userInstance.getChatId()).getRole().equals(UserRole.CREATOR.getName()) ||
+                                userInstance.getChatId() == userId)
                             add(new CallbackButton("Удалить", "remove_" + userId));
                     }})
                     .setMessageId(msg.getId())
