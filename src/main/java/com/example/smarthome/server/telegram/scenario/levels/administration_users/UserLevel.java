@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.execute;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserConfirmRemoveLevel.goToUserConfirmRemoveLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserSetupRoleLevel.goToUserSetupRoleLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
 
 public class UserLevel implements AnswerCreator {
@@ -50,6 +51,7 @@ public class UserLevel implements AnswerCreator {
 
             String[] arr = PATTERN.split(msg.getText());
             String cmd = arr[0];
+            long userId = arr.length > 1 ? Long.parseLong(arr[1]) : 0;
 
             switch (cmd) {
                 case "back":
@@ -57,10 +59,12 @@ public class UserLevel implements AnswerCreator {
                     EmojiCallback.back(msg.getCallbackId());
                     break;
                 case "remove":
-                    long userId = Long.parseLong(arr[1]);
                     goToUserConfirmRemoveLevel(user, msg, userId);
                     EmojiCallback.next(msg.getCallbackId());
                     break;
+                case "change-role":
+                    goToUserSetupRoleLevel(user, msg, userId);
+                    EmojiCallback.next(msg.getCallbackId());
             }
         }
     }
@@ -68,17 +72,24 @@ public class UserLevel implements AnswerCreator {
     public static void goToUserLevel(UserInstance userInstance, IncomingMessage msg, long userId) {
         try {
             TelegramUser user = service.getUser(userId);
+            TelegramUser currUser = service.getUser(userInstance.getChatId());
+
             execute(new InlineKeyboardMessage(userInstance.getChatId(),
                     String.format("<i>%s</i>\nУровень доступа: %s\nДата добавления: %s",
                             bot.getUserName(userId), user.getRole(), user.getAdditionDate()
                                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))),
                     new ArrayList<CallbackButton>() {{
-                        if (service.getUser(userInstance.getChatId()).getRole().equals(UserRole.CREATOR.getName()) ||
-                                userInstance.getChatId() == userId)
+                        int code = UserRole.valueOf(currUser.getRole().toUpperCase()).getCode();
+
+                        if (code >= UserRole.CREATOR.getCode() || userInstance.getChatId() == userId)
                             add(new CallbackButton("Удалить", "remove_" + userId));
+                        if (code >= UserRole.CREATOR.getCode()) {
+                            add(new CallbackButton("Изменить роль", "change-role_" + userId));
+                        }
                     }})
                     .setMessageId(msg.getId())
-                    .hasBackButton(true));
+                    .hasBackButton(true)
+                    .setNumOfColumns(2));
 
             userInstance.setCurrentLvl(instance);
         } catch (UserNotFoundException e) {
