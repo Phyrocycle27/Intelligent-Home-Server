@@ -6,11 +6,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.groupadministration.GetChat;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Chat;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
+import org.telegram.telegrambots.meta.updateshandlers.SentCallback;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,7 +60,6 @@ public class Bot extends TelegramLongPollingBot {
         String callbackId = null;
         String text = null;
         MessageType type = null;
-
 
         if (update.hasMessage()) {
             if (update.getMessage().hasContact()) {
@@ -104,6 +110,44 @@ public class Bot extends TelegramLongPollingBot {
             log.warn(e.getMessage());
         }
         return "";
+    }
+
+    public void executeAsync(SendMessage msg, CallbackAction task) {
+        sendApiMethodAsync(msg, new SentCallback<Message>() {
+            @Override
+            public void onResult(BotApiMethod<Message> botApiMethod, Message message) {
+                task.process();
+            }
+
+            @Override
+            public void onError(BotApiMethod<Message> botApiMethod, TelegramApiRequestException e) {
+
+            }
+
+            @Override
+            public void onException(BotApiMethod<Message> botApiMethod, Exception e) {
+
+            }
+        });
+    }
+
+    public void executeAsync(EditMessageText msg, CallbackAction task) {
+        sendApiMethodAsync(msg, new SentCallback<Serializable>() {
+            @Override
+            public void onResult(BotApiMethod<Serializable> botApiMethod, Serializable serializable) {
+                task.process();
+            }
+
+            @Override
+            public void onError(BotApiMethod<Serializable> botApiMethod, TelegramApiRequestException e) {
+
+            }
+
+            @Override
+            public void onException(BotApiMethod<Serializable> botApiMethod, Exception e) {
+
+            }
+        });
     }
 
     @Override

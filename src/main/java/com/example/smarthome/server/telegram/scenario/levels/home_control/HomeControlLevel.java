@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.MenuLevel.goToMenuLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
@@ -109,9 +110,9 @@ public class HomeControlLevel implements AnswerCreator {
     }
 
     private void sendToken(UserInstance user, IncomingMessage msg) {
-        execute(new Message(user.getChatId(), tokenSuccessGen)
+        executeAsync(new Message(user.getChatId(), tokenSuccessGen)
                 .setMessageId(msg.getId()));
-        execute(new Message(user.getChatId(),
+        executeAsync(new Message(user.getChatId(),
                 service.createToken(user.getChatId())));
     }
 }

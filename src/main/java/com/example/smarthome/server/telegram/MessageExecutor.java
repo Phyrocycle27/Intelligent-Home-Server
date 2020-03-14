@@ -36,6 +36,7 @@ public class MessageExecutor {
         }
     }
 
+    @Deprecated
     public static void execute(Message msg) {
         log.info("Sending message...");
         if (msg.getMessageId() == 0) {
@@ -59,6 +60,25 @@ public class MessageExecutor {
             }
         }
     }
+
+    public static void executeAsync(Message msg, CallbackAction task) {
+        log.info("Sending message...");
+        if (msg.getMessageId() == 0) {
+            SendMessage answer = new SendMessage(msg.getChatId(), msg.getText())
+                    .setParseMode("HTML");
+
+            bot.executeAsync(answer, task);
+        } else {
+            EditMessageText answer = new EditMessageText()
+                    .setChatId(msg.getChatId())
+                    .setText(msg.getText())
+                    .setMessageId(msg.getMessageId())
+                    .setParseMode("HTML");
+
+            bot.executeAsync(answer, task);
+        }
+    }
+
 
     public static void execute(InlineKeyboardMessage msg) {
         log.info("Sending message...");
