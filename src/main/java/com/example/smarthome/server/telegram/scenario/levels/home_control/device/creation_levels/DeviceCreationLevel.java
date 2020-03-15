@@ -28,7 +28,6 @@ public class DeviceCreationLevel implements AnswerCreator {
     public static void goToDeviceCreationLevel(UserInstance user, IncomingMessage msg) {
         user.setDeviceCreator(new DeviceCreator(user));
         user.getDeviceCreator().start(msg);
-        user.setLastMessageId(msg.getId());
         user.setCurrentLvl(instance);
     }
 }

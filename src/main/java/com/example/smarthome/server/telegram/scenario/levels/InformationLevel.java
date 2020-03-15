@@ -1,6 +1,5 @@
 package com.example.smarthome.server.telegram.scenario.levels;
 
-import com.example.smarthome.server.exceptions.MessageNotModified;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.Weather;
@@ -18,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.MenuLevel.goToMenuLevel;
 
 public class InformationLevel implements AnswerCreator {
@@ -50,45 +49,36 @@ public class InformationLevel implements AnswerCreator {
     @Override
     public void create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK)
-            try {
-                switch (msg.getText()) {
-                    case "weather":
-                        String weather = weatherService.getWeather();
+            switch (msg.getText()) {
+                case "weather":
+                    String weather = weatherService.getWeather();
 
-                        updateInformationMessage(user, msg, weather != null ? weather : errorGettingWeatherInfo);
-                        break;
-                    case "time":
-                        updateInformationMessage(user, msg, String.format("Химкинское время %s",
-                                LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))));
-                        break;
-                    case "back":
-                        goToMenuLevel(user, msg);
-                        EmojiCallback.back(msg.getCallbackId());
-                        break;
-                    default:
-                        if (!msg.getCallbackId().isEmpty())
-                            execute(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
-                }
-            } catch (MessageNotModified e) {
-                log.error(e.getMessage());
+                    updateInformationMessage(user, msg, weather != null ? weather : errorGettingWeatherInfo);
+                    break;
+                case "time":
+                    updateInformationMessage(user, msg, String.format("Химкинское время %s",
+                            LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))));
+                    break;
+                case "back":
+                    goToMenuLevel(user, msg);
+                    EmojiCallback.back(msg.getCallbackId());
+                    break;
+                default:
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
     }
 
     public static void updateInformationMessage(UserInstance user, IncomingMessage msg, String s) {
-        execute(new InlineKeyboardMessage(user.getChatId(), s, infoButtons)
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), s, infoButtons)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
-                .hasBackButton(true));
-
-        EmojiCallback.success(msg.getCallbackId());
+                .hasBackButton(true), () -> EmojiCallback.success(msg.getCallbackId()));
     }
 
     public static void goToInformationLevel(UserInstance user, IncomingMessage msg) {
-        execute(new InlineKeyboardMessage(user.getChatId(), infoMsg, infoButtons)
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), infoMsg, infoButtons)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
-                .hasBackButton(true));
-
-        user.setCurrentLvl(instance);
+                .hasBackButton(true), () -> user.setCurrentLvl(instance));
     }
 }

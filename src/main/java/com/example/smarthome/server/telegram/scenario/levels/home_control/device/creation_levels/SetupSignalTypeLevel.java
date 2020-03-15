@@ -1,5 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
+import com.example.smarthome.server.telegram.MessageExecutor;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -11,7 +12,7 @@ import com.example.smarthome.server.telegram.scenario.MessageProcessor;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 
 public class SetupSignalTypeLevel implements MessageProcessor {
 
@@ -38,7 +39,7 @@ public class SetupSignalTypeLevel implements MessageProcessor {
         if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
                 case "pwm":
-                    execute(new AnswerCallback(msg.getCallbackId(), "Поддержка этого типа сигнала ещё не добавлена"));
+                    MessageExecutor.executeAsync(new AnswerCallback(msg.getCallbackId(), "Поддержка этого типа сигнала ещё не добавлена"));
                     break;
                 case "digital":
                     return msg.getText();
@@ -48,9 +49,9 @@ public class SetupSignalTypeLevel implements MessageProcessor {
     }
 
     public static void goToSetupSignalTypeLevel(UserInstance user, IncomingMessage msg) {
-        execute(new InlineKeyboardMessage(user.getChatId(), chooseSignalType, typesOfSignal)
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), chooseSignalType, typesOfSignal)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
-                .hasBackButton(true));
+                .hasBackButton(true), null);
     }
 }

@@ -7,8 +7,8 @@ import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.delete;
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.deleteAsync;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserSetupRoleLevel.goToUserSetupRoleLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
 
@@ -36,18 +36,16 @@ public class UserAdditionLevel implements AnswerCreator {
             try {
                 goToUserSetupRoleLevel(user, msg, Long.parseLong(msg.getText()));
             } finally {
-                delete(user.getChatId(), user.getLastMessageId());
-                user.setLastMessageId(0);
+                deleteAsync(user.getChatId(), user.getLastMessageId(), () -> user.setLastMessageId(0));
             }
         }
     }
 
     public static void goToUserAdditionLevel(UserInstance user, IncomingMessage msg) {
-        execute(new InlineKeyboardMessage(user.getChatId(), sendUserContact, null)
-                .hasBackButton(true).setMessageId(msg.getId()));
-        user.setCurrentLvl(UserAdditionLevel.getInstance());
-
-        user.setLastMessageId(msg.getId());
-        user.setCurrentLvl(instance);
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), sendUserContact, null)
+                .hasBackButton(true).setMessageId(msg.getId()), () -> {
+            user.setLastMessageId(msg.getId());
+            user.setCurrentLvl(instance);
+        });
     }
 }

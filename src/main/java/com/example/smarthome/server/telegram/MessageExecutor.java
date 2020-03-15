@@ -16,6 +16,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 public class MessageExecutor {
 
@@ -24,50 +25,31 @@ public class MessageExecutor {
 
     private static final String notModified = "Bad Request: message is not modified";
 
-    public static void execute(AnswerCallback callback) {
+    public static void executeAsync(AnswerCallback callback) {
         AnswerCallbackQuery answer = new AnswerCallbackQuery()
                 .setCallbackQueryId(callback.getCallbackId())
                 .setText(callback.getText())
                 .setShowAlert(callback.isAlert());
-        try {
-            bot.execute(answer);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
+
+        bot.executeAsync(answer);
     }
 
-    @Deprecated
-    public static void execute(Message msg) {
-        log.info("Sending message...");
-        if (msg.getMessageId() == 0) {
-            SendMessage answer = new SendMessage(msg.getChatId(), msg.getText())
-                    .setParseMode("HTML");
-            try {
-                bot.execute(answer);
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
-            }
-        } else {
-            EditMessageText answer = new EditMessageText()
-                    .setChatId(msg.getChatId())
-                    .setText(msg.getText())
-                    .setMessageId(msg.getMessageId())
-                    .setParseMode("HTML");
-            try {
-                bot.execute(answer);
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
+    /*
+    MESSAGE OBJECT
+     */
     public static void executeAsync(Message msg, CallbackAction task) {
+        executeAsync(msg, task, null);
+    }
+
+    public static void executeAsync(Message msg, CallbackAction task,
+                                    Consumer<TelegramApiRequestException> errorHandler) {
+
         log.info("Sending message...");
         if (msg.getMessageId() == 0) {
             SendMessage answer = new SendMessage(msg.getChatId(), msg.getText())
                     .setParseMode("HTML");
 
-            bot.executeAsync(answer, task);
+            bot.executeAsync(answer, task, errorHandler);
         } else {
             EditMessageText answer = new EditMessageText()
                     .setChatId(msg.getChatId())
@@ -75,12 +57,20 @@ public class MessageExecutor {
                     .setMessageId(msg.getMessageId())
                     .setParseMode("HTML");
 
-            bot.executeAsync(answer, task);
+            bot.executeAsync(answer, task, errorHandler);
         }
     }
 
+    /*
+    INLINE_MESSAGE OBJECT
+     */
+    public static void executeAsync(InlineKeyboardMessage msg, CallbackAction task) {
+        executeAsync(msg, task, null);
+    }
 
-    public static void execute(InlineKeyboardMessage msg) {
+    public static void executeAsync(InlineKeyboardMessage msg, CallbackAction task,
+                                    Consumer<TelegramApiRequestException> errorHandler) {
+
         log.info("Sending message...");
         InlineKeyboardBuilder builder = InlineKeyboardBuilder.create(msg.getChatId()).setText(msg.getText());
 
@@ -110,32 +100,25 @@ public class MessageExecutor {
 
         if (msg.getMessageId() == 0) {
             SendMessage answer = builder.buildNew();
-            try {
-                bot.execute(answer);
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
-            }
+            bot.executeAsync(answer, task, errorHandler);
         } else {
             EditMessageText answer = builder.setMessageId(msg.getMessageId()).buildEdited();
-            try {
-                bot.execute(answer);
+            bot.executeAsync(answer, task, errorHandler);
+            /*try {
+                bot.executeAsync(answer);
             } catch (TelegramApiRequestException e) {
                 if (e.getApiResponse().startsWith(notModified)) {
                     throw new MessageNotModified();
                 }
             } catch (TelegramApiException e) {
                 log.error(e.getMessage());
-            }
+            }*/
         }
     }
 
-    public static void delete(long chatId, int messageId) {
+    public static void deleteAsync(long chatId, int messageId, CallbackAction task) {
         log.info("Removing message...");
         DeleteMessage message = new DeleteMessage(chatId, messageId);
-        try {
-            bot.execute(message);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
+        bot.executeAsync(message, task);
     }
 }

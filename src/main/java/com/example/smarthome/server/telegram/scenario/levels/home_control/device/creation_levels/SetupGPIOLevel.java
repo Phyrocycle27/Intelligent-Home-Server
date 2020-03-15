@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 import static com.example.smarthome.server.connection.ClientAPI.getAvailableOutputs;
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 
 public class SetupGPIOLevel implements MessageProcessor {
@@ -54,14 +54,14 @@ public class SetupGPIOLevel implements MessageProcessor {
 
     public static void goToSetupGPIOLevel(UserInstance user, IncomingMessage msg) {
         try {
-            execute(new InlineKeyboardMessage(user.getChatId(), choosePin, new ArrayList<CallbackButton>() {{
+            executeAsync(new InlineKeyboardMessage(user.getChatId(), choosePin, new ArrayList<CallbackButton>() {{
                 for (String s : getAvailableOutputs(getChannel(user.getChatId()), user.getDeviceCreator()
                         .getCreationOutput().getType()))
                     add(new CallbackButton(s, s));
             }})
                     .setMessageId(msg.getId())
                     .setNumOfColumns(6)
-                    .hasBackButton(true));
+                    .hasBackButton(true), null);
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());
             goToHomeControlLevel(user, msg);

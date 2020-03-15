@@ -6,9 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.groupadministration.GetChat;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -20,6 +22,7 @@ import org.telegram.telegrambots.meta.updateshandlers.SentCallback;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class Bot extends TelegramLongPollingBot {
 
@@ -112,16 +115,20 @@ public class Bot extends TelegramLongPollingBot {
         return "";
     }
 
-    public void executeAsync(SendMessage msg, CallbackAction task) {
+    public void executeAsync(SendMessage msg, CallbackAction task, Consumer<TelegramApiRequestException> errorHandler) {
         sendApiMethodAsync(msg, new SentCallback<Message>() {
             @Override
             public void onResult(BotApiMethod<Message> botApiMethod, Message message) {
-                task.process();
+                if (task != null) {
+                    task.process();
+                }
             }
 
             @Override
             public void onError(BotApiMethod<Message> botApiMethod, TelegramApiRequestException e) {
-
+                if (errorHandler != null) {
+                    errorHandler.accept(e);
+                }
             }
 
             @Override
@@ -131,20 +138,64 @@ public class Bot extends TelegramLongPollingBot {
         });
     }
 
-    public void executeAsync(EditMessageText msg, CallbackAction task) {
+    public void executeAsync(EditMessageText msg, CallbackAction task, Consumer<TelegramApiRequestException> errorHandler) {
         sendApiMethodAsync(msg, new SentCallback<Serializable>() {
             @Override
             public void onResult(BotApiMethod<Serializable> botApiMethod, Serializable serializable) {
-                task.process();
+                if (task != null) {
+                    task.process();
+                }
             }
 
             @Override
             public void onError(BotApiMethod<Serializable> botApiMethod, TelegramApiRequestException e) {
-
+                if (errorHandler != null) {
+                    errorHandler.accept(e);
+                }
             }
 
             @Override
             public void onException(BotApiMethod<Serializable> botApiMethod, Exception e) {
+
+            }
+        });
+    }
+
+    public void executeAsync(AnswerCallbackQuery callbackQuery) {
+        sendApiMethodAsync(callbackQuery, new SentCallback<Boolean>() {
+            @Override
+            public void onResult(BotApiMethod<Boolean> botApiMethod, Boolean aBoolean) {
+
+            }
+
+            @Override
+            public void onError(BotApiMethod<Boolean> botApiMethod, TelegramApiRequestException e) {
+
+            }
+
+            @Override
+            public void onException(BotApiMethod<Boolean> botApiMethod, Exception e) {
+
+            }
+        });
+    }
+
+    public void executeAsync(DeleteMessage msg, CallbackAction task) {
+        sendApiMethodAsync(msg, new SentCallback<Boolean>() {
+            @Override
+            public void onResult(BotApiMethod<Boolean> botApiMethod, Boolean aBoolean) {
+                if (task != null) {
+                    task.process();
+                }
+            }
+
+            @Override
+            public void onError(BotApiMethod<Boolean> botApiMethod, TelegramApiRequestException e) {
+
+            }
+
+            @Override
+            public void onException(BotApiMethod<Boolean> botApiMethod, Exception e) {
 
             }
         });

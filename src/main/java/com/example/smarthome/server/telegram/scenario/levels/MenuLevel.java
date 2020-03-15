@@ -13,7 +13,7 @@ import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.InformationLevel.goToInformationLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 
@@ -54,16 +54,13 @@ public class MenuLevel implements AnswerCreator {
                     EmojiCallback.next(msg.getCallbackId());
                     break;
                 default:
-                    if (!msg.getCallbackId().isEmpty())
-                        execute(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
     }
 
     public static void goToMenuLevel(UserInstance user, IncomingMessage msg) {
-        execute(new InlineKeyboardMessage(user.getChatId(), menuMsg, menuButtons)
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), menuMsg, menuButtons)
                 .setMessageId(msg.getId())
-                .setNumOfColumns(2));
-
-        user.setCurrentLvl(instance);
+                .setNumOfColumns(2), () -> user.setCurrentLvl(instance));
     }
 }

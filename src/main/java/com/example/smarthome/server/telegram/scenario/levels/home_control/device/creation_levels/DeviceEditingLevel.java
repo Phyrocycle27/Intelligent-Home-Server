@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceLevel.goToDeviceLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.SetupNameLevel.goToSetupNameLevel;
@@ -76,11 +76,11 @@ public class DeviceEditingLevel implements AnswerCreator {
     }
 
     public static void goToChoice(UserInstance user, IncomingMessage msg) {
-        execute(new InlineKeyboardMessage(user.getChatId(), chooseToEdit, new ArrayList<CallbackButton>() {{
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), chooseToEdit, new ArrayList<CallbackButton>() {{
             add(new CallbackButton("Имя", "name"));
             add(new CallbackButton("Инверсия сигнала", "inversion_of_signal"));
         }}).setMessageId(msg.getId())
                 .hasBackButton(true)
-                .setNumOfColumns(2));
+                .setNumOfColumns(2), null);
     }
 }

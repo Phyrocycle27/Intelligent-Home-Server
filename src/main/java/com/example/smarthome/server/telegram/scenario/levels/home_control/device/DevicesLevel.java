@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
 import static com.example.smarthome.server.connection.ClientAPI.getOutputs;
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceLevel.goToDeviceLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceCreationLevel.goToDeviceCreationLevel;
@@ -70,7 +70,7 @@ public class DevicesLevel implements AnswerCreator {
                     EmojiCallback.next(msg.getCallbackId());
                     break;
                 default:
-                    execute(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
         }
     }
@@ -92,14 +92,10 @@ public class DevicesLevel implements AnswerCreator {
                 answer.hasAddButton(true);
             }
 
-            execute(answer);
-
-            user.setCurrentLvl(instance);
-        } catch (ChannelNotFoundException e) {
+            executeAsync(answer, () -> user.setCurrentLvl(instance));
+        } catch (ChannelNotFoundException | UserNotFoundException e) {
             log.warn(e.getMessage());
             goToHomeControlLevel(user, msg);
-        } catch (UserNotFoundException e) {
-            e.printStackTrace();
         }
     }
 }

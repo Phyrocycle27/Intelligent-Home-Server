@@ -16,7 +16,7 @@ import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserAdditionLevel.goToUserAdditionLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserLevel.goToUserLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
@@ -72,11 +72,10 @@ public class UsersLevel implements AnswerCreator {
                 answer.hasAddButton(true);
             }
 
-            execute(answer);
+            executeAsync(answer, () -> userInstance.setCurrentLvl(instance));
         } catch (UserNotFoundException e) {
             e.printStackTrace();
+            goToHomeControlLevel(userInstance, msg);
         }
-
-        userInstance.setCurrentLvl(instance);
     }
 }

@@ -8,7 +8,7 @@ import com.example.smarthome.server.telegram.scenario.MessageProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 
 public class SetupNameLevel implements MessageProcessor {
 
@@ -34,8 +34,7 @@ public class SetupNameLevel implements MessageProcessor {
     }
 
     public static void goToSetupNameLevel(UserInstance user, IncomingMessage msg) {
-        execute(new InlineKeyboardMessage(user.getChatId(), enterName, null).setMessageId(msg.getId())
-                .hasBackButton(true));
-        user.setLastMessageId(msg.getId());
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), enterName, null).setMessageId(msg.getId())
+                .hasBackButton(true), () -> user.setLastMessageId(msg.getId()));
     }
 }

@@ -10,7 +10,7 @@ import com.example.smarthome.server.telegram.scenario.MessageProcessor;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 
 public class SetupSignalInversionLevel implements MessageProcessor {
 
@@ -41,9 +41,9 @@ public class SetupSignalInversionLevel implements MessageProcessor {
     }
 
     public static void goToSetupSignalInversionLevel(UserInstance user, IncomingMessage msg) {
-        execute(new InlineKeyboardMessage(user.getChatId(), inversionMsg, yesOrNo)
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), inversionMsg, yesOrNo)
                 .setNumOfColumns(2)
                 .setMessageId(msg.getId())
-                .hasBackButton(true));
+                .hasBackButton(true), null);
     }
 }

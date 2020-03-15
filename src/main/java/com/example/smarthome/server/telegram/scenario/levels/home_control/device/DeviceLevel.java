@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.connection.ClientAPI.*;
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceConfirmRemoveLevel.goToDeviceConfirmRemoveLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
@@ -79,7 +79,7 @@ public class DeviceLevel implements AnswerCreator {
                         EmojiCallback.next(msg.getCallbackId());
                         break;
                     default:
-                        execute(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                        executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
                 }
             } catch (ChannelNotFoundException e) {
                 log.warn(e.getMessage());
@@ -116,7 +116,7 @@ public class DeviceLevel implements AnswerCreator {
                     }
                 }};
 
-                execute(new InlineKeyboardMessage(user.getChatId(), String.format("<b>%s</b>\n" +
+                executeAsync(new InlineKeyboardMessage(user.getChatId(), String.format("<b>%s</b>\n" +
                                 "Текущее состояние: <i>%s</i>\n" +
                                 "Тип сигнала: <i>%s</i>\n" +
                                 "Инверсия: <i>%s</i>\n" +
@@ -124,15 +124,11 @@ public class DeviceLevel implements AnswerCreator {
                         output.getName(), currStateText, signalType, inversion,
                         output.getGpio()), buttons)
                         .setMessageId(msg.getId())
-                        .hasBackButton(true));
-
-                user.setCurrentLvl(instance);
+                        .hasBackButton(true), () -> user.setCurrentLvl(instance));
             }
-        } catch (ChannelNotFoundException e) {
+        } catch (ChannelNotFoundException | UserNotFoundException e) {
             log.warn(e.getMessage());
             goToHomeControlLevel(user, msg);
-        } catch (UserNotFoundException e) {
-            e.printStackTrace();
         }
     }
 }

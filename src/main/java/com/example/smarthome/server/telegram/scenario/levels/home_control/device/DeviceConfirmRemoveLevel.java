@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.connection.ClientAPI.deleteOutput;
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceLevel.goToDeviceLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
@@ -67,14 +67,12 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
     }
 
     public static void goToDeviceConfirmRemoveLevel(UserInstance user, IncomingMessage msg, int deviceId) {
-        execute(new InlineKeyboardMessage(user.getChatId(), removeConfirmationDevice,
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), removeConfirmationDevice,
                 new ArrayList<CallbackButton>() {{
                     add(new CallbackButton("Подтвердить", "confirmRemove_" + deviceId));
                     add(new CallbackButton("Отмена", "cancel_" + deviceId));
                 }})
                 .setMessageId(msg.getId())
-                .setNumOfColumns(2));
-
-        user.setCurrentLvl(instance);
+                .setNumOfColumns(2), () -> user.setCurrentLvl(instance));
     }
 }

@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import static com.example.smarthome.server.connection.ClientAPI.createOutput;
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
-import static com.example.smarthome.server.telegram.MessageExecutor.delete;
+import static com.example.smarthome.server.telegram.MessageExecutor.deleteAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.SetupGPIOLevel.goToSetupGPIOLevel;
@@ -24,9 +24,9 @@ public class DeviceCreator {
     private static final Logger log = LoggerFactory.getLogger(DeviceCreator.class);
 
     private MessageProcessor currCreationLvl;
-    private UserInstance user;
+    private final UserInstance user;
 
-    private Output creationOutput;
+    private final Output creationOutput;
 
     DeviceCreator(UserInstance user) {
         creationOutput = new Output();
@@ -76,10 +76,11 @@ public class DeviceCreator {
 
             if (deviceName != null && !deviceName.isEmpty()) {
                 creationOutput.setName(deviceName);
-                delete(user.getChatId(), user.getLastMessageId());
-                user.setLastMessageId(0);
-                goToSetupSignalTypeLevel(user, msg);
-                user.getDeviceCreator().setCurrCreationLvl(SetupSignalTypeLevel.getInstance());
+                deleteAsync(user.getChatId(), user.getLastMessageId(), () -> {
+                    user.setLastMessageId(0);
+                    goToSetupSignalTypeLevel(user, msg);
+                    user.getDeviceCreator().setCurrCreationLvl(SetupSignalTypeLevel.getInstance());
+                });
             }
         } else if (currCreationLvl.getClass().equals(SetupSignalTypeLevel.class)) {
             String signalType = (String) currCreationLvl.process(user, msg);

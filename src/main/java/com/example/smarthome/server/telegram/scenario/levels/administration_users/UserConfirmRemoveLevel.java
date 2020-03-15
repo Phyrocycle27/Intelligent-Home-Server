@@ -11,7 +11,7 @@ import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserLevel.goToUserLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
 
@@ -52,14 +52,12 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
     }
 
     public static void goToUserConfirmRemoveLevel(UserInstance user, IncomingMessage msg, long userId) {
-        execute(new InlineKeyboardMessage(user.getChatId(), removeConfirmationUser,
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), removeConfirmationUser,
                 new ArrayList<CallbackButton>() {{
                     add(new CallbackButton("Подтвердить", "confirmRemove_" + userId));
                     add(new CallbackButton("Отмена", "cancel_" + userId));
                 }})
                 .setMessageId(msg.getId())
-                .setNumOfColumns(2));
-
-        user.setCurrentLvl(UserConfirmRemoveLevel.getInstance());
+                .setNumOfColumns(2), () -> user.setCurrentLvl(instance));
     }
 }

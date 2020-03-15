@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserConfirmRemoveLevel.goToUserConfirmRemoveLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserSetupRoleLevel.goToUserSetupRoleLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
@@ -74,7 +74,7 @@ public class UserLevel implements AnswerCreator {
             TelegramUser user = service.getUser(userId);
             TelegramUser currUser = service.getUser(userInstance.getChatId());
 
-            execute(new InlineKeyboardMessage(userInstance.getChatId(),
+            executeAsync(new InlineKeyboardMessage(userInstance.getChatId(),
                     String.format("<i>%s</i>\nУровень доступа: %s\nДата добавления: %s",
                             bot.getUserName(userId), user.getRole(), user.getAdditionDate()
                                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))),
@@ -89,12 +89,10 @@ public class UserLevel implements AnswerCreator {
                     }})
                     .setMessageId(msg.getId())
                     .hasBackButton(true)
-                    .setNumOfColumns(2));
-
-            userInstance.setCurrentLvl(instance);
+                    .setNumOfColumns(2), () -> userInstance.setCurrentLvl(instance));
         } catch (UserNotFoundException e) {
             log.error(e.getMessage());
-            execute(new AnswerCallback(msg.getCallbackId(), "Пользователь не найден")
+            executeAsync(new AnswerCallback(msg.getCallbackId(), "Пользователь не найден")
                     .hasAlert(true));
         }
     }

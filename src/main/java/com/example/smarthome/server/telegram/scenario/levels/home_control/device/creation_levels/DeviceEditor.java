@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
 import static com.example.smarthome.server.connection.ClientAPI.getOutput;
-import static com.example.smarthome.server.telegram.MessageExecutor.delete;
+import static com.example.smarthome.server.telegram.MessageExecutor.deleteAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceEditingLevel.goToChoice;
 
@@ -29,9 +29,9 @@ public class DeviceEditor {
     }
 
     private MessageProcessor currEditingLvl;
-    private UserInstance user;
+    private final UserInstance user;
 
-    private Output editingOutput;
+    private final Output editingOutput;
 
     public Output getEditingOutput() {
         return editingOutput;
@@ -50,9 +50,7 @@ public class DeviceEditor {
                 editingOutput.setName(deviceName);
                 update(msg);
 
-                delete(user.getChatId(), user.getLastMessageId());
-                user.setLastMessageId(0);
-
+                deleteAsync(user.getChatId(), user.getLastMessageId(), () -> user.setLastMessageId(0));
             }
         } else if (currEditingLvl.getClass().equals(SetupSignalInversionLevel.class)) {
             Boolean inversion = (Boolean) currEditingLvl.process(user, msg);

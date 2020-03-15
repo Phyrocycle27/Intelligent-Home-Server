@@ -3,7 +3,6 @@ package com.example.smarthome.server.telegram.scenario.levels.administration_use
 import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.EmojiCallback;
-import com.example.smarthome.server.telegram.MessageExecutor;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -15,6 +14,7 @@ import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
+import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserAdditionLevel.goToUserAdditionLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
 
@@ -63,15 +63,13 @@ public class UserSetupRoleLevel implements AnswerCreator {
     }
 
     public static void goToUserSetupRoleLevel(UserInstance user, IncomingMessage msg, long userId) {
-        MessageExecutor.execute(new InlineKeyboardMessage(user.getChatId(), chooseRole,
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), chooseRole,
                 new ArrayList<CallbackButton>() {{
                     add(new CallbackButton("Admin", "admin_" + userId));
                     add(new CallbackButton("User", "user_" + userId));
                 }})
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
-                .hasBackButton(true));
-
-        user.setCurrentLvl(instance);
+                .hasBackButton(true), () -> user.setCurrentLvl(instance));
     }
 }

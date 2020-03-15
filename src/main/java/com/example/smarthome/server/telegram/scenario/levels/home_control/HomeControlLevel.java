@@ -15,7 +15,6 @@ import com.example.smarthome.server.telegram.scenario.levels.MenuLevel;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.execute;
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.MenuLevel.goToMenuLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
@@ -71,7 +70,6 @@ public class HomeControlLevel implements AnswerCreator {
                     break;
                 case "token_gen":
                     sendToken(user, msg);
-                    goToMenuLevel(user, msg);
                     EmojiCallback.back(msg.getCallbackId());
                     break;
                 case "back":
@@ -79,40 +77,36 @@ public class HomeControlLevel implements AnswerCreator {
                     EmojiCallback.back(msg.getCallbackId());
                     break;
                 default:
-                    execute(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
     }
 
     public static void goToHomeControlLevel(UserInstance user, IncomingMessage msg) {
         if (service.isExists(user.getChatId())) {
             if (service.isChannelExist(user.getChatId())) {
-                execute(new InlineKeyboardMessage(user.getChatId(), homeControl, homeControlButtons)
+                executeAsync(new InlineKeyboardMessage(user.getChatId(), homeControl, homeControlButtons)
                         .setNumOfColumns(2)
                         .setMessageId(msg.getId())
-                        .hasBackButton(true));
-
-                user.setCurrentLvl(instance);
+                        .hasBackButton(true), () -> user.setCurrentLvl(instance));
             } else {
-                execute(new AnswerCallback(msg.getCallbackId(), channelNotFound)
+                executeAsync(new AnswerCallback(msg.getCallbackId(), channelNotFound)
                         .hasAlert(true));
 
                 if (user.getCurrentLvl() != MenuLevel.getInstance())
                     goToMenuLevel(user, msg);
             }
         } else {
-            execute(new InlineKeyboardMessage(user.getChatId(), tokenNotFound,
+            executeAsync(new InlineKeyboardMessage(user.getChatId(), tokenNotFound,
                     tokenGenButton)
                     .setMessageId(msg.getId())
-                    .hasBackButton(true));
-
-            user.setCurrentLvl(instance);
+                    .hasBackButton(true), () -> user.setCurrentLvl(instance));
         }
     }
 
     private void sendToken(UserInstance user, IncomingMessage msg) {
         executeAsync(new Message(user.getChatId(), tokenSuccessGen)
-                .setMessageId(msg.getId()));
+                .setMessageId(msg.getId()), () -> EmojiCallback.success(msg.getCallbackId()));
         executeAsync(new Message(user.getChatId(),
-                service.createToken(user.getChatId())));
+                service.createToken(user.getChatId())), () -> goToMenuLevel(user, msg));
     }
 }
