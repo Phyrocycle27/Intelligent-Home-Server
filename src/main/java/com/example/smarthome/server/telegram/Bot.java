@@ -22,6 +22,8 @@ import org.telegram.telegrambots.meta.updateshandlers.SentCallback;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 public class Bot extends TelegramLongPollingBot {
@@ -32,6 +34,7 @@ public class Bot extends TelegramLongPollingBot {
 //    private final static String USER_NAME = "intelligent_home_beta_bot";
     public static final Logger log = LoggerFactory.getLogger(Bot.class);
     private static Map<Long, UserInstance> instances = new HashMap<>();
+    private ExecutorService pool = Executors.newFixedThreadPool(16);
 
     private static Bot instance;
 
@@ -57,47 +60,56 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        long ns = System.nanoTime() / 1000;
-        log.info("New message incoming");
-        long chatId = 0;
-        int msgId = 0;
-        String callbackId = null;
-        String text = null;
-        MessageType type = null;
+//        long one = System.nanoTime() / 1000;
+        Runnable task = () -> {
+//            long ns = System.nanoTime() / 1000;
+//            log.info("New message incoming");
+            long chatId = 0;
+            int msgId = 0;
+            String callbackId = null;
+            String text = null;
+            MessageType type = null;
 
-        if (update.hasMessage()) {
-            if (update.getMessage().hasContact()) {
-                chatId = update.getMessage().getChatId();
-                text = update.getMessage().getContact().getUserID().toString();
-                type = MessageType.CONTACT;
-            } else if (update.getMessage().hasText()) {
-                chatId = update.getMessage().getChatId();
-                text = update.getMessage().getText();
-                type = MessageType.TEXT;
+            if (update.hasMessage()) {
+                if (update.getMessage().hasContact()) {
+                    chatId = update.getMessage().getChatId();
+                    text = update.getMessage().getContact().getUserID().toString();
+                    type = MessageType.CONTACT;
+                } else if (update.getMessage().hasText()) {
+                    chatId = update.getMessage().getChatId();
+                    text = update.getMessage().getText();
+                    type = MessageType.TEXT;
+                }
+            } else if (update.hasCallbackQuery()) {
+                text = update.getCallbackQuery().getData();
+                chatId = update.getCallbackQuery().getMessage().getChatId();
+                msgId = update.getCallbackQuery().getMessage().getMessageId();
+                callbackId = update.getCallbackQuery().getId();
+                type = MessageType.CALLBACK;
             }
-        } else if (update.hasCallbackQuery()) {
-            text = update.getCallbackQuery().getData();
-            chatId = update.getCallbackQuery().getMessage().getChatId();
-            msgId = update.getCallbackQuery().getMessage().getMessageId();
-            callbackId = update.getCallbackQuery().getId();
-            type = MessageType.CALLBACK;
-        }
 
-        log.info("Text: " + text + (callbackId != null ?
-                String.format(" Callback id: %s Message id: %d", callbackId, msgId) : ""));
+//            log.info("Text: " + text + (callbackId != null ?
+//                    String.format(" Callback id: %s Message id: %d", callbackId, msgId) : ""));
 
-        UserInstance instance = getUserInstance(chatId);
-        IncomingMessage msg = new IncomingMessage(msgId, text, callbackId, type);
-        answer(instance, msg);
-        long ns_2 = System.nanoTime() / 1000;
-        log.info("Prepared in " + (ns_2 - ns) + " ns");
+//            long ns_2 = System.nanoTime() / 1000;
+            UserInstance instance = getUserInstance(chatId);
+            IncomingMessage msg = new IncomingMessage(msgId, text, callbackId, type);
+
+            answer(instance, msg);
+//            long ns_3 = System.nanoTime() / 1000;
+//            log.info("Prepared in " + (ns_2 - ns) + " mcs" + "; after answer " + (ns_3 - ns_2) + "mcs");
+        };
+        pool.execute(task);
+
+//        long two = System.nanoTime() / 1000;
+//        log.info("Time " + (two - one));
     }
 
-    private void answer(UserInstance instance, IncomingMessage msg) {
+    private synchronized void answer(UserInstance instance, IncomingMessage msg) {
         instance.sendAnswer(msg);
     }
 
-    private UserInstance getUserInstance(long userId) {
+    private synchronized UserInstance getUserInstance(long userId) {
         UserInstance userInstance = instances.get(userId);
         if (userInstance == null) {
             userInstance = new UserInstance(userId);
@@ -106,7 +118,7 @@ public class Bot extends TelegramLongPollingBot {
         return userInstance;
     }
 
-    public String getUserName(long userId) {
+    public synchronized String getUserName(long userId) {
         try {
             Chat chat = sendApiMethod(new GetChat().setChatId(userId));
             String firstName = chat.getFirstName();
@@ -118,7 +130,9 @@ public class Bot extends TelegramLongPollingBot {
         return "";
     }
 
-    public void executeAsync(SendMessage msg, CallbackAction task, Consumer<TelegramApiRequestException> errorHandler) {
+    public synchronized void executeAsync(SendMessage msg, CallbackAction task,
+                                          Consumer<TelegramApiRequestException> errorHandler) {
+
         sendApiMethodAsync(msg, new SentCallback<Message>() {
             @Override
             public void onResult(BotApiMethod<Message> botApiMethod, Message message) {
@@ -141,7 +155,9 @@ public class Bot extends TelegramLongPollingBot {
         });
     }
 
-    public void executeAsync(EditMessageText msg, CallbackAction task, Consumer<TelegramApiRequestException> errorHandler) {
+    public synchronized void executeAsync(EditMessageText msg, CallbackAction task,
+                                          Consumer<TelegramApiRequestException> errorHandler) {
+
         sendApiMethodAsync(msg, new SentCallback<Serializable>() {
             @Override
             public void onResult(BotApiMethod<Serializable> botApiMethod, Serializable serializable) {
@@ -164,7 +180,7 @@ public class Bot extends TelegramLongPollingBot {
         });
     }
 
-    public void executeAsync(AnswerCallbackQuery callbackQuery) {
+    public synchronized void executeAsync(AnswerCallbackQuery callbackQuery) {
         sendApiMethodAsync(callbackQuery, new SentCallback<Boolean>() {
             @Override
             public void onResult(BotApiMethod<Boolean> botApiMethod, Boolean aBoolean) {
@@ -183,7 +199,7 @@ public class Bot extends TelegramLongPollingBot {
         });
     }
 
-    public void executeAsync(DeleteMessage msg, CallbackAction task) {
+    public synchronized void executeAsync(DeleteMessage msg, CallbackAction task) {
         sendApiMethodAsync(msg, new SentCallback<Boolean>() {
             @Override
             public void onResult(BotApiMethod<Boolean> botApiMethod, Boolean aBoolean) {
