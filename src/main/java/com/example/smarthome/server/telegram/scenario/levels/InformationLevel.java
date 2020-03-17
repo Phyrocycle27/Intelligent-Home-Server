@@ -32,6 +32,7 @@ public class InformationLevel implements AnswerCreator {
             "или нажмите \"Время\"чтобы узнать точное время в вашем городе";
     private static final String buttonInvalid = "Кнопка недействительна";
     private static final String errorGettingWeatherInfo = "Ошибка при получении информаци о погоде";
+    private static final String notModified = "Bad Request: message is not modified";
 
     // ************************************** BUTTONS *************************************************
     private static final List<CallbackButton> infoButtons = new ArrayList<CallbackButton>() {{
@@ -70,9 +71,15 @@ public class InformationLevel implements AnswerCreator {
 
     public static void updateInformationMessage(UserInstance user, IncomingMessage msg, String s) {
         executeAsync(new InlineKeyboardMessage(user.getChatId(), s, infoButtons)
-                .setMessageId(msg.getId())
-                .setNumOfColumns(2)
-                .hasBackButton(true), () -> EmojiCallback.success(msg.getCallbackId()));
+                        .setMessageId(msg.getId())
+                        .setNumOfColumns(2)
+                        .hasBackButton(true),
+                () -> EmojiCallback.success(msg.getCallbackId()),
+                e -> {
+                    if (e.getApiResponse().startsWith(notModified)) {
+                        EmojiCallback.success(msg.getCallbackId());
+                    }
+                });
     }
 
     public static void goToInformationLevel(UserInstance user, IncomingMessage msg) {

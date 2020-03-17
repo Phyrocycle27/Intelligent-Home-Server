@@ -1,6 +1,5 @@
 package com.example.smarthome.server.telegram;
 
-import com.example.smarthome.server.exceptions.MessageNotModified;
 import com.example.smarthome.server.telegram.objects.Message;
 import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
@@ -12,7 +11,6 @@ import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 import java.util.Iterator;
@@ -22,8 +20,6 @@ public class MessageExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(MessageExecutor.class);
     private static final Bot bot = Bot.getInstance();
-
-    private static final String notModified = "Bad Request: message is not modified";
 
     public static void executeAsync(AnswerCallback callback) {
         AnswerCallbackQuery answer = new AnswerCallbackQuery()

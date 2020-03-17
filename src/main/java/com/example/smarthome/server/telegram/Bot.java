@@ -57,6 +57,7 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+        long ns = System.nanoTime() / 1000;
         log.info("New message incoming");
         long chatId = 0;
         int msgId = 0;
@@ -88,6 +89,8 @@ public class Bot extends TelegramLongPollingBot {
         UserInstance instance = getUserInstance(chatId);
         IncomingMessage msg = new IncomingMessage(msgId, text, callbackId, type);
         answer(instance, msg);
+        long ns_2 = System.nanoTime() / 1000;
+        log.info("Prepared in " + (ns_2 - ns) + " ns");
     }
 
     private void answer(UserInstance instance, IncomingMessage msg) {
