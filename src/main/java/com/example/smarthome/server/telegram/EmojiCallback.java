@@ -2,8 +2,6 @@ package com.example.smarthome.server.telegram;
 
 import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 
-import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
-
 public class EmojiCallback {
 
     private static final Bot bot = Bot.getInstance();

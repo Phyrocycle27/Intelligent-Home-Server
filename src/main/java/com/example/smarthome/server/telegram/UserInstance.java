@@ -14,10 +14,12 @@ public class UserInstance {
 
     private DeviceCreator deviceCreator;
     private DeviceEditor deviceEditor;
-    private long chatId;
-    private int lastMessageId;
-
     private AnswerCreator currentLvl;
+    private long chatId;
+
+    private int lastMessageId;
+    private boolean processing;
+    private int spamCount;
 
     UserInstance(long chatId) {
         this.chatId = chatId;
@@ -49,6 +51,7 @@ public class UserInstance {
 
     public void setCurrentLvl(AnswerCreator currentLvl) {
         this.currentLvl = currentLvl;
+        processing = false;
     }
 
     public int getLastMessageId() {
@@ -59,7 +62,28 @@ public class UserInstance {
         this.lastMessageId = lastMessageId;
     }
 
-    void sendAnswer(IncomingMessage msg) {
+    public boolean isProcessing() {
+        return processing;
+    }
+
+    public void setProcessing(boolean processing) {
+        this.processing = processing;
+    }
+
+    public synchronized int getSpamCount() {
+        return spamCount;
+    }
+
+    public synchronized void spam() {
+        spamCount++;
+    }
+
+    public synchronized void clearSpamCount() {
+        spamCount = 0;
+    }
+
+    synchronized void sendAnswer(IncomingMessage msg) {
+        processing = true;
         if (!CheckOfStartCommand.getInstance().check(this, msg)) {
             if (currentLvl != null) {
                 currentLvl.create(this, msg);

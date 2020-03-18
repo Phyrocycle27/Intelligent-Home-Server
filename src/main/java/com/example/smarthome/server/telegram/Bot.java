@@ -2,6 +2,7 @@ package com.example.smarthome.server.telegram;
 
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
+import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
@@ -28,12 +29,14 @@ import java.util.function.Consumer;
 
 public class Bot extends TelegramLongPollingBot {
 
-    private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
-    private final static String USER_NAME = "intelligent_home_bot";
-    //    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
-//    private final static String USER_NAME = "intelligent_home_beta_bot";
+    //    private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
+    //    private final static String USER_NAME = "intelligent_home_bot";
+    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
+    private final static String USER_NAME = "intelligent_home_beta_bot";
+
     public static final Logger log = LoggerFactory.getLogger(Bot.class);
-    private static Map<Long, UserInstance> instances = new HashMap<>();
+
+    private Map<Long, UserInstance> instances = new HashMap<>();
     private ExecutorService pool = Executors.newFixedThreadPool(16);
 
     private static Bot instance;
@@ -60,10 +63,14 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-//        long one = System.nanoTime() / 1000;
+        log.info("------------------------------------- New message incoming -----------------------------------------");
+        long one = System.nanoTime() / 1000;
+
         Runnable task = () -> {
-//            long ns = System.nanoTime() / 1000;
-//            log.info("New message incoming");
+            log.info("Processing is starting...");
+
+            long ns = System.nanoTime() / 1000;
+
             long chatId = 0;
             int msgId = 0;
             String callbackId = null;
@@ -88,24 +95,46 @@ public class Bot extends TelegramLongPollingBot {
                 type = MessageType.CALLBACK;
             }
 
-//            log.info("Text: " + text + (callbackId != null ?
-//                    String.format(" Callback id: %s Message id: %d", callbackId, msgId) : ""));
+            log.info("Text: " + text + "; " + (callbackId != null ?
+                    String.format(" Callback id: %s; Message id: %d", callbackId, msgId) : ""));
 
-//            long ns_2 = System.nanoTime() / 1000;
             UserInstance instance = getUserInstance(chatId);
-            IncomingMessage msg = new IncomingMessage(msgId, text, callbackId, type);
 
-            answer(instance, msg);
-//            long ns_3 = System.nanoTime() / 1000;
-//            log.info("Prepared in " + (ns_2 - ns) + " mcs" + "; after answer " + (ns_3 - ns_2) + "mcs");
+            if (!instance.isProcessing()) {
+                IncomingMessage msg = new IncomingMessage(msgId, text, callbackId, type);
+
+                long ns_2 = System.nanoTime() / 1000;
+
+                answer(instance, msg);
+
+                long ns_3 = System.nanoTime() / 1000;
+                log.info("Prepared in " + (ns_2 - ns) + " mcs" + "; after answer " + (ns_3 - ns_2) + "mcs");
+
+                if (instance.getCurrentLvl() != null) {
+                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().toString());
+                }
+            } else {
+                if (type == MessageType.CALLBACK) {
+                    if (instance.getSpamCount() < 5) {
+                        MessageExecutor.executeAsync(new AnswerCallback(callbackId, "Пожалуйста, подождите"));
+                        instance.spam();
+                    } else {
+                        MessageExecutor.executeAsync(new AnswerCallback(callbackId, "Слишком много сообщений. " +
+                                "Своими действиями вы наносите вред друим пользователям. Спам нарушает лицензионное " +
+                                "соглашение Telegram LLC и Intelligent Home")
+                                .hasAlert(true));
+                        instance.clearSpamCount();
+                    }
+                }
+            }
         };
         pool.execute(task);
 
-//        long two = System.nanoTime() / 1000;
-//        log.info("Time " + (two - one));
+        long two = System.nanoTime() / 1000;
+        log.info("Time " + (two - one));
     }
 
-    private synchronized void answer(UserInstance instance, IncomingMessage msg) {
+    private static void answer(UserInstance instance, IncomingMessage msg) {
         instance.sendAnswer(msg);
     }
 
@@ -118,7 +147,7 @@ public class Bot extends TelegramLongPollingBot {
         return userInstance;
     }
 
-    public synchronized String getUserName(long userId) {
+    public String getUserName(long userId) {
         try {
             Chat chat = sendApiMethod(new GetChat().setChatId(userId));
             String firstName = chat.getFirstName();
@@ -130,8 +159,8 @@ public class Bot extends TelegramLongPollingBot {
         return "";
     }
 
-    public synchronized void executeAsync(SendMessage msg, CallbackAction task,
-                                          Consumer<TelegramApiRequestException> errorHandler) {
+    public void executeAsync(SendMessage msg, CallbackAction task, Consumer<TelegramApiRequestException> errorHandler) {
+        UserInstance instance = getUserInstance(Long.parseLong(msg.getChatId()));
 
         sendApiMethodAsync(msg, new SentCallback<Message>() {
             @Override
@@ -139,6 +168,7 @@ public class Bot extends TelegramLongPollingBot {
                 if (task != null) {
                     task.process();
                 }
+                instance.setProcessing(false);
             }
 
             @Override
@@ -146,17 +176,18 @@ public class Bot extends TelegramLongPollingBot {
                 if (errorHandler != null) {
                     errorHandler.accept(e);
                 }
+                instance.setProcessing(false);
             }
 
             @Override
             public void onException(BotApiMethod<Message> botApiMethod, Exception e) {
-
+                instance.setProcessing(false);
             }
         });
     }
 
-    public synchronized void executeAsync(EditMessageText msg, CallbackAction task,
-                                          Consumer<TelegramApiRequestException> errorHandler) {
+    public void executeAsync(EditMessageText msg, CallbackAction task, Consumer<TelegramApiRequestException> errorHandler) {
+        UserInstance instance = getUserInstance(Long.parseLong(msg.getChatId()));
 
         sendApiMethodAsync(msg, new SentCallback<Serializable>() {
             @Override
@@ -164,6 +195,7 @@ public class Bot extends TelegramLongPollingBot {
                 if (task != null) {
                     task.process();
                 }
+                instance.setProcessing(false);
             }
 
             @Override
@@ -171,36 +203,18 @@ public class Bot extends TelegramLongPollingBot {
                 if (errorHandler != null) {
                     errorHandler.accept(e);
                 }
+                instance.setProcessing(false);
             }
 
             @Override
             public void onException(BotApiMethod<Serializable> botApiMethod, Exception e) {
-
+                instance.setProcessing(false);
             }
         });
     }
 
-    public synchronized void executeAsync(AnswerCallbackQuery callbackQuery) {
+    public void executeAsync(AnswerCallbackQuery callbackQuery, CallbackAction task) {
         sendApiMethodAsync(callbackQuery, new SentCallback<Boolean>() {
-            @Override
-            public void onResult(BotApiMethod<Boolean> botApiMethod, Boolean aBoolean) {
-
-            }
-
-            @Override
-            public void onError(BotApiMethod<Boolean> botApiMethod, TelegramApiRequestException e) {
-
-            }
-
-            @Override
-            public void onException(BotApiMethod<Boolean> botApiMethod, Exception e) {
-
-            }
-        });
-    }
-
-    public synchronized void executeAsync(DeleteMessage msg, CallbackAction task) {
-        sendApiMethodAsync(msg, new SentCallback<Boolean>() {
             @Override
             public void onResult(BotApiMethod<Boolean> botApiMethod, Boolean aBoolean) {
                 if (task != null) {
@@ -210,12 +224,34 @@ public class Bot extends TelegramLongPollingBot {
 
             @Override
             public void onError(BotApiMethod<Boolean> botApiMethod, TelegramApiRequestException e) {
-
             }
 
             @Override
             public void onException(BotApiMethod<Boolean> botApiMethod, Exception e) {
+            }
+        });
+    }
 
+    public void executeAsync(DeleteMessage msg, CallbackAction task) {
+        UserInstance instance = getUserInstance(Long.parseLong(msg.getChatId()));
+
+        sendApiMethodAsync(msg, new SentCallback<Boolean>() {
+            @Override
+            public void onResult(BotApiMethod<Boolean> botApiMethod, Boolean aBoolean) {
+                if (task != null) {
+                    task.process();
+                }
+                instance.setProcessing(false);
+            }
+
+            @Override
+            public void onError(BotApiMethod<Boolean> botApiMethod, TelegramApiRequestException e) {
+                instance.setProcessing(false);
+            }
+
+            @Override
+            public void onException(BotApiMethod<Boolean> botApiMethod, Exception e) {
+                instance.setProcessing(false);
             }
         });
     }

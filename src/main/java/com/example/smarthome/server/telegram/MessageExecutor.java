@@ -22,12 +22,16 @@ public class MessageExecutor {
     private static final Bot bot = Bot.getInstance();
 
     public static void executeAsync(AnswerCallback callback) {
+        executeAsync(callback, null);
+    }
+
+    public static void executeAsync(AnswerCallback callback, CallbackAction task) {
         AnswerCallbackQuery answer = new AnswerCallbackQuery()
                 .setCallbackQueryId(callback.getCallbackId())
                 .setText(callback.getText())
                 .setShowAlert(callback.isAlert());
 
-        bot.executeAsync(answer);
+        bot.executeAsync(answer, task);
     }
 
     /*
@@ -100,15 +104,6 @@ public class MessageExecutor {
         } else {
             EditMessageText answer = builder.setMessageId(msg.getMessageId()).buildEdited();
             bot.executeAsync(answer, task, errorHandler);
-            /*try {
-                bot.executeAsync(answer);
-            } catch (TelegramApiRequestException e) {
-                if (e.getApiResponse().startsWith(notModified)) {
-                    throw new MessageNotModified();
-                }
-            } catch (TelegramApiException e) {
-                log.error(e.getMessage());
-            }*/
         }
     }
 

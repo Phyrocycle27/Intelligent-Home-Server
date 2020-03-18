@@ -90,7 +90,7 @@ public class HomeControlLevel implements AnswerCreator {
                         .hasBackButton(true), () -> user.setCurrentLvl(instance));
             } else {
                 executeAsync(new AnswerCallback(msg.getCallbackId(), channelNotFound)
-                        .hasAlert(true));
+                        .hasAlert(true), () -> user.setProcessing(false));
 
                 if (user.getCurrentLvl() != MenuLevel.getInstance())
                     goToMenuLevel(user, msg);

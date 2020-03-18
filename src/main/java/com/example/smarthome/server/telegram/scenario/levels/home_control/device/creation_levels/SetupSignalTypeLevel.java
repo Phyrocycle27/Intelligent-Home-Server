@@ -20,6 +20,7 @@ public class SetupSignalTypeLevel implements MessageProcessor {
 
     // ************************************* MESSAGES *************************************************
     private static final String chooseSignalType = "Выберите тип сигнала, который может принимать устройство";
+    private static final String signalTypeNotSupport = "Поддержка этого типа сигнала ещё не добавлена";
 
     // ************************************* BUTTONS **************************************************
     private static final List<CallbackButton> typesOfSignal = new ArrayList<CallbackButton>() {{
@@ -39,7 +40,7 @@ public class SetupSignalTypeLevel implements MessageProcessor {
         if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
                 case "pwm":
-                    MessageExecutor.executeAsync(new AnswerCallback(msg.getCallbackId(), "Поддержка этого типа сигнала ещё не добавлена"));
+                    MessageExecutor.executeAsync(new AnswerCallback(msg.getCallbackId(), signalTypeNotSupport));
                     break;
                 case "digital":
                     return msg.getText();
