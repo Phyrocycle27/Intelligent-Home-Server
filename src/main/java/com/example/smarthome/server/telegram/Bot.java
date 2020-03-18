@@ -36,8 +36,8 @@ public class Bot extends TelegramLongPollingBot {
 
     public static final Logger log = LoggerFactory.getLogger(Bot.class);
 
+    private ExecutorService pool = Executors.newFixedThreadPool(32);
     private Map<Long, UserInstance> instances = new HashMap<>();
-    private ExecutorService pool = Executors.newFixedThreadPool(16);
 
     private static Bot instance;
 

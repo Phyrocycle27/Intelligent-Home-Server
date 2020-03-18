@@ -70,7 +70,7 @@ public class UserInstance {
         this.processing = processing;
     }
 
-    public synchronized int getSpamCount() {
+    public int getSpamCount() {
         return spamCount;
     }
 
