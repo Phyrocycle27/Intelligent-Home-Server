@@ -5,5 +5,6 @@ public enum MessageType {
     TEXT,
     CONTACT,
     CALLBACK,
-    LOCATION
+    LOCATION,
+    UNKNOWN
 }

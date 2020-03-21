@@ -1,9 +1,11 @@
 package com.example.smarthome.server;
 
-import com.example.smarthome.server.netty.Server;
+import com.example.smarthome.server.repository.CitiesRepository;
 import com.example.smarthome.server.repository.TelegramUsersRepository;
 import com.example.smarthome.server.repository.TokensRepository;
+import com.example.smarthome.server.repository.WeatherUsersRepository;
 import com.example.smarthome.server.service.DeviceAccessService;
+import com.example.smarthome.server.service.WeatherService;
 import com.example.smarthome.server.telegram.Telegram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +35,9 @@ public class Main {
         service.setTokensRepo(ctx.getBean(TokensRepository.class));
         service.setUsersRepo(ctx.getBean(TelegramUsersRepository.class));
         // *********** NETTY THREAD START ***************
-        new Server(SERVER_PORT); // starting the netty server
+//        new Server(SERVER_PORT); // starting the netty server
+        WeatherService.getInstance().setCitiesRepo(ctx.getBean(CitiesRepository.class));
+        WeatherService.getInstance().setUsersRepo(ctx.getBean(WeatherUsersRepository.class));
 
         // *********** TELEGRAM THREAD START ************
         new Telegram(PROXY_HOST, PROXY_PORT);

@@ -53,7 +53,6 @@ public class DeviceAccessService {
         }});
 
         tokensRepo.save(token);
-        usersRepo.save(user);
 
         return tokenStr;
     }
@@ -112,11 +111,11 @@ public class DeviceAccessService {
         return !tokensRepo.findByToken(token).isEmpty();
     }
 
-    private static class SecureTokenGenerator {
+    public static class SecureTokenGenerator {
 
         private static final String CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-        private static final int SECURE_TOKEN_LENGTH = 32;
+        public static final int SECURE_TOKEN_LENGTH = 32;
 
         private static final SecureRandom random = new SecureRandom();
 

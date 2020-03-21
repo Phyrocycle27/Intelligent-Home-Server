@@ -1,8 +1,8 @@
 package com.example.smarthome.server.telegram.scenario.levels;
 
+import com.example.smarthome.server.service.WeatherService;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
-import com.example.smarthome.server.telegram.Weather;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
@@ -16,8 +16,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
+import static com.example.smarthome.server.telegram.scenario.levels.ListCitiesLevel.goToListCitiesLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.MenuLevel.goToMenuLevel;
 
 public class InformationLevel implements AnswerCreator {
@@ -25,13 +27,14 @@ public class InformationLevel implements AnswerCreator {
     private static final InformationLevel instance = new InformationLevel();
 
     private static final Logger log = LoggerFactory.getLogger(InformationLevel.class.getName());
-    private static final Weather weatherService = Weather.getInstance();
+    private static final WeatherService weatherService = WeatherService.getInstance();
+
+    private static final Pattern p = Pattern.compile("[_]");
 
     // ************************************* MESSAGES *************************************************
     private static final String infoMsg = "Выберите \"Погода\" чтобы узнать погоду в совём городе " +
             "или нажмите \"Время\"чтобы узнать точное время в вашем городе";
     private static final String buttonInvalid = "Кнопка недействительна";
-    private static final String errorGettingWeatherInfo = "Ошибка при получении информаци о погоде";
     private static final String notModified = "Bad Request: message is not modified";
 
     // ************************************** BUTTONS *************************************************
@@ -52,9 +55,8 @@ public class InformationLevel implements AnswerCreator {
         if (msg.getType() == MessageType.CALLBACK)
             switch (msg.getText()) {
                 case "weather":
-                    String weather = weatherService.getWeather();
-
-                    updateInformationMessage(user, msg, weather != null ? weather : errorGettingWeatherInfo);
+                    goToListCitiesLevel(user, msg);
+                    EmojiCallback.next(msg.getCallbackId());
                     break;
                 case "time":
                     updateInformationMessage(user, msg, String.format("Химкинское время %s",

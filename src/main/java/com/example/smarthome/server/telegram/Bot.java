@@ -14,6 +14,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Chat;
+import org.telegram.telegrambots.meta.api.objects.Location;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -64,24 +65,25 @@ public class Bot extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
         log.info("------------------------------------- New message incoming -----------------------------------------");
-        long one = System.nanoTime() / 1000;
-
         Runnable task = () -> {
-            log.info("Processing is starting...");
-
             long ns = System.nanoTime() / 1000;
 
             long chatId = 0;
             int msgId = 0;
             String callbackId = null;
             String text = null;
-            MessageType type = null;
+            MessageType type = MessageType.UNKNOWN;
 
             if (update.hasMessage()) {
                 if (update.getMessage().hasContact()) {
                     chatId = update.getMessage().getChatId();
                     text = update.getMessage().getContact().getUserID().toString();
                     type = MessageType.CONTACT;
+                } else if (update.getMessage().hasLocation()) {
+                    Location location = update.getMessage().getLocation();
+                    text = location.getLatitude() + " " + location.getLongitude();
+                    chatId = update.getMessage().getChatId();
+                    type = MessageType.LOCATION;
                 } else if (update.getMessage().hasText()) {
                     chatId = update.getMessage().getChatId();
                     text = update.getMessage().getText();
@@ -95,7 +97,7 @@ public class Bot extends TelegramLongPollingBot {
                 type = MessageType.CALLBACK;
             }
 
-            log.info("Text: " + text + "; " + (callbackId != null ?
+            log.info("Type: " + type.name() + "; " + "Text: " + text + "; " + (callbackId != null ?
                     String.format(" Callback id: %s; Message id: %d", callbackId, msgId) : ""));
 
             UserInstance instance = getUserInstance(chatId);
@@ -111,7 +113,7 @@ public class Bot extends TelegramLongPollingBot {
                 log.info("Prepared in " + (ns_2 - ns) + " mcs" + "; after answer " + (ns_3 - ns_2) + "mcs");
 
                 if (instance.getCurrentLvl() != null) {
-                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().toString());
+                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getName());
                 }
             } else {
                 if (type == MessageType.CALLBACK) {
@@ -129,9 +131,6 @@ public class Bot extends TelegramLongPollingBot {
             }
         };
         pool.execute(task);
-
-        long two = System.nanoTime() / 1000;
-        log.info("Time " + (two - one));
     }
 
     private static void answer(UserInstance instance, IncomingMessage msg) {

@@ -1,5 +1,6 @@
 package com.example.smarthome.server.entity;
 
+import com.example.smarthome.server.service.DeviceAccessService;
 import lombok.*;
 import org.hibernate.annotations.Proxy;
 
@@ -21,9 +22,10 @@ public class Token {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
 
-    @Column(name = "token", nullable = false, unique = true, updatable = false, length = 32)
+    @Column(name = "token", nullable = false, unique = true, updatable = false,
+            length = DeviceAccessService.SecureTokenGenerator.SECURE_TOKEN_LENGTH)
     private String token;
 
-    @OneToMany(mappedBy = "token", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "token", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Set<TelegramUser> users;
 }
