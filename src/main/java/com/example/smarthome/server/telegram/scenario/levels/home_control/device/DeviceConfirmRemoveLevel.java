@@ -5,6 +5,7 @@ import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
+import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
@@ -31,6 +32,7 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
 
     // ************************************* MESSAGES *************************************************
     private static final String removeConfirmationDevice = "Вы действительно хотите удалить это устройство?";
+    private static final String buttonInvalid = "Кнопка недействительна";
 
     private DeviceConfirmRemoveLevel() {
     }
@@ -40,7 +42,7 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
+    public boolean create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
 
             String[] arr = PATTERN.split(msg.getText());
@@ -58,12 +60,18 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
                         goToDeviceLevel(user, msg, deviceId);
                         EmojiCallback.back(msg.getCallbackId());
                         break;
+                    default:
+                        executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
                 }
             } catch (ChannelNotFoundException e) {
                 log.warn(e.getMessage());
                 goToHomeControlLevel(user, msg);
             }
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
         }
+        // иначе, если содержание сообщения не может быть обработано уровнем, возвращаем ложь
+        return false;
     }
 
     public static void goToDeviceConfirmRemoveLevel(UserInstance user, IncomingMessage msg, int deviceId) {

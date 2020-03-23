@@ -28,17 +28,23 @@ public class UserAdditionLevel implements AnswerCreator {
 
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
+    public boolean create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK && msg.getText().equals("back")) {
             goToUsersLevel(user, msg);
             EmojiCallback.back(msg.getCallbackId());
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
         } else if (msg.getType() == MessageType.CONTACT) {
             try {
                 goToUserSetupRoleLevel(user, msg, Long.parseLong(msg.getText()));
             } finally {
                 deleteAsync(user.getChatId(), user.getLastMessageId(), () -> user.setLastMessageId(0));
             }
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
         }
+        // иначе, если содержание сообщения не может быть обработано уровнем, возвращаем ложь
+        return false;
     }
 
     public static void goToUserAdditionLevel(UserInstance user, IncomingMessage msg) {

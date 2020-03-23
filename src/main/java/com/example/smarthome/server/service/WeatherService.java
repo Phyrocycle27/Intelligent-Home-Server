@@ -195,7 +195,9 @@ public class WeatherService {
                     hPa * 0.750063 - 17.2));
 
             // Видимость
-            message.append(String.format("• Видимость %s м\n", df.format(obj.getInt("visibility"))));
+            if (obj.has("visibility")) {
+                message.append(String.format("• Видимость %s м\n", df.format(obj.getInt("visibility"))));
+            }
 
             weather = message.toString();
             log.info("Parsing finish!");

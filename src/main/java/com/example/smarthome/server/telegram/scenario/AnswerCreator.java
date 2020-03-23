@@ -6,5 +6,5 @@ import com.example.smarthome.server.telegram.objects.IncomingMessage;
 @FunctionalInterface
 public interface AnswerCreator {
 
-    void create(UserInstance user, IncomingMessage msg);
+    boolean create(UserInstance user, IncomingMessage msg);
 }

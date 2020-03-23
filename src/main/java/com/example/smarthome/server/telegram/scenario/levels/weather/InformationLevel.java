@@ -1,4 +1,4 @@
-package com.example.smarthome.server.telegram.scenario.levels;
+package com.example.smarthome.server.telegram.scenario.levels.weather;
 
 import com.example.smarthome.server.service.WeatherService;
 import com.example.smarthome.server.telegram.EmojiCallback;
@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
-import static com.example.smarthome.server.telegram.scenario.levels.ListCitiesLevel.goToListCitiesLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.MenuLevel.goToMenuLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.weather.ListCitiesLevel.goToListCitiesLevel;
 
 public class InformationLevel implements AnswerCreator {
 
@@ -51,8 +51,8 @@ public class InformationLevel implements AnswerCreator {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
-        if (msg.getType() == MessageType.CALLBACK)
+    public boolean create(UserInstance user, IncomingMessage msg) {
+        if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
                 case "weather":
                     goToListCitiesLevel(user, msg);
@@ -69,6 +69,11 @@ public class InformationLevel implements AnswerCreator {
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
+        }
+        // иначе, если содержание сообщения не может быть обработано уровнем, возвращаем ложь
+        return false;
     }
 
     public static void updateInformationMessage(UserInstance user, IncomingMessage msg, String s) {

@@ -1,10 +1,11 @@
-package com.example.smarthome.server.telegram.scenario.levels;
+package com.example.smarthome.server.telegram.scenario.levels.weather;
 
 import com.example.smarthome.server.service.WeatherService;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
+import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
@@ -13,7 +14,7 @@ import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
-import static com.example.smarthome.server.telegram.scenario.levels.ListCitiesLevel.goToListCitiesLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.weather.ListCitiesLevel.goToListCitiesLevel;
 
 public class WeatherLevel implements AnswerCreator {
 
@@ -25,6 +26,7 @@ public class WeatherLevel implements AnswerCreator {
     // ************************************* MESSAGES *************************************************
     private static final String errorGettingWeatherInfo = "Ошибка при получении информаци о погоде";
     private static final String notModified = "Bad Request: message is not modified";
+    private static final String buttonInvalid = "Кнопка недействительна";
 
     private WeatherLevel() {
     }
@@ -34,7 +36,7 @@ public class WeatherLevel implements AnswerCreator {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
+    public boolean create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
             String[] arr = p.split(msg.getText());
             String cmd = arr[0];
@@ -50,8 +52,14 @@ public class WeatherLevel implements AnswerCreator {
                     goToListCitiesLevel(user, msg);
                     EmojiCallback.back(msg.getCallbackId());
                     break;
+                default:
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
         }
+        // иначе, если содержание сообщения не может быть обработано уровнем, возвращаем ложь
+        return false;
     }
 
     public static void goToWeatherLevel(UserInstance user, IncomingMessage msg, int cityId) {
@@ -59,8 +67,8 @@ public class WeatherLevel implements AnswerCreator {
                         new ArrayList<CallbackButton>() {{
                             add(new CallbackButton("Удалить", "remove_" + cityId));
                         }})
-                .setMessageId(msg.getId())
-                .hasBackButton(true),
+                        .setMessageId(msg.getId())
+                        .hasBackButton(true),
                 () -> user.setCurrentLvl(instance));
     }
 }

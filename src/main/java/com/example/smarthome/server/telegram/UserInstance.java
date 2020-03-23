@@ -86,7 +86,7 @@ public class UserInstance {
         processing = true;
         if (!CheckOfStartCommand.getInstance().check(this, msg)) {
             if (currentLvl != null) {
-                currentLvl.create(this, msg);
+                processing = currentLvl.create(this, msg);
             }
         }
     }

@@ -49,7 +49,7 @@ public class DevicesLevel implements AnswerCreator {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
+    public boolean create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
             String[] arr = PATTERN.split(msg.getText());
             String cmd = arr[0];
@@ -72,7 +72,11 @@ public class DevicesLevel implements AnswerCreator {
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
         }
+        // иначе, если содержание сообщения не может быть обработано уровнем, возвращаем ложь
+        return false;
     }
 
     public static void goToDevicesLevel(UserInstance user, IncomingMessage msg) {

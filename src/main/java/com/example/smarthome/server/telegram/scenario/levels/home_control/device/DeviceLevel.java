@@ -51,7 +51,7 @@ public class DeviceLevel implements AnswerCreator {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
+    public boolean create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
 
             String[] arr = PATTERN.split(msg.getText());
@@ -85,7 +85,11 @@ public class DeviceLevel implements AnswerCreator {
                 log.warn(e.getMessage());
                 goToHomeControlLevel(user, msg);
             }
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
         }
+        // иначе, если содержание сообщения не может быть обработано уровнем, возвращаем ложь
+        return false;
     }
 
     public static void goToDeviceLevel(UserInstance user, IncomingMessage msg, int deviceId) {

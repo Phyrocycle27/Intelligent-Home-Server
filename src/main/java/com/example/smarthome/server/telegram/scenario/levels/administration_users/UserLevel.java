@@ -37,6 +37,7 @@ public class UserLevel implements AnswerCreator {
 
     // ************************************* MESSAGES *************************************************
     private static final String userNotFound = "Пользователь не найден";
+    private static final String buttonInvalid = "Кнопка недействительна";
 
     private UserLevel() {
     }
@@ -46,7 +47,7 @@ public class UserLevel implements AnswerCreator {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
+    public boolean create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
 
             String[] arr = PATTERN.split(msg.getText());
@@ -65,8 +66,14 @@ public class UserLevel implements AnswerCreator {
                 case "change-role":
                     goToUserSetupRoleLevel(user, msg, userId);
                     EmojiCallback.next(msg.getCallbackId());
+                default:
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
         }
+        // иначе, если содержание сообщения не может быть обработано уровнем, возвращаем ложь
+        return false;
     }
 
     public static void goToUserLevel(UserInstance userInstance, IncomingMessage msg, long userId) {

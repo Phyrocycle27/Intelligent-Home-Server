@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
-import static com.example.smarthome.server.telegram.scenario.levels.InformationLevel.goToInformationLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.weather.InformationLevel.goToInformationLevel;
 
 public class MenuLevel implements AnswerCreator {
 
@@ -42,8 +42,8 @@ public class MenuLevel implements AnswerCreator {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
-        if (msg.getType() == MessageType.CALLBACK)
+    public boolean create(UserInstance user, IncomingMessage msg) {
+        if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
                 case "home_control":
                     goToHomeControlLevel(user, msg);
@@ -56,6 +56,11 @@ public class MenuLevel implements AnswerCreator {
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
+        }
+        // иначе, если содержание сообщения не может быть обработано уровнем, возвращаем ложь
+        return false;
     }
 
     public static void goToMenuLevel(UserInstance user, IncomingMessage msg) {

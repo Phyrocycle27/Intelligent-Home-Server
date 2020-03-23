@@ -18,11 +18,12 @@ public class DeviceCreationLevel implements AnswerCreator {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
+    public boolean create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK && msg.getText().equals("back")) {
             user.getDeviceCreator().goToPrev(msg);
             EmojiCallback.back(msg.getCallbackId());
         } else user.getDeviceCreator().process(msg);
+        return true;
     }
 
     public static void goToDeviceCreationLevel(UserInstance user, IncomingMessage msg) {

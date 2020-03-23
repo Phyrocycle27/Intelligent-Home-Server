@@ -5,6 +5,7 @@ import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
+import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
@@ -27,12 +28,13 @@ public class DeviceEditingLevel implements AnswerCreator {
 
     // ************************************* MESSAGES *************************************************
     private static final String chooseToEdit = "Выберите параметр, который хотите изменить";
+    private static final String buttonInvalid = "Кнопка недействительна";
 
     private DeviceEditingLevel() {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
+    public boolean create(UserInstance user, IncomingMessage msg) {
         if (user.getDeviceEditor().getCurrEditingLvl() == null) {
             if (msg.getType() == MessageType.CALLBACK) {
                 switch (msg.getText()) {
@@ -51,6 +53,8 @@ public class DeviceEditingLevel implements AnswerCreator {
                         user.getDeviceEditor().destroy();
                         EmojiCallback.back(msg.getCallbackId());
                         break;
+                    default:
+                        executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
                 }
             }
         } else {
@@ -62,6 +66,7 @@ public class DeviceEditingLevel implements AnswerCreator {
                 user.getDeviceEditor().process(msg);
             }
         }
+        return true;
     }
 
     public static void goToDeviceEditingLevel(UserInstance user, IncomingMessage msg, int deviceId) {

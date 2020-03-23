@@ -57,8 +57,8 @@ public class HomeControlLevel implements AnswerCreator {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
-        if (msg.getType() == MessageType.CALLBACK)
+    public boolean create(UserInstance user, IncomingMessage msg) {
+        if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
                 case "devices":
                     goToDevicesLevel(user, msg);
@@ -79,6 +79,11 @@ public class HomeControlLevel implements AnswerCreator {
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
+        }
+        // иначе, если содержание сообщения не может быть обработано уровнем, возвращаем ложь
+        return false;
     }
 
     public static void goToHomeControlLevel(UserInstance user, IncomingMessage msg) {

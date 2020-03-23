@@ -7,6 +7,7 @@ import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.UserRole;
+import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
@@ -28,6 +29,7 @@ public class UserSetupRoleLevel implements AnswerCreator {
 
     // ************************************* MESSAGES *************************************************
     private static final String chooseRole = "Выберите уровень доступа, который хотите назначить пользователю";
+    private static final String buttonInvalid = "Кнопка недействительна";
 
     private UserSetupRoleLevel() {
     }
@@ -37,7 +39,7 @@ public class UserSetupRoleLevel implements AnswerCreator {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
+    public boolean create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
 
             String[] arr = PATTERN.split(msg.getText());
@@ -58,8 +60,14 @@ public class UserSetupRoleLevel implements AnswerCreator {
                 case "back":
                     goToUserAdditionLevel(user, msg);
                     EmojiCallback.back(msg.getCallbackId());
+                default:
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
         }
+        // иначе, если содержание сообщения не может быть обработано уровнем, возвращаем ложь
+        return false;
     }
 
     public static void goToUserSetupRoleLevel(UserInstance user, IncomingMessage msg, long userId) {

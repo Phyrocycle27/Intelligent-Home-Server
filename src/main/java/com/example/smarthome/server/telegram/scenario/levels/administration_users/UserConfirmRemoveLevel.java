@@ -4,6 +4,8 @@ import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
+import com.example.smarthome.server.telegram.objects.MessageType;
+import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
@@ -26,6 +28,7 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
     // ************************************* MESSAGES *************************************************
     private static final String removeConfirmationUser = "Вы действительно хотите удалить этого пользователя?";
     private static final String userRemoved = "Пользователь удалён";
+    private static final String buttonInvalid = "Кнопка недействительна";
 
     private UserConfirmRemoveLevel() {
     }
@@ -35,20 +38,31 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
     }
 
     @Override
-    public void create(UserInstance user, IncomingMessage msg) {
-        String[] arr = PATTERN.split(msg.getText());
+    public boolean create(UserInstance user, IncomingMessage msg) {
+        if (msg.getType() == MessageType.CALLBACK) {
+            String[] arr = PATTERN.split(msg.getText());
 
-        String cmd = arr[0];
-        long userId = Long.parseLong(arr[1]);
+            String cmd = arr[0];
+            long userId = arr.length > 1? Long.parseLong(arr[1]): 0;
 
-        if (cmd.equals("confirmRemove")) {
-            service.deleteUser(userId);
-            goToUsersLevel(user, msg);
-            EmojiCallback.success(msg.getCallbackId());
-        } else if (cmd.equals("cancel")) {
-            goToUserLevel(user, msg, userId);
-            EmojiCallback.back(msg.getCallbackId());
+            switch (cmd) {
+                case "confirmRemove":
+                    service.deleteUser(userId);
+                    goToUsersLevel(user, msg);
+                    EmojiCallback.success(msg.getCallbackId());
+                    break;
+                case "cancel":
+                    goToUserLevel(user, msg, userId);
+                    EmojiCallback.back(msg.getCallbackId());
+                    break;
+                default:
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+            }
+            // если сообщение успешно обработано, то возвращаем истину
+            return true;
         }
+        // иначе, если содержание сообщения не может быть обработано уровнем, возвращаем ложь
+        return false;
     }
 
     public static void goToUserConfirmRemoveLevel(UserInstance user, IncomingMessage msg, long userId) {
