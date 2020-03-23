@@ -11,6 +11,9 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,25 +26,20 @@ import static com.example.smarthome.server.telegram.scenario.levels.weather.City
 import static com.example.smarthome.server.telegram.scenario.levels.weather.InformationLevel.goToInformationLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.weather.WeatherLevel.goToWeatherLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ListCitiesLevel implements AnswerCreator {
 
+    @Getter
     private static final ListCitiesLevel instance = new ListCitiesLevel();
-    private static final WeatherService weather = WeatherService.getInstance();
 
     private static final Logger log = LoggerFactory.getLogger(ListCitiesLevel.class);
+    private static final WeatherService weather = WeatherService.getInstance();
     private static final Pattern p = Pattern.compile("[_]");
 
     // ************************************* MESSAGES *************************************************
     private static final String levelMessage = "Выберите один из городов, чтобы узнать в нём текущую погоду, или " +
             "добавьте новый город";
     private static final String buttonInvalid = "Кнопка недействительна";
-
-    private ListCitiesLevel() {
-    }
-
-    public static ListCitiesLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

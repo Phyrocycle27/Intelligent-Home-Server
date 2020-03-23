@@ -6,6 +6,9 @@ import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.scenario.MessageProcessor;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,26 +26,17 @@ public class DeviceCreator {
 
     private static final Logger log = LoggerFactory.getLogger(DeviceCreator.class);
 
+    @Setter(value = AccessLevel.PACKAGE)
+    @Getter(value = AccessLevel.PACKAGE)
     private MessageProcessor currCreationLvl;
     private final UserInstance user;
 
+    @Getter(value = AccessLevel.PACKAGE)
     private final Output creationOutput;
 
     DeviceCreator(UserInstance user) {
         creationOutput = new Output();
         this.user = user;
-    }
-
-    Output getCreationOutput() {
-        return creationOutput;
-    }
-
-    MessageProcessor getCurrCreationLvl() {
-        return currCreationLvl;
-    }
-
-    void setCurrCreationLvl(MessageProcessor currCreationLvl) {
-        this.currCreationLvl = currCreationLvl;
     }
 
     void start(IncomingMessage msg) {

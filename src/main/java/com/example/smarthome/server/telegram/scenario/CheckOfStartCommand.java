@@ -1,4 +1,4 @@
-package com.example.smarthome.server.telegram.scenario.levels;
+package com.example.smarthome.server.telegram.scenario;
 
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;

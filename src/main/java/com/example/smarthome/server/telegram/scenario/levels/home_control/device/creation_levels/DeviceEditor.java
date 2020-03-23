@@ -7,6 +7,9 @@ import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.scenario.MessageProcessor;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,22 +23,12 @@ public class DeviceEditor {
 
     private static final Logger log = LoggerFactory.getLogger(DeviceEditor.class);
 
-    public MessageProcessor getCurrEditingLvl() {
-        return currEditingLvl;
-    }
-
-    public void setCurrEditingLvl(MessageProcessor currEditingLvl) {
-        this.currEditingLvl = currEditingLvl;
-    }
-
+    @Setter(value = AccessLevel.PACKAGE)
+    @Getter(value = AccessLevel.PACKAGE)
     private MessageProcessor currEditingLvl;
     private final UserInstance user;
-
+    @Getter(value = AccessLevel.PACKAGE)
     private final Output editingOutput;
-
-    public Output getEditingOutput() {
-        return editingOutput;
-    }
 
     DeviceEditor(UserInstance user, int deviceId) throws ChannelNotFoundException {
         editingOutput = getOutput(getChannel(user.getChatId()), deviceId);

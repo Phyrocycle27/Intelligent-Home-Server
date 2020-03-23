@@ -11,36 +11,27 @@ import com.example.smarthome.server.repository.TokensRepository;
 import com.example.smarthome.server.telegram.objects.UserRole;
 import io.netty.channel.Channel;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DeviceAccessService {
 
-    private static final Logger LOGGER;
-    private static DeviceAccessService instance;
+    private static final Logger log = LoggerFactory.getLogger(DeviceAccessService.class);
+    @Getter
+    private static final DeviceAccessService instance = new DeviceAccessService();
     @Setter
     private TokensRepository tokensRepo;
     @Setter
     private TelegramUsersRepository usersRepo;
-
-    static {
-        LOGGER = Logger.getLogger(DeviceAccessService.class.getName());
-    }
-
-    public static synchronized DeviceAccessService getInstance() {
-        if (instance == null) {
-            instance = new DeviceAccessService();
-        }
-        return instance;
-    }
 
     public String createToken(long userId) {
         String tokenStr = SecureTokenGenerator.nextToken();
@@ -98,7 +89,7 @@ public class DeviceAccessService {
         try {
             flag = getChannel(userId) != null;
         } catch (ChannelNotFoundException e) {
-            LOGGER.log(Level.ALL, e.getMessage());
+            log.warn(e.getMessage());
         }
         return flag;
     }

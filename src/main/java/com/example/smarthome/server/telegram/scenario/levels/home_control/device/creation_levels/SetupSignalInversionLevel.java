@@ -6,14 +6,19 @@ import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.MessageProcessor;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SetupSignalInversionLevel implements MessageProcessor {
 
+    @Getter
     private static final SetupSignalInversionLevel instance = new SetupSignalInversionLevel();
 
     // ************************************* MESSAGES *************************************************
@@ -24,13 +29,6 @@ public class SetupSignalInversionLevel implements MessageProcessor {
         add(new CallbackButton("Да", "true"));
         add(new CallbackButton("Нет", "false"));
     }};
-
-    private SetupSignalInversionLevel() {
-    }
-
-    public static SetupSignalInversionLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public Object process(UserInstance user, IncomingMessage msg) {

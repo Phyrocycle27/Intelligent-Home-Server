@@ -9,6 +9,9 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -17,8 +20,10 @@ import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserLevel.goToUserLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserConfirmRemoveLevel implements AnswerCreator {
 
+    @Getter
     private static final UserConfirmRemoveLevel instance = new UserConfirmRemoveLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
@@ -29,13 +34,6 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
     private static final String removeConfirmationUser = "Вы действительно хотите удалить этого пользователя?";
     private static final String userRemoved = "Пользователь удалён";
     private static final String buttonInvalid = "Кнопка недействительна";
-
-    private UserConfirmRemoveLevel() {
-    }
-
-    public static UserConfirmRemoveLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

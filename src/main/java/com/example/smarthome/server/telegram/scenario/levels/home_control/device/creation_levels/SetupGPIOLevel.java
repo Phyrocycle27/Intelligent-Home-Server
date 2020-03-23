@@ -7,6 +7,9 @@ import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.MessageProcessor;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,21 +20,16 @@ import static com.example.smarthome.server.connection.ClientAPI.getChannel;
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SetupGPIOLevel implements MessageProcessor {
 
+    @Getter
     private static final SetupGPIOLevel instance = new SetupGPIOLevel();
 
     private static final Logger log = LoggerFactory.getLogger(SetupGPIOLevel.class);
 
     // ************************************* MESSAGES *************************************************
     private static final String choosePin = "Теперь выберите пин, к которому вы хотите подключить новое устройство";
-
-    private SetupGPIOLevel() {
-    }
-
-    public static SetupGPIOLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public Object process(UserInstance user, IncomingMessage msg) {

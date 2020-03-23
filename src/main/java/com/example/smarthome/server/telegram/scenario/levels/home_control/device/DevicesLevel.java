@@ -13,6 +13,9 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,8 +30,10 @@ import static com.example.smarthome.server.telegram.scenario.levels.home_control
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceLevel.goToDeviceLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceCreationLevel.goToDeviceCreationLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DevicesLevel implements AnswerCreator {
 
+    @Getter
     private static final DevicesLevel instance = new DevicesLevel();
 
     private static final Logger log = LoggerFactory.getLogger(DevicesLevel.class);
@@ -40,13 +45,6 @@ public class DevicesLevel implements AnswerCreator {
     private static final String buttonInvalid = "Кнопка недействительна";
     private static final String devicesNotFound = "Устройства не обнаружены. Вы можете добавить их прямо сейчас";
     private static final String devicesMsg = "Нажмите на существующее устройство или добавьте новое";
-
-    private DevicesLevel() {
-    }
-
-    public static DevicesLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

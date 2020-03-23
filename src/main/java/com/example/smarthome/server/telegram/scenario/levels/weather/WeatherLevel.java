@@ -9,6 +9,9 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -16,8 +19,10 @@ import java.util.regex.Pattern;
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.weather.ListCitiesLevel.goToListCitiesLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class WeatherLevel implements AnswerCreator {
 
+    @Getter
     private static final WeatherLevel instance = new WeatherLevel();
 
     private static final WeatherService weather = WeatherService.getInstance();
@@ -27,13 +32,6 @@ public class WeatherLevel implements AnswerCreator {
     private static final String errorGettingWeatherInfo = "Ошибка при получении информаци о погоде";
     private static final String notModified = "Bad Request: message is not modified";
     private static final String buttonInvalid = "Кнопка недействительна";
-
-    private WeatherLevel() {
-    }
-
-    public static WeatherLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

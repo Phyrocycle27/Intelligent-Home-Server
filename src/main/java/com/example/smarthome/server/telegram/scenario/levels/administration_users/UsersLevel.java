@@ -13,6 +13,9 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +26,10 @@ import static com.example.smarthome.server.telegram.scenario.levels.administrati
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserLevel.goToUserLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UsersLevel implements AnswerCreator {
 
+    @Getter
     private static final UsersLevel instance = new UsersLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
@@ -35,13 +40,6 @@ public class UsersLevel implements AnswerCreator {
     // ************************************* MESSAGES ************************************************
     private static final String allowedUsersMessage = "Список пользователей, имеющих доступ к вашему дому";
     private static final String buttonInvalid = "Кнопка недействительна";
-
-    private UsersLevel() {
-    }
-
-    public static UsersLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

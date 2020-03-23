@@ -9,6 +9,9 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,8 +25,10 @@ import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync
 import static com.example.smarthome.server.telegram.scenario.levels.MenuLevel.goToMenuLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.weather.ListCitiesLevel.goToListCitiesLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class InformationLevel implements AnswerCreator {
 
+    @Getter
     private static final InformationLevel instance = new InformationLevel();
 
     private static final Logger log = LoggerFactory.getLogger(InformationLevel.class.getName());
@@ -42,13 +47,6 @@ public class InformationLevel implements AnswerCreator {
         add(new CallbackButton("Погода", "weather"));
         add(new CallbackButton("Время", "time"));
     }};
-
-    private InformationLevel() {
-    }
-
-    public static InformationLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

@@ -11,6 +11,9 @@ import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import com.example.smarthome.server.telegram.scenario.levels.MenuLevel;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +23,10 @@ import static com.example.smarthome.server.telegram.scenario.levels.MenuLevel.go
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class HomeControlLevel implements AnswerCreator {
 
+    @Getter
     private static final HomeControlLevel instance = new HomeControlLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
@@ -48,13 +53,6 @@ public class HomeControlLevel implements AnswerCreator {
     private static final List<CallbackButton> tokenGenButton = new ArrayList<CallbackButton>() {{
         add(new CallbackButton("Сгенерировать токен", "token_gen"));
     }};
-
-    private HomeControlLevel() {
-    }
-
-    public static HomeControlLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

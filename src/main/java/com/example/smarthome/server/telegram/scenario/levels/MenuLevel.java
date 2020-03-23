@@ -9,6 +9,9 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,8 +20,10 @@ import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.weather.InformationLevel.goToInformationLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class MenuLevel implements AnswerCreator {
 
+    @Getter
     private static final MenuLevel instance = new MenuLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
@@ -33,13 +38,6 @@ public class MenuLevel implements AnswerCreator {
         add(new CallbackButton("Управление домом", "home_control"));
         add(new CallbackButton("Информация", "information"));
     }};
-
-    private MenuLevel() {
-    }
-
-    public static MenuLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

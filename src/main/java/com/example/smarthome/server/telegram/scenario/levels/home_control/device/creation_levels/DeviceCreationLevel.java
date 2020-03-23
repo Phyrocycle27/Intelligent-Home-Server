@@ -5,17 +5,15 @@ import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DeviceCreationLevel implements AnswerCreator {
 
+    @Getter
     private static final DeviceCreationLevel instance = new DeviceCreationLevel();
-
-    private DeviceCreationLevel() {
-    }
-
-    public static DeviceCreationLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

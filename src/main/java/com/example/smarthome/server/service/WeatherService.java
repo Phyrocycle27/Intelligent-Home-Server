@@ -5,6 +5,8 @@ import com.example.smarthome.server.entity.WeatherUser;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.repository.CitiesRepository;
 import com.example.smarthome.server.repository.WeatherUsersRepository;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -32,12 +34,16 @@ public class WeatherService {
     private final String unitParam = "&units=metric";
     private final String URI = URL + API_KEY + langParam + unitParam;
 
+    @Getter
+    private static final WeatherService instance = new WeatherService();
+
+    @Setter
     private CitiesRepository citiesRepo;
+    @Setter
     private WeatherUsersRepository usersRepo;
 
     private final DecimalFormat df;
     private final HttpClient client;
-    private static WeatherService instance;
     private LocationManager locationManager;
     private final Logger log;
 
@@ -56,21 +62,6 @@ public class WeatherService {
         locationManager = new LocationManager();
 
         log = LoggerFactory.getLogger(WeatherService.class);
-    }
-
-    public static WeatherService getInstance() {
-        if (instance == null) {
-            instance = new WeatherService();
-        }
-        return instance;
-    }
-
-    public void setCitiesRepo(CitiesRepository cities) {
-        this.citiesRepo = cities;
-    }
-
-    public void setUsersRepo(WeatherUsersRepository users) {
-        this.usersRepo = users;
     }
 
     public List<City> getUserCities(long userId) throws UserNotFoundException {

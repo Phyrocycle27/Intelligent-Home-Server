@@ -9,6 +9,9 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,8 +25,10 @@ import static com.example.smarthome.server.telegram.scenario.levels.home_control
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceLevel.goToDeviceLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DeviceConfirmRemoveLevel implements AnswerCreator {
 
+    @Getter
     private static final DeviceConfirmRemoveLevel instance = new DeviceConfirmRemoveLevel();
 
     private static final Logger log = LoggerFactory.getLogger(DeviceConfirmRemoveLevel.class);
@@ -33,13 +38,6 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
     // ************************************* MESSAGES *************************************************
     private static final String removeConfirmationDevice = "Вы действительно хотите удалить это устройство?";
     private static final String buttonInvalid = "Кнопка недействительна";
-
-    private DeviceConfirmRemoveLevel() {
-    }
-
-    public static DeviceConfirmRemoveLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

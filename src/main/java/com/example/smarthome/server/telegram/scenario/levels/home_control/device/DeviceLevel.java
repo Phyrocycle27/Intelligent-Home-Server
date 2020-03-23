@@ -13,6 +13,9 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,8 +30,10 @@ import static com.example.smarthome.server.telegram.scenario.levels.home_control
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceEditingLevel.goToDeviceEditingLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DeviceLevel implements AnswerCreator {
 
+    @Getter
     private static final DeviceLevel instance = new DeviceLevel();
 
     private static final Logger log = LoggerFactory.getLogger(DeviceLevel.class);
@@ -41,14 +46,6 @@ public class DeviceLevel implements AnswerCreator {
     private static final String buttonInvalid = "Кнопка недействительна";
     private static final String deviceOff = "Устройство выключено";
     private static final String deviceOn = "Устройство включено";
-
-
-    private DeviceLevel() {
-    }
-
-    public static DeviceLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

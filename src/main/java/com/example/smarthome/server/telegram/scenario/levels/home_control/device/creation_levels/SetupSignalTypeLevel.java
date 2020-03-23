@@ -8,14 +8,19 @@ import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.MessageProcessor;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SetupSignalTypeLevel implements MessageProcessor {
 
+    @Getter
     private static final SetupSignalTypeLevel instance = new SetupSignalTypeLevel();
 
     // ************************************* MESSAGES *************************************************
@@ -27,13 +32,6 @@ public class SetupSignalTypeLevel implements MessageProcessor {
         add(new CallbackButton("Цифровой", "digital"));
         add(new CallbackButton("ШИМ", "pwm"));
     }};
-
-    private SetupSignalTypeLevel() {
-    }
-
-    public static SetupSignalTypeLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public Object process(UserInstance user, IncomingMessage msg) {

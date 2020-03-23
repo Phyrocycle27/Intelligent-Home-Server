@@ -5,25 +5,23 @@ import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.MessageProcessor;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SetupNameLevel implements MessageProcessor {
 
+    @Getter
     private static final SetupNameLevel instance = new SetupNameLevel();
     private static final Logger log = LoggerFactory.getLogger(SetupNameLevel.class);
 
     // ************************************* MESSAGES *************************************************
     private static final String enterName = "Пожалуйста, введите имя нового устройства";
-
-    private SetupNameLevel() {
-    }
-
-    public static SetupNameLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public Object process(UserInstance user, IncomingMessage msg) {

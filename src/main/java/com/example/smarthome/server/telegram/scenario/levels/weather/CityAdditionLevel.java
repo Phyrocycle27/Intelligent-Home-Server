@@ -8,6 +8,9 @@ import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.regex.Pattern;
 
@@ -15,8 +18,10 @@ import static com.example.smarthome.server.telegram.MessageExecutor.deleteAsync;
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.weather.ListCitiesLevel.goToListCitiesLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CityAdditionLevel implements AnswerCreator {
 
+    @Getter
     private static final CityAdditionLevel instance = new CityAdditionLevel();
 
     private static final WeatherService weather = WeatherService.getInstance();
@@ -27,13 +32,6 @@ public class CityAdditionLevel implements AnswerCreator {
     private static final String cityNotFound = "Похоже, что в этом районе нет метеостанций OpenWeatherMap. " +
             "Попробуйте отправить другую геопозицию";
     private static final String buttonInvalid = "Кнопка недействительна";
-
-    private CityAdditionLevel() {
-    }
-
-    public static CityAdditionLevel getInstance() {
-        return instance;
-    }
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {

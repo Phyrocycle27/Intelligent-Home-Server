@@ -6,26 +6,23 @@ import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.deleteAsync;
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserSetupRoleLevel.goToUserSetupRoleLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserAdditionLevel implements AnswerCreator {
 
+    @Getter
     private static final UserAdditionLevel instance = new UserAdditionLevel();
 
     // ************************************* MESSAGES *************************************************
     private static final String sendUserContact = "Отправьте контакт пользователя, которого хотите добавить";
-
-    private UserAdditionLevel() {
-    }
-
-    public static UserAdditionLevel getInstance() {
-        return instance;
-    }
-
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {
