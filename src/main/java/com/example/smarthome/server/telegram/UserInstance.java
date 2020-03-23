@@ -44,7 +44,6 @@ public class UserInstance {
     }
 
     synchronized void sendAnswer(IncomingMessage msg) {
-        processing = true;
         if (!CheckOfStartCommand.getInstance().check(this, msg)) {
             if (currentLvl != null) {
                 processing = currentLvl.create(this, msg);
