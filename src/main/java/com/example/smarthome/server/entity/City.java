@@ -12,7 +12,7 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "cities")
 @EqualsAndHashCode(of = {"id"})
-@ToString(of = {"id", "name", "state", "countryCode"})
+@ToString(of = {"id", "name", "suburb", "state", "countryCode"})
 @AllArgsConstructor
 @NoArgsConstructor
 @Proxy(lazy = false)
@@ -26,6 +26,9 @@ public class City {
 
     @Column
     private String state;
+
+    @Column
+    private String suburb;
 
     @Column(name = "county_code")
     private String countryCode;

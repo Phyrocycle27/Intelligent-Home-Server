@@ -30,14 +30,14 @@ import java.util.function.Consumer;
 
 public class Bot extends TelegramLongPollingBot {
 
-    //    private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
-    //    private final static String USER_NAME = "intelligent_home_bot";
+//        private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
+//        private final static String USER_NAME = "intelligent_home_bot";
     private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
     private final static String USER_NAME = "intelligent_home_beta_bot";
 
     public static final Logger log = LoggerFactory.getLogger(Bot.class);
 
-    private ExecutorService pool = Executors.newFixedThreadPool(32);
+    private ExecutorService pool = Executors.newFixedThreadPool(16);
     private Map<Long, UserInstance> instances = new HashMap<>();
 
     private static Bot instance;
@@ -111,10 +111,6 @@ public class Bot extends TelegramLongPollingBot {
 
                 long ns_3 = System.nanoTime() / 1000;
                 log.info("Prepared in " + (ns_2 - ns) + " mcs" + "; after answer " + (ns_3 - ns_2) + "mcs");
-
-                if (instance.getCurrentLvl() != null) {
-                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getName());
-                }
             } else {
                 if (type == MessageType.CALLBACK) {
                     if (instance.getSpamCount() < 5) {
@@ -168,6 +164,9 @@ public class Bot extends TelegramLongPollingBot {
                     task.process();
                 }
                 instance.setProcessing(false);
+                if (instance.getCurrentLvl() != null) {
+                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
+                }
             }
 
             @Override
@@ -176,11 +175,17 @@ public class Bot extends TelegramLongPollingBot {
                     errorHandler.accept(e);
                 }
                 instance.setProcessing(false);
+                if (instance.getCurrentLvl() != null) {
+                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
+                }
             }
 
             @Override
             public void onException(BotApiMethod<Message> botApiMethod, Exception e) {
                 instance.setProcessing(false);
+                if (instance.getCurrentLvl() != null) {
+                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
+                }
             }
         });
     }
@@ -195,6 +200,9 @@ public class Bot extends TelegramLongPollingBot {
                     task.process();
                 }
                 instance.setProcessing(false);
+                if (instance.getCurrentLvl() != null) {
+                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
+                }
             }
 
             @Override
@@ -203,11 +211,17 @@ public class Bot extends TelegramLongPollingBot {
                     errorHandler.accept(e);
                 }
                 instance.setProcessing(false);
+                if (instance.getCurrentLvl() != null) {
+                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
+                }
             }
 
             @Override
             public void onException(BotApiMethod<Serializable> botApiMethod, Exception e) {
                 instance.setProcessing(false);
+                if (instance.getCurrentLvl() != null) {
+                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
+                }
             }
         });
     }

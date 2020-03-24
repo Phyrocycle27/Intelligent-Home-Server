@@ -135,62 +135,105 @@ public class WeatherService {
         try {
             log.info("Send..");
             final HttpEntity entity = client.execute(request).getEntity();
+
             log.info("Parse data...");
             StringBuilder message = new StringBuilder();
             JSONObject obj = new JSONObject(EntityUtils.toString(entity));
-            String name = city.getName().equals(city.getState())? city.getName():
-                    String.format("%s, %s", city.getName(), city.getState());
+            int infoCnt = 0;
 
-            message.append(String.format("<b><i>%s</i></b>\n", name));
+            if (city.getName() != null || city.getState() != null) {
+                String name = city.getName().equals(city.getState()) ? city.getName() :
+                        String.format("%s, %s", city.getName(), city.getState());
 
-            // Температура
-            JSONObject main = obj.getJSONObject("main");
+                message.append(String.format("<b><i>%s</i></b>\n", name));
 
-            message.append(String.format(Locale.ENGLISH, "• Температура %.2f °C\n",
-                    main.getFloat("temp")));
-            message.append(String.format(Locale.ENGLISH, "• Ощущается как %.2f °C\n",
-                    main.getFloat("feels_like")));
+                // ТЕМПЕРАТУРА
+                if (obj.has("main")) {
+                    JSONObject main = obj.getJSONObject("main");
 
-            // Влажность
-            message.append(String.format("• Влажность %d %%\n",
-                    main.getInt("humidity")));
+                    if (main.has("temp")) {
+                        message.append(String.format(Locale.ENGLISH, "• Температура %.2f °C\n",
+                                main.getFloat("temp")));
+                        infoCnt++;
+                    }
 
-            // Описание
-            StringBuilder description = new StringBuilder();
-            JSONArray array = obj.getJSONArray("weather");
+                    if (main.has("feels_like")) {
+                        message.append(String.format(Locale.ENGLISH, "• Ощущается как %.2f °C\n",
+                                main.getFloat("feels_like")));
+                        infoCnt++;
+                    }
 
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject tmp = array.getJSONObject(i);
-                description.append(tmp.getString("description"));
+                    // ВЛАЖНОСТЬ
+                    if (main.has("humidity")) {
+                        message.append(String.format("• Влажность %d %%\n",
+                                main.getInt("humidity")));
+                        infoCnt++;
+                    }
 
-                if (i + 1 < array.length())
-                    description.append(", ");
+                    // ДАВЛЕНИЕ
+                    if (main.has("pressure")) {
+                        int hPa = main.getInt("pressure");
+                        message.append(String.format(Locale.ENGLISH, "• Давление %.2f мм рт.ст.\n",
+                                hPa * 0.750063 - 17.2));
+                        infoCnt++;
+                    }
+                }
+
+                // ОПИСАНИЕ
+                StringBuilder description = new StringBuilder();
+                if (obj.has("weather")) {
+                    JSONArray array = obj.getJSONArray("weather");
+
+                    for (int i = 0; i < array.length(); i++) {
+                        JSONObject tmp = array.getJSONObject(i);
+                        description.append(tmp.getString("description"));
+
+                        if (i + 1 < array.length())
+                            description.append(", ");
+                    }
+
+                    message.append(String.format("• На улице %s\n", description.toString()));
+                    infoCnt++;
+                }
+
+                // ВЕТЕР
+                if (obj.has("wind")) {
+                    JSONObject wind = obj.getJSONObject("wind");
+
+                    if (wind.has("speed")) {
+                        message.append(String.format("• Скорость ветра %d м/с\n",
+                                wind.getInt("speed")));
+                        infoCnt++;
+                    }
+                    if (wind.has("deg")) {
+                        message.append(String.format("• Направление ветра %s\n",
+                                getWindDir((wind.getInt("deg")))));
+                        infoCnt++;
+                    }
+                }
+
+                // ОБЛАЧНОСТЬ
+                if (obj.has("clouds")) {
+                    JSONObject clouds = obj.getJSONObject("clouds");
+                    message.append(String.format("• Облачность %d %%\n", clouds.getInt("all")));
+                    infoCnt++;
+                }
+
+                // ВИДИМОСТЬ
+                if (obj.has("visibility")) {
+                    message.append(String.format("• Видимость %s м\n", df.format(obj.getInt("visibility"))));
+                    infoCnt++;
+                }
+
+                if (infoCnt <= 2) {
+                    weather = "Недостаточно данных для этого региона";
+                } else {
+                    weather = message.toString();
+                }
+            } else {
+                weather = "Недостаточно данных для этого региона";
             }
 
-            message.append(String.format("• На улице %s\n", description.toString()));
-
-            // ВЕТЕР
-            JSONObject wind = obj.getJSONObject("wind");
-            message.append(String.format("• Скорость ветра %d м/с\n",
-                    wind.getInt("speed")));
-            message.append(String.format("• Направление ветра %s\n",
-                    getWindDir((wind.getInt("deg")))));
-
-            // ОБЛАЧНОСТЬ
-            JSONObject clouds = obj.getJSONObject("clouds");
-            message.append(String.format("• Облачность %d %%\n", clouds.getInt("all")));
-
-            // Давление
-            int hPa = main.getInt("pressure");
-            message.append(String.format(Locale.ENGLISH, "• Давление %.2f мм рт.ст.\n",
-                    hPa * 0.750063 - 17.2));
-
-            // Видимость
-            if (obj.has("visibility")) {
-                message.append(String.format("• Видимость %s м\n", df.format(obj.getInt("visibility"))));
-            }
-
-            weather = message.toString();
             log.info("Parsing finish!");
         } catch (IOException e) {
             e.printStackTrace();
@@ -243,15 +286,74 @@ public class WeatherService {
                 final HttpEntity entity = client.execute(request).getEntity();
 
                 JSONObject body = new JSONObject(EntityUtils.toString(entity));
+                log.info("Location manager: body is: " + body.toString());
 
                 if (body.has("address")) {
                     JSONObject address = body.getJSONObject("address");
 
+                    // NAME OF PLACE
+                    String name;
+
+                    if (address.has("village")) {
+                        name = address.getString("village");
+                    } else if (address.has("town")) {
+                        name = address.getString("town");
+                    } else if (address.has("city")) {
+                        name = address.getString("city");
+                    } else if (address.has("region")) {
+                        name = address.getString("region");
+                    } else if (address.has("county")) {
+                        name = address.getString("county");
+                    } else {
+                        name = null;
+                    }
+
+                    if (name != null) {
+                        if (name.contains("район")) {
+                            name = name.replace("район", "р-н");
+                        }
+                    }
+
+                    // SUBURB
+                    String suburb;
+
+                    if (address.has("neighbourhood")) {
+                        suburb = address.getString("neighbourhood");
+                    } else if (address.has("suburb")) {
+                        suburb = address.getString("suburb");
+                    } else if  (address.has("residential")) {
+                        suburb = address.getString("residential");
+                    } else {
+                        suburb = null;
+                    }
+
+                    if (suburb != null) {
+                        if (suburb.contains("микрорайон")) {
+                            suburb = suburb.replace("микрорайон", "мкр.");
+                        }
+                    }
+
+                    // STATE
+                    String state;
+
+                    if (address.has("state")) {
+                        state = address.getString("state");
+                    } else {
+                        state = null;
+                    }
+
+                    if (state != null) {
+                        if (state.contains("область")) {
+                            state = state.replace("область", "обл.");
+                        } else if (state.contains("административный округ")) {
+                            state = state.replace("административный округ", "адм.о.");
+                        }
+                    }
+
                     City city = new City();
-                    city.setName(address.has("city") ? address.getString("city") :
-                            address.has("town") ? address.getString("town") :
-                                    address.has("hamlet") ? address.getString("hamlet") : "Unknown");
-                    city.setState(address.has("state") ? address.getString("state") : "Unknown");
+                    city.setName(name);
+                    city.setState(state);
+                    city.setSuburb(suburb);
                     city.setCountryCode(address.getString("country_code"));
 
                     return city;

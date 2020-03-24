@@ -76,9 +76,17 @@ public class ListCitiesLevel implements AnswerCreator {
         try {
             List<City> cities = weather.getUserCities(user.getChatId());
             for (City city : cities) {
-                buttons.add(new CallbackButton(
-                        String.format("%s, %s", city.getName(), city.getState()), "id_" + city.getId()
-                ));
+                CallbackButton btn = new CallbackButton(String.format("%s, %s",
+                        city.getName(), city.getState()), "id_" + city.getId());
+
+                if (buttons.contains(btn)) {
+                    int index = buttons.indexOf(btn);
+                    buttons.get(index).setText(String.format("%s, %s",
+                            cities.get(index).getSuburb(), buttons.get(index).getText()));
+                    btn.setText(String.format("%s, %s", city.getSuburb(), btn.getText()));
+                }
+
+                buttons.add(btn);
             }
         } catch (UserNotFoundException e) {
             log.error(e.getMessage());
