@@ -21,6 +21,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -29,10 +33,11 @@ import java.util.Locale;
 public class WeatherService {
 
     private final String API_KEY = "appid=3156e4747f7d07492a0c3a19b388ed8f";
-    private final String URL = "https://api.openweathermap.org/data/2.5/weather?";
+    private final String URL = "https://api.openweathermap.org/data/2.5/";
     private final String langParam = "&lang=ru";
     private final String unitParam = "&units=metric";
-    private final String URI = URL + API_KEY + langParam + unitParam;
+    private final String URI_FOR_CURRENT = URL + "weather?" + API_KEY + langParam + unitParam;
+    private final String URI_FOR_FORECAST = URL + "forecast?" + API_KEY + langParam + unitParam;
 
     @Getter
     private static final WeatherService instance = new WeatherService();
@@ -42,11 +47,11 @@ public class WeatherService {
     @Setter
     private WeatherUsersRepository usersRepo;
 
-    private final DecimalFormat df;
     private final HttpClient client;
     private LocationManager locationManager;
     private final Logger log;
 
+    private final DecimalFormat df;
 
     private WeatherService() {
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
@@ -122,128 +127,158 @@ public class WeatherService {
         usersRepo.save(user);
     }
 
-    public String getWeather(int cityId) {
-        log.info("Build request with parameter (cityId)...");
-        return doRequest(URI + "&id=" + cityId, citiesRepo.getOne(cityId));
+    public String getCurrent(int cityId) {
+        log.info("(CURRENT) Build request with parameter (cityId)...");
+        return getCurrent(URI_FOR_CURRENT + "&id=" + cityId, citiesRepo.getOne(cityId));
     }
 
-    private String doRequest(String uri, City city) {
+    private String getCurrent(String uri, City city) {
         HttpUriRequest request = new HttpGet(uri);
-
         String weather = null;
-
         try {
             log.info("Send..");
             final HttpEntity entity = client.execute(request).getEntity();
-
-            log.info("Parse data...");
-            StringBuilder message = new StringBuilder();
-            JSONObject obj = new JSONObject(EntityUtils.toString(entity));
-            int infoCnt = 0;
-
-            if (city.getName() != null || city.getState() != null) {
-                String name = city.getName().equals(city.getState()) ? city.getName() :
-                        String.format("%s, %s", city.getName(), city.getState());
-
-                message.append(String.format("<b><i>%s</i></b>\n", name));
-
-                // ТЕМПЕРАТУРА
-                if (obj.has("main")) {
-                    JSONObject main = obj.getJSONObject("main");
-
-                    if (main.has("temp")) {
-                        message.append(String.format(Locale.ENGLISH, "• Температура %.2f °C\n",
-                                main.getFloat("temp")));
-                        infoCnt++;
-                    }
-
-                    if (main.has("feels_like")) {
-                        message.append(String.format(Locale.ENGLISH, "• Ощущается как %.2f °C\n",
-                                main.getFloat("feels_like")));
-                        infoCnt++;
-                    }
-
-                    // ВЛАЖНОСТЬ
-                    if (main.has("humidity")) {
-                        message.append(String.format("• Влажность %d %%\n",
-                                main.getInt("humidity")));
-                        infoCnt++;
-                    }
-
-                    // ДАВЛЕНИЕ
-                    if (main.has("pressure")) {
-                        int hPa = main.getInt("pressure");
-                        message.append(String.format(Locale.ENGLISH, "• Давление %.2f мм рт.ст.\n",
-                                hPa * 0.750063 - 17.2));
-                        infoCnt++;
-                    }
-                }
-
-                // ОПИСАНИЕ
-                StringBuilder description = new StringBuilder();
-                if (obj.has("weather")) {
-                    JSONArray array = obj.getJSONArray("weather");
-
-                    for (int i = 0; i < array.length(); i++) {
-                        JSONObject tmp = array.getJSONObject(i);
-                        description.append(tmp.getString("description"));
-
-                        if (i + 1 < array.length())
-                            description.append(", ");
-                    }
-
-                    message.append(String.format("• На улице %s\n", description.toString()));
-                    infoCnt++;
-                }
-
-                // ВЕТЕР
-                if (obj.has("wind")) {
-                    JSONObject wind = obj.getJSONObject("wind");
-
-                    if (wind.has("speed")) {
-                        message.append(String.format("• Скорость ветра %d м/с\n",
-                                wind.getInt("speed")));
-                        infoCnt++;
-                    }
-                    if (wind.has("deg")) {
-                        message.append(String.format("• Направление ветра %s\n",
-                                getWindDir((wind.getInt("deg")))));
-                        infoCnt++;
-                    }
-                }
-
-                // ОБЛАЧНОСТЬ
-                if (obj.has("clouds")) {
-                    JSONObject clouds = obj.getJSONObject("clouds");
-                    message.append(String.format("• Облачность %d %%\n", clouds.getInt("all")));
-                    infoCnt++;
-                }
-
-                // ВИДИМОСТЬ
-                if (obj.has("visibility")) {
-                    message.append(String.format("• Видимость %s м\n", df.format(obj.getInt("visibility"))));
-                    infoCnt++;
-                }
-
-                if (infoCnt <= 2) {
-                    weather = "Недостаточно данных для этого региона";
-                } else {
-                    weather = message.toString();
-                }
-            } else {
-                weather = "Недостаточно данных для этого региона";
-            }
-
-            log.info("Parsing finish!");
+            weather = parseWeather(EntityUtils.toString(entity), city);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return weather;
+    }
 
+    public String getForecast(int cityId, int forecastTime) {
+        log.info("(FORECAST) Build request with parameter (cityId)...");
+        return getForecast(URI_FOR_FORECAST + "&id=" + cityId + "&cnt=" + forecastTime / 3 + 1,
+                citiesRepo.getOne(cityId), forecastTime);
+    }
+
+    private String getForecast(String uri, City city, int forecastTime) {
+        HttpUriRequest request = new HttpGet(uri);
+        String forecast = null;
+        try {
+            log.info("Send..");
+            final HttpEntity entity = client.execute(request).getEntity();
+            JSONArray arr = new JSONObject(EntityUtils.toString(entity)).getJSONArray("list");
+            forecast = parseWeather(arr.get(forecastTime / 3).toString(), city);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return forecast;
+    }
+
+    private String parseWeather(String data, City city) {
+        log.info("Parse data...");
+        StringBuilder message = new StringBuilder();
+        JSONObject obj = new JSONObject(data);
+        String weather;
+        int infoCnt = 0;
+
+        if (city.getName() != null || city.getState() != null) {
+            String name = city.getSuburb() != null ? String.format("%s, %s, %s",
+                    city.getSuburb(), city.getName(), city.getState()) : String.format("%s, %s",
+                    city.getName(), city.getState());
+
+            message.append(String.format("<b><i>%s</i></b>\n", name));
+            message.append(String.format("<u><i>Данные на %s</i></u>\n", DateTimeFormatter.ofPattern("HH:mm, dd MMMM")
+                    .withLocale(new Locale("ru"))
+                    .format(LocalDateTime.ofInstant(
+                            Instant.ofEpochSecond(obj.getLong("dt")),
+                            ZoneId.of("Europe/Moscow")
+                    ))));
+
+            // ТЕМПЕРАТУРА
+            if (obj.has("main")) {
+                JSONObject main = obj.getJSONObject("main");
+
+                if (main.has("temp")) {
+                    message.append(String.format(Locale.ENGLISH, "• <i>Температура</i> <b>%.2f °C</b>\n",
+                            main.getFloat("temp")));
+                    infoCnt++;
+                }
+
+                if (main.has("feels_like")) {
+                    message.append(String.format(Locale.ENGLISH, "• <i>Ощущается как</i> <b>%.2f °C</b>\n",
+                            main.getFloat("feels_like")));
+                    infoCnt++;
+                }
+
+                // ВЛАЖНОСТЬ
+                if (main.has("humidity")) {
+                    message.append(String.format("• <i>Влажность</i> <b>%d %%</b>\n",
+                            main.getInt("humidity")));
+                    infoCnt++;
+                }
+
+                // ДАВЛЕНИЕ
+                if (main.has("grnd_level")) {
+                    int hPa = main.getInt("grnd_level");
+                    message.append(String.format(Locale.ENGLISH, "• <i>Давление</i> <b>%.2f мм рт.ст.</b>\n",
+                            hPa * 0.750063));
+                    infoCnt++;
+                    log.info("pressure");
+                }
+            }
+
+            // ОПИСАНИЕ
+            StringBuilder description = new StringBuilder();
+            if (obj.has("weather")) {
+                JSONArray array = obj.getJSONArray("weather");
+
+                for (int i = 0; i < array.length(); i++) {
+                    JSONObject tmp = array.getJSONObject(i);
+                    description.append(tmp.getString("description"));
+
+                    if (i + 1 < array.length())
+                        description.append(", ");
+                }
+
+                message.append(String.format("• <i>На улице</i> <b>%s</b>\n", description.toString()));
+                infoCnt++;
+            }
+
+            // ВЕТЕР
+            if (obj.has("wind")) {
+                JSONObject wind = obj.getJSONObject("wind");
+
+                if (wind.has("speed")) {
+                    message.append(String.format("• <i>Скорость ветра</i> <b>%d м/с</b>\n",
+                            wind.getInt("speed")));
+                    infoCnt++;
+                }
+                if (wind.has("deg")) {
+                    message.append(String.format("• <i>Ветер</i> <b>%s</b>\n",
+                            getWindDir((wind.getInt("deg")))));
+                    infoCnt++;
+                }
+            }
+
+            // ОБЛАЧНОСТЬ
+            if (obj.has("clouds")) {
+                JSONObject clouds = obj.getJSONObject("clouds");
+                message.append(String.format("• <i>Облачность</i> <b>%d %%</b>\n", clouds.getInt("all")));
+                infoCnt++;
+            }
+
+            // ВИДИМОСТЬ
+            if (obj.has("visibility")) {
+                message.append(String.format("• <i>Видимость</i> <b>%s м</b>\n", df.format(obj.getInt("visibility"))));
+                infoCnt++;
+            }
+
+            if (infoCnt <= 2) {
+                weather = "<b>Недостаточно данных для этого региона</b>";
+            } else {
+                weather = message.toString();
+            }
+        } else {
+            weather = "<b>Недостаточно данных для этого региона</b>";
+        }
+
+        log.info("Parsing finish!");
         return weather;
     }
 
     private int getCityId(float lat, float lon) {
-        String uri = String.format(URI + "&lat=%f&lon=%f", lat, lon);
+        String uri = String.format(URI_FOR_CURRENT + "&lat=%f&lon=%f", lat, lon);
         HttpUriRequest request = new HttpGet(uri);
         try {
             final HttpEntity entity = client.execute(request).getEntity();
@@ -257,21 +292,21 @@ public class WeatherService {
 
     private String getWindDir(int degrees) {
         if (degrees >= 337) {
-            return "северное";
+            return "северный";
         } else if (degrees >= 292) {
-            return "северо-западное";
+            return "северо-западный";
         } else if (degrees >= 247) {
-            return "западное";
+            return "западный";
         } else if (degrees >= 202) {
-            return "юго-западное";
+            return "юго-западный";
         } else if (degrees >= 157) {
-            return "южное";
+            return "южный";
         } else if (degrees >= 112) {
-            return "юго-восточное";
+            return "юго-восточный";
         } else if (degrees >= 67) {
-            return "восточное";
+            return "восточный";
         }
-        return "северо-восточное";
+        return "северо-восточный";
     }
 
     private class LocationManager {
@@ -316,12 +351,11 @@ public class WeatherService {
 
                     // SUBURB
                     String suburb;
-
                     if (address.has("neighbourhood")) {
                         suburb = address.getString("neighbourhood");
                     } else if (address.has("suburb")) {
                         suburb = address.getString("suburb");
-                    } else if  (address.has("residential")) {
+                    } else if (address.has("residential")) {
                         suburb = address.getString("residential");
                     } else {
                         suburb = null;
@@ -331,6 +365,10 @@ public class WeatherService {
                         if (suburb.contains("микрорайон")) {
                             suburb = suburb.replace("микрорайон", "мкр.");
                         }
+                    }
+
+                    if (name != null && suburb != null && name.contains(suburb)) {
+                        suburb = null;
                     }
 
                     // STATE
@@ -347,6 +385,8 @@ public class WeatherService {
                             state = state.replace("область", "обл.");
                         } else if (state.contains("административный округ")) {
                             state = state.replace("административный округ", "адм.о.");
+                        } else if (state.contains("Республика")) {
+                            state = state.replace("Республика", "Респ.");
                         }
                     }
 

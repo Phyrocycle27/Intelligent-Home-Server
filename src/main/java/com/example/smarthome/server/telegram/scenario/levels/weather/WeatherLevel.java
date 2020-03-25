@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels.weather;
 
 import com.example.smarthome.server.service.WeatherService;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -38,17 +39,25 @@ public class WeatherLevel implements AnswerCreator {
         if (msg.getType() == MessageType.CALLBACK) {
             String[] arr = p.split(msg.getText());
             String cmd = arr[0];
+            int cityId;
 
             switch (cmd) {
                 case "remove":
-                    int id = Integer.parseInt(arr[1]);
-                    weather.removeCityForUser(user.getChatId(), id);
+                    cityId = Integer.parseInt(arr[1]);
+                    weather.removeCityForUser(user.getChatId(), cityId);
                     goToListCitiesLevel(user, msg);
                     EmojiCallback.success(msg.getCallbackId());
                     break;
                 case "back":
                     goToListCitiesLevel(user, msg);
                     EmojiCallback.back(msg.getCallbackId());
+                    break;
+                case "forecast":
+                    int forecast = Integer.parseInt(arr[1]);
+                    cityId = Integer.parseInt(arr[2]);
+                    String s = weather.getForecast(cityId, forecast);
+                    updateMessage(user, msg, s, cityId, forecast,
+                            () -> EmojiCallback.success(msg.getCallbackId()));
                     break;
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
@@ -60,13 +69,31 @@ public class WeatherLevel implements AnswerCreator {
         return false;
     }
 
+    private static void updateMessage(UserInstance user, IncomingMessage msg, String s, int cityId,
+                                      int currForecast, CallbackAction task) {
+
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), s,
+                new ArrayList<CallbackButton>() {{
+                    if (currForecast != 3) {
+                        add(new CallbackButton("Прогноз на 3 часа", "forecast_3_" + cityId));
+                    }
+                    if (currForecast != 6) {
+                        add(new CallbackButton("Прогноз на 6 часов", "forecast_6_" + cityId));
+                    }
+                    if (currForecast != 12) {
+                        add(new CallbackButton("Прогноз на 12 часов", "forecast_12_" + cityId));
+                    }
+                    if (currForecast != 24) {
+                        add(new CallbackButton("Прогноз на сутки", "forecast_24_" + cityId));
+                    }
+                    add(new CallbackButton("Удалить", "remove_" + cityId));
+                }})
+                .hasBackButton(true)
+                .setMessageId(msg.getId()), task);
+    }
+
     public static void goToWeatherLevel(UserInstance user, IncomingMessage msg, int cityId) {
-        executeAsync(new InlineKeyboardMessage(user.getChatId(), weather.getWeather(cityId),
-                        new ArrayList<CallbackButton>() {{
-                            add(new CallbackButton("Удалить", "remove_" + cityId));
-                        }})
-                        .setMessageId(msg.getId())
-                        .hasBackButton(true),
-                () -> user.setCurrentLvl(instance));
+        String s = weather.getCurrent(cityId);
+        updateMessage(user, msg, s, cityId, 0, () -> user.setCurrentLvl(instance));
     }
 }
