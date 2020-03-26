@@ -4,6 +4,7 @@ import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -44,6 +45,7 @@ public class DeviceLevel implements AnswerCreator {
     // ************************************* MESSAGES *************************************************
     private static final String removeConfirmationDevice = "Вы действительно хотите удалить это устройство?";
     private static final String buttonInvalid = "Кнопка недействительна";
+    private static final String deviceNotFound = "Устройство не найдено";
     private static final String deviceOff = "Устройство выключено";
     private static final String deviceOn = "Устройство включено";
 
@@ -58,29 +60,25 @@ public class DeviceLevel implements AnswerCreator {
             try {
                 switch (cmd) {
                     case "back":
-                        goToDevicesLevel(user, msg);
-                        EmojiCallback.back(msg.getCallbackId());
+                        goToDevicesLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
                         break;
                     case "off":
                     case "on":
                         setDigitalState(getChannel(user.getChatId()), deviceId, cmd.equals("on"));
-                        goToDeviceLevel(user, msg, deviceId);
-                        EmojiCallback.success(msg.getCallbackId());
+                        goToDeviceLevel(user, msg, deviceId, () -> EmojiCallback.success(msg.getCallbackId()));
                         break;
                     case "remove":
-                        goToDeviceConfirmRemoveLevel(user, msg, deviceId);
-                        EmojiCallback.next(msg.getCallbackId());
+                        goToDeviceConfirmRemoveLevel(user, msg, deviceId, () -> EmojiCallback.next(msg.getCallbackId()));
                         break;
                     case "edit":
-                        goToDeviceEditingLevel(user, msg, deviceId);
-                        EmojiCallback.next(msg.getCallbackId());
+                        goToDeviceEditingLevel(user, msg, deviceId, () -> EmojiCallback.next(msg.getCallbackId()));
                         break;
                     default:
                         executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
                 }
             } catch (ChannelNotFoundException e) {
                 log.warn(e.getMessage());
-                goToHomeControlLevel(user, msg);
+                goToHomeControlLevel(user, msg, null);
             }
             // если сообщение успешно обработано, то возвращаем истину
             return true;
@@ -89,11 +87,12 @@ public class DeviceLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToDeviceLevel(UserInstance user, IncomingMessage msg, int deviceId) {
+    public static void goToDeviceLevel(UserInstance user, IncomingMessage msg, int deviceId, CallbackAction action) {
         try {
             Output output = getOutput(getChannel(user.getChatId()), deviceId);
 
-            if (output == null) goToDevicesLevel(user, msg);
+            if (output == null) goToDevicesLevel(user, msg, () -> executeAsync(
+                    new AnswerCallback(msg.getCallbackId(), deviceNotFound)));
             else {
                 boolean currState = getDigitalState(getChannel(user.getChatId()), output.getOutputId());
                 String currStateText = currState ? "включено" : "выключено";
@@ -125,11 +124,14 @@ public class DeviceLevel implements AnswerCreator {
                         output.getName(), currStateText, signalType, inversion,
                         output.getGpio()), buttons)
                         .setMessageId(msg.getId())
-                        .hasBackButton(true), () -> user.setCurrentLvl(instance));
+                        .hasBackButton(true), () -> {
+                    user.setCurrentLvl(instance);
+                    if (action != null) action.process();
+                });
             }
         } catch (ChannelNotFoundException | UserNotFoundException e) {
             log.warn(e.getMessage());
-            goToHomeControlLevel(user, msg);
+            goToHomeControlLevel(user, msg, null);
         }
     }
 }

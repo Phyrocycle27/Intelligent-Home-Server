@@ -2,6 +2,7 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control.devic
 
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -39,28 +40,35 @@ public class DeviceCreator {
         this.user = user;
     }
 
-    void start(IncomingMessage msg) {
-        goToSetupNameLevel(user, msg);
-        user.getDeviceCreator().setCurrCreationLvl(SetupNameLevel.getInstance());
+    void start(IncomingMessage msg, CallbackAction action) {
+        goToSetupNameLevel(user, msg, () -> {
+            user.setCurrentLvl(DeviceCreationLevel.getInstance());
+            user.getDeviceCreator().setCurrCreationLvl(SetupNameLevel.getInstance());
+            if (action != null) action.process();
+        });
     }
 
-    void goToPrev(IncomingMessage msg) {
+    void goToPrev(IncomingMessage msg, CallbackAction action) {
         if (currCreationLvl.getClass().equals(SetupNameLevel.class)) {
-            goToDevicesLevel(user, msg);
-            destroy();
-            EmojiCallback.back(msg.getCallbackId());
+            goToDevicesLevel(user, msg, () -> {
+               destroy();
+               action.process();
+            });
         } else if (currCreationLvl.getClass().equals(SetupSignalTypeLevel.class)) {
-            goToSetupNameLevel(user, msg);
-            user.getDeviceCreator().setCurrCreationLvl(SetupNameLevel.getInstance());
-            EmojiCallback.back(msg.getCallbackId());
+            goToSetupNameLevel(user, msg, () -> {
+                user.getDeviceCreator().setCurrCreationLvl(SetupNameLevel.getInstance());
+                action.process();
+            });
         } else if (currCreationLvl.getClass().equals(SetupGPIOLevel.class)) {
-            goToSetupSignalTypeLevel(user, msg);
-            user.getDeviceCreator().setCurrCreationLvl(SetupSignalTypeLevel.getInstance());
-            EmojiCallback.back(msg.getCallbackId());
+            goToSetupSignalTypeLevel(user, msg, () -> {
+                user.getDeviceCreator().setCurrCreationLvl(SetupSignalTypeLevel.getInstance());
+                action.process();
+            });
         } else if (currCreationLvl.getClass().equals(SetupSignalInversionLevel.class)) {
-            goToSetupGPIOLevel(user, msg);
-            user.getDeviceCreator().setCurrCreationLvl(SetupGPIOLevel.getInstance());
-            EmojiCallback.back(msg.getCallbackId());
+            goToSetupGPIOLevel(user, msg, () -> {
+                user.getDeviceCreator().setCurrCreationLvl(SetupGPIOLevel.getInstance());
+                action.process();
+            });
         }
     }
 
@@ -70,27 +78,27 @@ public class DeviceCreator {
 
             if (deviceName != null && !deviceName.isEmpty()) {
                 creationOutput.setName(deviceName);
-                deleteAsync(user.getChatId(), user.getLastMessageId(), () -> {
-                    user.setLastMessageId(0);
-                    goToSetupSignalTypeLevel(user, msg);
-                    user.getDeviceCreator().setCurrCreationLvl(SetupSignalTypeLevel.getInstance());
-                });
+                deleteAsync(user.getChatId(), user.getLastMessageId(), () -> user.setLastMessageId(0));
+                goToSetupSignalTypeLevel(user, msg, () -> user.getDeviceCreator()
+                        .setCurrCreationLvl(SetupSignalTypeLevel.getInstance()));
             }
         } else if (currCreationLvl.getClass().equals(SetupSignalTypeLevel.class)) {
             String signalType = (String) currCreationLvl.process(user, msg);
             if (signalType != null) {
                 creationOutput.setType(signalType);
-                goToSetupGPIOLevel(user, msg);
-                user.getDeviceCreator().setCurrCreationLvl(SetupGPIOLevel.getInstance());
-                EmojiCallback.next(msg.getCallbackId());
+                goToSetupGPIOLevel(user, msg, () -> {
+                    user.getDeviceCreator().setCurrCreationLvl(SetupGPIOLevel.getInstance());
+                    EmojiCallback.next(msg.getCallbackId());
+                });
             }
         } else if (currCreationLvl.getClass().equals(SetupGPIOLevel.class)) {
             Integer gpio = (Integer) currCreationLvl.process(user, msg);
             if (gpio != null) {
                 creationOutput.setGpio(gpio);
-                goToSetupSignalInversionLevel(user, msg);
-                user.getDeviceCreator().setCurrCreationLvl(SetupSignalInversionLevel.getInstance());
-                EmojiCallback.next(msg.getCallbackId());
+                goToSetupSignalInversionLevel(user, msg, () -> {
+                    user.getDeviceCreator().setCurrCreationLvl(SetupSignalInversionLevel.getInstance());
+                    EmojiCallback.next(msg.getCallbackId());
+                });
             }
         } else if (currCreationLvl.getClass().equals(SetupSignalInversionLevel.class)) {
             Boolean inversion = (Boolean) currCreationLvl.process(user, msg);
@@ -98,7 +106,6 @@ public class DeviceCreator {
                 creationOutput.setReverse(inversion);
                 createDevice(msg);
                 destroy();
-                EmojiCallback.success(msg.getCallbackId());
             }
         }
     }
@@ -107,11 +114,10 @@ public class DeviceCreator {
     private void createDevice(IncomingMessage msg) {
         try {
             createOutput(getChannel(user.getChatId()), creationOutput);
-            goToDevicesLevel(user, msg);
-            EmojiCallback.success(msg.getCallbackId());
+            goToDevicesLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());
-            goToHomeControlLevel(user, msg);
+            goToHomeControlLevel(user, msg, null);
         } finally {
             destroy();
         }

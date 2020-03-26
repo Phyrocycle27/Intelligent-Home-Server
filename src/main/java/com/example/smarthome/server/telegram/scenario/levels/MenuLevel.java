@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels;
 
 import com.example.smarthome.server.service.DeviceAccessService;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -44,12 +45,10 @@ public class MenuLevel implements AnswerCreator {
         if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
                 case "home_control":
-                    goToHomeControlLevel(user, msg);
-                    EmojiCallback.next(msg.getCallbackId());
+                    goToHomeControlLevel(user, msg, () -> EmojiCallback.next(msg.getCallbackId()));
                     break;
                 case "information":
-                    goToInformationLevel(user, msg);
-                    EmojiCallback.next(msg.getCallbackId());
+                    goToInformationLevel(user, msg, () -> EmojiCallback.next(msg.getCallbackId()));
                     break;
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
@@ -61,9 +60,13 @@ public class MenuLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToMenuLevel(UserInstance user, IncomingMessage msg) {
+    public static void goToMenuLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         executeAsync(new InlineKeyboardMessage(user.getChatId(), menuMsg, menuButtons)
-                .setMessageId(msg.getId())
-                .setNumOfColumns(2), () -> user.setCurrentLvl(instance));
+                        .setMessageId(msg.getId())
+                        .setNumOfColumns(2),
+                () -> {
+                    user.setCurrentLvl(instance);
+                    if (action != null) action.process();
+                });
     }
 }

@@ -8,20 +8,16 @@ import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
-import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.groupadministration.GetChat;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Location;
-import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
-import org.telegram.telegrambots.meta.updateshandlers.SentCallback;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +33,8 @@ public class Bot extends TelegramLongPollingBot {
 
     public static final Logger log = LoggerFactory.getLogger(Bot.class);
 
-    private ExecutorService pool = Executors.newFixedThreadPool(16);
+    private ExecutorService answerCreatorPool = Executors.newFixedThreadPool(16);
+    private ExecutorService messageExecutorPool = Executors.newFixedThreadPool(16);
     private Map<Long, UserInstance> instances = new HashMap<>();
 
     private static Bot instance;
@@ -126,7 +123,8 @@ public class Bot extends TelegramLongPollingBot {
                 }
             }
         };
-        pool.execute(task);
+
+        answerCreatorPool.execute(task);
     }
 
     private static void answer(UserInstance instance, IncomingMessage msg) {
@@ -155,118 +153,94 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     public void executeAsync(SendMessage msg, CallbackAction task, Consumer<TelegramApiRequestException> errorHandler) {
-        UserInstance instance = getUserInstance(Long.parseLong(msg.getChatId()));
-
-        sendApiMethodAsync(msg, new SentCallback<Message>() {
-            @Override
-            public void onResult(BotApiMethod<Message> botApiMethod, Message message) {
+        Runnable r = () -> {
+            UserInstance user = getUserInstance(Long.parseLong(msg.getChatId()));
+            try {
+                instance.execute(msg);
                 if (task != null) {
                     task.process();
                 }
-                instance.setProcessing(false);
-                if (instance.getCurrentLvl() != null) {
-                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
-                }
-            }
-
-            @Override
-            public void onError(BotApiMethod<Message> botApiMethod, TelegramApiRequestException e) {
+            } catch (TelegramApiRequestException e) {
+                e.printStackTrace();
                 if (errorHandler != null) {
                     errorHandler.accept(e);
                 }
-                instance.setProcessing(false);
-                if (instance.getCurrentLvl() != null) {
-                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                user.setProcessing(false);
+                if (user.getCurrentLvl() != null) {
+                    log.info("Current user level is: " + user.getCurrentLvl().getClass().getTypeName());
                 }
             }
-
-            @Override
-            public void onException(BotApiMethod<Message> botApiMethod, Exception e) {
-                instance.setProcessing(false);
-                if (instance.getCurrentLvl() != null) {
-                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
-                }
-            }
-        });
+        };
+        executeTask(r);
     }
 
     public void executeAsync(EditMessageText msg, CallbackAction task, Consumer<TelegramApiRequestException> errorHandler) {
-        UserInstance instance = getUserInstance(Long.parseLong(msg.getChatId()));
-
-        sendApiMethodAsync(msg, new SentCallback<Serializable>() {
-            @Override
-            public void onResult(BotApiMethod<Serializable> botApiMethod, Serializable serializable) {
+        Runnable r = () -> {
+            UserInstance user = getUserInstance(Long.parseLong(msg.getChatId()));
+            try {
+                instance.execute(msg);
                 if (task != null) {
                     task.process();
                 }
-                instance.setProcessing(false);
-                if (instance.getCurrentLvl() != null) {
-                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
-                }
-            }
-
-            @Override
-            public void onError(BotApiMethod<Serializable> botApiMethod, TelegramApiRequestException e) {
+            } catch (TelegramApiRequestException e) {
+                e.printStackTrace();
                 if (errorHandler != null) {
                     errorHandler.accept(e);
                 }
-                instance.setProcessing(false);
-                if (instance.getCurrentLvl() != null) {
-                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                user.setProcessing(false);
+                if (user.getCurrentLvl() != null) {
+                    log.info("Current user level is: " + user.getCurrentLvl().getClass().getTypeName());
                 }
             }
+        };
 
-            @Override
-            public void onException(BotApiMethod<Serializable> botApiMethod, Exception e) {
-                instance.setProcessing(false);
-                if (instance.getCurrentLvl() != null) {
-                    log.info("Current user level is: " + instance.getCurrentLvl().getClass().getTypeName());
-                }
-            }
-        });
-    }
-
-    public void executeAsync(AnswerCallbackQuery callbackQuery, CallbackAction task) {
-        sendApiMethodAsync(callbackQuery, new SentCallback<Boolean>() {
-            @Override
-            public void onResult(BotApiMethod<Boolean> botApiMethod, Boolean aBoolean) {
-                if (task != null) {
-                    task.process();
-                }
-            }
-
-            @Override
-            public void onError(BotApiMethod<Boolean> botApiMethod, TelegramApiRequestException e) {
-            }
-
-            @Override
-            public void onException(BotApiMethod<Boolean> botApiMethod, Exception e) {
-            }
-        });
+        executeTask(r);
     }
 
     public void executeAsync(DeleteMessage msg, CallbackAction task) {
-        UserInstance instance = getUserInstance(Long.parseLong(msg.getChatId()));
-
-        sendApiMethodAsync(msg, new SentCallback<Boolean>() {
-            @Override
-            public void onResult(BotApiMethod<Boolean> botApiMethod, Boolean aBoolean) {
+        Runnable r = () -> {
+            UserInstance user = getUserInstance(Long.parseLong(msg.getChatId()));
+            try {
+                instance.execute(msg);
                 if (task != null) {
                     task.process();
                 }
-                instance.setProcessing(false);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                user.setProcessing(false);
+                if (user.getCurrentLvl() != null) {
+                    log.info("Current user level is: " + user.getCurrentLvl().getClass().getTypeName());
+                }
             }
+        };
 
-            @Override
-            public void onError(BotApiMethod<Boolean> botApiMethod, TelegramApiRequestException e) {
-                instance.setProcessing(false);
-            }
+        executeTask(r);
+    }
 
-            @Override
-            public void onException(BotApiMethod<Boolean> botApiMethod, Exception e) {
-                instance.setProcessing(false);
+    public void executeAsync(AnswerCallbackQuery callback, CallbackAction task) {
+        Runnable r = () -> {
+            try {
+                instance.execute(callback);
+                if (task != null) {
+                    task.process();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        });
+        };
+
+        executeTask(r);
+    }
+
+    private synchronized void executeTask(Runnable task) {
+        messageExecutorPool.execute(task);
     }
 
     @Override

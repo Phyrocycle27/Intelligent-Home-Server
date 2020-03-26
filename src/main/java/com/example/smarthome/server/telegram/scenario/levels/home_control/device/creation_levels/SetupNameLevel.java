@@ -1,5 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -31,8 +32,11 @@ public class SetupNameLevel implements MessageProcessor {
         return null;
     }
 
-    public static void goToSetupNameLevel(UserInstance user, IncomingMessage msg) {
+    public static void goToSetupNameLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         executeAsync(new InlineKeyboardMessage(user.getChatId(), enterName, null).setMessageId(msg.getId())
-                .hasBackButton(true), () -> user.setLastMessageId(msg.getId()));
+                .hasBackButton(true), () -> {
+            if (action != null) action.process();
+            user.setLastMessageId(msg.getId());
+        });
     }
 }

@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels.weather;
 
 import com.example.smarthome.server.service.WeatherService;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -37,8 +38,7 @@ public class CityAdditionLevel implements AnswerCreator {
     public boolean create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
             if (msg.getText().equals("back")) {
-                goToListCitiesLevel(user, msg);
-                EmojiCallback.back(msg.getCallbackId());
+                goToListCitiesLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
             } else {
                 executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
@@ -51,7 +51,7 @@ public class CityAdditionLevel implements AnswerCreator {
             float lon = Float.parseFloat(coordinates[1]);
             try {
                 weather.addCity(user.getChatId(), lat, lon);
-                goToListCitiesLevel(user, msg);
+                goToListCitiesLevel(user, msg, null);
             } catch (Exception e) {
                 e.printStackTrace();
                 executeAsync(new InlineKeyboardMessage(user.getChatId(), cityNotFound, null)
@@ -64,12 +64,13 @@ public class CityAdditionLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToCityAdditionLevel(UserInstance user, IncomingMessage msg) {
+    public static void goToCityAdditionLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         executeAsync(new InlineKeyboardMessage(user.getChatId(), sendLocation, null)
                 .setMessageId(msg.getId())
                 .hasBackButton(true), () -> {
             user.setCurrentLvl(instance);
             user.setLastMessageId(msg.getId());
+            if (action != null) action.process();
         });
     }
 }

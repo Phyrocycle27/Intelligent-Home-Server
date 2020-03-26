@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
 
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -51,19 +52,17 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
                 switch (cmd) {
                     case "confirmRemove":
                         deleteOutput(getChannel(user.getChatId()), deviceId);
-                        goToDevicesLevel(user, msg);
-                        EmojiCallback.success(msg.getCallbackId());
+                        goToDevicesLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
                         break;
                     case "cancel":
-                        goToDeviceLevel(user, msg, deviceId);
-                        EmojiCallback.back(msg.getCallbackId());
+                        goToDeviceLevel(user, msg, deviceId, () -> EmojiCallback.back(msg.getCallbackId()));
                         break;
                     default:
                         executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
                 }
             } catch (ChannelNotFoundException e) {
                 log.warn(e.getMessage());
-                goToHomeControlLevel(user, msg);
+                goToHomeControlLevel(user, msg, null);
             }
             // если сообщение успешно обработано, то возвращаем истину
             return true;
@@ -72,13 +71,18 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToDeviceConfirmRemoveLevel(UserInstance user, IncomingMessage msg, int deviceId) {
+    public static void goToDeviceConfirmRemoveLevel(UserInstance user, IncomingMessage msg,
+                                                    int deviceId, CallbackAction action) {
+
         executeAsync(new InlineKeyboardMessage(user.getChatId(), removeConfirmationDevice,
                 new ArrayList<CallbackButton>() {{
                     add(new CallbackButton("Подтвердить", "confirmRemove_" + deviceId));
                     add(new CallbackButton("Отмена", "cancel_" + deviceId));
                 }})
                 .setMessageId(msg.getId())
-                .setNumOfColumns(2), () -> user.setCurrentLvl(instance));
+                .setNumOfColumns(2), () -> {
+            user.setCurrentLvl(instance);
+            if (action != null) action.process();
+        });
     }
 }

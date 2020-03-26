@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -43,14 +44,13 @@ public class SetupGPIOLevel implements MessageProcessor {
                 log.error(e.getMessage());
             } catch (ChannelNotFoundException e) {
                 log.warn(e.getMessage());
-                goToHomeControlLevel(user, msg);
-                user.getDeviceCreator().destroy();
+                goToHomeControlLevel(user, msg, () -> user.getDeviceCreator().destroy());
             }
         }
         return null;
     }
 
-    public static void goToSetupGPIOLevel(UserInstance user, IncomingMessage msg) {
+    public static void goToSetupGPIOLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         try {
             executeAsync(new InlineKeyboardMessage(user.getChatId(), choosePin, new ArrayList<CallbackButton>() {{
                 for (String s : getAvailableOutputs(getChannel(user.getChatId()), user.getDeviceCreator()
@@ -59,11 +59,10 @@ public class SetupGPIOLevel implements MessageProcessor {
             }})
                     .setMessageId(msg.getId())
                     .setNumOfColumns(6)
-                    .hasBackButton(true), null);
+                    .hasBackButton(true), action);
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());
-            goToHomeControlLevel(user, msg);
-            user.getDeviceCreator().destroy();
+            goToHomeControlLevel(user, msg, () -> user.getDeviceCreator().destroy());
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels.weather;
 
 import com.example.smarthome.server.service.WeatherService;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -53,16 +54,14 @@ public class InformationLevel implements AnswerCreator {
         if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
                 case "weather":
-                    goToListCitiesLevel(user, msg);
-                    EmojiCallback.next(msg.getCallbackId());
+                    goToListCitiesLevel(user, msg, () -> EmojiCallback.next(msg.getCallbackId()));
                     break;
                 case "time":
                     updateInformationMessage(user, msg, String.format("Химкинское время %s",
                             LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))));
                     break;
                 case "back":
-                    goToMenuLevel(user, msg);
-                    EmojiCallback.back(msg.getCallbackId());
+                    goToMenuLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
                     break;
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
@@ -87,10 +86,14 @@ public class InformationLevel implements AnswerCreator {
                 });
     }
 
-    public static void goToInformationLevel(UserInstance user, IncomingMessage msg) {
+    public static void goToInformationLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         executeAsync(new InlineKeyboardMessage(user.getChatId(), infoMsg, infoButtons)
-                .setMessageId(msg.getId())
-                .setNumOfColumns(2)
-                .hasBackButton(true), () -> user.setCurrentLvl(instance));
+                        .setMessageId(msg.getId())
+                        .setNumOfColumns(2)
+                        .hasBackButton(true),
+                () -> {
+                    user.setCurrentLvl(instance);
+                    if (action != null) action.process();
+                });
     }
 }

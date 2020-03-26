@@ -1,5 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.MessageExecutor;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -47,10 +48,10 @@ public class SetupSignalTypeLevel implements MessageProcessor {
         return null;
     }
 
-    public static void goToSetupSignalTypeLevel(UserInstance user, IncomingMessage msg) {
+    public static void goToSetupSignalTypeLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         executeAsync(new InlineKeyboardMessage(user.getChatId(), chooseSignalType, typesOfSignal)
                 .setMessageId(msg.getId())
                 .setNumOfColumns(2)
-                .hasBackButton(true), null);
+                .hasBackButton(true), action);
     }
 }

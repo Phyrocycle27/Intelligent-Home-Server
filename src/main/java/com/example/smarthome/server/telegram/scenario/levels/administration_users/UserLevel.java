@@ -4,6 +4,7 @@ import com.example.smarthome.server.entity.TelegramUser;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -54,16 +55,13 @@ public class UserLevel implements AnswerCreator {
 
             switch (cmd) {
                 case "back":
-                    goToUsersLevel(user, msg);
-                    EmojiCallback.back(msg.getCallbackId());
+                    goToUsersLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
                     break;
                 case "remove":
-                    goToUserConfirmRemoveLevel(user, msg, userId);
-                    EmojiCallback.next(msg.getCallbackId());
+                    goToUserConfirmRemoveLevel(user, msg, userId, () -> EmojiCallback.next(msg.getCallbackId()));
                     break;
                 case "change-role":
-                    goToUserSetupRoleLevel(user, msg, userId);
-                    EmojiCallback.next(msg.getCallbackId());
+                    goToUserSetupRoleLevel(user, msg, userId, () -> EmojiCallback.next(msg.getCallbackId()));
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
             }
@@ -74,7 +72,7 @@ public class UserLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToUserLevel(UserInstance userInstance, IncomingMessage msg, long userId) {
+    public static void goToUserLevel(UserInstance userInstance, IncomingMessage msg, long userId, CallbackAction action) {
         try {
             TelegramUser user = service.getUser(userId);
             TelegramUser currUser = service.getUser(userInstance.getChatId());
@@ -94,7 +92,10 @@ public class UserLevel implements AnswerCreator {
                     }})
                     .setMessageId(msg.getId())
                     .hasBackButton(true)
-                    .setNumOfColumns(2), () -> userInstance.setCurrentLvl(instance));
+                    .setNumOfColumns(2), () -> {
+                userInstance.setCurrentLvl(instance);
+                if (action != null) action.process();
+            });
         } catch (UserNotFoundException e) {
             log.error(e.getMessage());
             executeAsync(new AnswerCallback(msg.getCallbackId(), "Пользователь не найден")

@@ -3,6 +3,7 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control.devic
 import com.example.smarthome.server.connection.ClientAPI;
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -41,18 +42,15 @@ public class DeviceEditor {
 
             if (deviceName != null && !deviceName.isEmpty()) {
                 editingOutput.setName(deviceName);
-                update(msg);
-
                 deleteAsync(user.getChatId(), user.getLastMessageId(), () -> user.setLastMessageId(0));
+                update(msg, null);
             }
         } else if (currEditingLvl.getClass().equals(SetupSignalInversionLevel.class)) {
             Boolean inversion = (Boolean) currEditingLvl.process(user, msg);
 
             if (inversion != null) {
                 editingOutput.setReverse(inversion);
-                update(msg);
-
-                EmojiCallback.success(msg.getCallbackId());
+                update(msg, () ->  EmojiCallback.success(msg.getCallbackId()));
             }
         }
     }
@@ -61,14 +59,16 @@ public class DeviceEditor {
         user.setDeviceEditor(null);
     }
 
-    private void update(IncomingMessage msg) {
+    private void update(IncomingMessage msg, CallbackAction action) {
         try {
             ClientAPI.updateOutput(getChannel(user.getChatId()), editingOutput);
-            currEditingLvl = null;
-            goToChoice(user, msg);
+            goToChoice(user, msg, () -> {
+                currEditingLvl = null;
+                if (action != null) action.process();
+            });
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());
-            goToHomeControlLevel(user, msg);
+            goToHomeControlLevel(user, msg, null);
             destroy();
         }
     }

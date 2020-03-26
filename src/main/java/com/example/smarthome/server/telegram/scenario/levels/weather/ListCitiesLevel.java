@@ -3,6 +3,7 @@ package com.example.smarthome.server.telegram.scenario.levels.weather;
 import com.example.smarthome.server.entity.City;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.WeatherService;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -50,16 +51,13 @@ public class ListCitiesLevel implements AnswerCreator {
             switch (cmd) {
                 case "id":
                     int id = Integer.parseInt(arr[1]);
-                    goToWeatherLevel(user, msg, id);
-                    EmojiCallback.next(msg.getCallbackId());
+                    goToWeatherLevel(user, msg, id, () -> EmojiCallback.next(msg.getCallbackId()));
                     break;
                 case "add":
-                    goToCityAdditionLevel(user, msg);
-                    EmojiCallback.next(msg.getCallbackId());
+                    goToCityAdditionLevel(user, msg, () -> EmojiCallback.next(msg.getCallbackId()));
                     break;
                 case "back":
-                    goToInformationLevel(user, msg);
-                    EmojiCallback.back(msg.getCallbackId());
+                    goToInformationLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
                     break;
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
@@ -71,7 +69,7 @@ public class ListCitiesLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToListCitiesLevel(UserInstance user, IncomingMessage msg) {
+    public static void goToListCitiesLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         List<CallbackButton> buttons = new ArrayList<>();
         try {
             List<City> cities = weather.getUserCities(user.getChatId());
@@ -93,9 +91,11 @@ public class ListCitiesLevel implements AnswerCreator {
         }
 
         executeAsync(new InlineKeyboardMessage(user.getChatId(), levelMessage, buttons)
-                        .setMessageId(msg.getId())
-                        .hasBackButton(true)
-                        .hasAddButton(true),
-                () -> user.setCurrentLvl(instance));
+                .setMessageId(msg.getId())
+                .hasBackButton(true)
+                .hasAddButton(true), () -> {
+            user.setCurrentLvl(instance);
+            if (action != null) action.process();
+        });
     }
 }

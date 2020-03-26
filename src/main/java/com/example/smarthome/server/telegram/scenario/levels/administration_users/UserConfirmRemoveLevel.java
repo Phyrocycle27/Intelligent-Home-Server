@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels.administration_users;
 
 import com.example.smarthome.server.service.DeviceAccessService;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -46,12 +47,10 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
             switch (cmd) {
                 case "confirmRemove":
                     service.deleteUser(userId);
-                    goToUsersLevel(user, msg);
-                    EmojiCallback.success(msg.getCallbackId());
+                    goToUsersLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
                     break;
                 case "cancel":
-                    goToUserLevel(user, msg, userId);
-                    EmojiCallback.back(msg.getCallbackId());
+                    goToUserLevel(user, msg, userId, () -> EmojiCallback.back(msg.getCallbackId()));
                     break;
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
@@ -63,13 +62,18 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToUserConfirmRemoveLevel(UserInstance user, IncomingMessage msg, long userId) {
+    public static void goToUserConfirmRemoveLevel(UserInstance user, IncomingMessage msg,
+                                                  long userId, CallbackAction action) {
+
         executeAsync(new InlineKeyboardMessage(user.getChatId(), removeConfirmationUser,
                 new ArrayList<CallbackButton>() {{
                     add(new CallbackButton("Подтвердить", "confirmRemove_" + userId));
                     add(new CallbackButton("Отмена", "cancel_" + userId));
                 }})
                 .setMessageId(msg.getId())
-                .setNumOfColumns(2), () -> user.setCurrentLvl(instance));
+                .setNumOfColumns(2), () -> {
+            user.setCurrentLvl(instance);
+            if (action != null) action.process();
+        });
     }
 }

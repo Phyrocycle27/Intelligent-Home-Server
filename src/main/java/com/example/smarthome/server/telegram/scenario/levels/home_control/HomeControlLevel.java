@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control;
 
 import com.example.smarthome.server.service.DeviceAccessService;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -41,6 +42,7 @@ public class HomeControlLevel implements AnswerCreator {
     private static final String channelNotFound = "Ваша Raspberry PI не подключена к серверу\n" +
             "Введите, пожалуйста, свой токен в соответствующем разделе в приложении чтобы Ваше устройство могло " +
             "подключиться к серверу";
+    private static final String lostConnection = "Потеряно соединение с Raspberry PI";
     private static final String homeControl = "Выберите Устройства, чтобы управлять устройствами или добавить новое, или " +
             "выберите Датчики чтобы посмотреть показания или добавить новый датчик";
 
@@ -59,20 +61,16 @@ public class HomeControlLevel implements AnswerCreator {
         if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
                 case "devices":
-                    goToDevicesLevel(user, msg);
-                    EmojiCallback.next(msg.getCallbackId());
+                    goToDevicesLevel(user, msg, () -> EmojiCallback.next(msg.getCallbackId()));
                     break;
                 case "users":
-                    goToUsersLevel(user, msg);
-                    EmojiCallback.next(msg.getCallbackId());
+                    goToUsersLevel(user, msg, () -> EmojiCallback.next(msg.getCallbackId()));
                     break;
                 case "token_gen":
                     sendToken(user, msg);
-                    EmojiCallback.back(msg.getCallbackId());
                     break;
                 case "back":
-                    goToMenuLevel(user, msg);
-                    EmojiCallback.back(msg.getCallbackId());
+                    goToMenuLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
                     break;
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
@@ -84,25 +82,32 @@ public class HomeControlLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToHomeControlLevel(UserInstance user, IncomingMessage msg) {
+    public static void goToHomeControlLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         if (service.isExists(user.getChatId())) {
             if (service.isChannelExist(user.getChatId())) {
                 executeAsync(new InlineKeyboardMessage(user.getChatId(), homeControl, homeControlButtons)
                         .setNumOfColumns(2)
                         .setMessageId(msg.getId())
-                        .hasBackButton(true), () -> user.setCurrentLvl(instance));
+                        .hasBackButton(true), () -> {
+                    user.setCurrentLvl(instance);
+                    if (action != null) action.process();
+                });
             } else {
                 executeAsync(new AnswerCallback(msg.getCallbackId(), channelNotFound)
                         .hasAlert(true), () -> user.setProcessing(false));
 
                 if (user.getCurrentLvl() != MenuLevel.getInstance())
-                    goToMenuLevel(user, msg);
+                    goToMenuLevel(user, msg, () -> executeAsync(new AnswerCallback(msg.getCallbackId(), lostConnection)
+                                    .hasAlert(true)));
             }
         } else {
             executeAsync(new InlineKeyboardMessage(user.getChatId(), tokenNotFound,
                     tokenGenButton)
                     .setMessageId(msg.getId())
-                    .hasBackButton(true), () -> user.setCurrentLvl(instance));
+                    .hasBackButton(true), () -> {
+                user.setCurrentLvl(instance);
+                if (action != null) action.process();
+            });
         }
     }
 
@@ -110,6 +115,7 @@ public class HomeControlLevel implements AnswerCreator {
         executeAsync(new Message(user.getChatId(), tokenSuccessGen)
                 .setMessageId(msg.getId()), () -> EmojiCallback.success(msg.getCallbackId()));
         executeAsync(new Message(user.getChatId(),
-                service.createToken(user.getChatId())), () -> goToMenuLevel(user, msg));
+                service.createToken(user.getChatId())), () -> goToMenuLevel(user, msg,
+                () -> EmojiCallback.success(msg.getCallbackId())));
     }
 }

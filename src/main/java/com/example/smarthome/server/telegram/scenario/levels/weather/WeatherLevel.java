@@ -45,12 +45,10 @@ public class WeatherLevel implements AnswerCreator {
                 case "remove":
                     cityId = Integer.parseInt(arr[1]);
                     weather.removeCityForUser(user.getChatId(), cityId);
-                    goToListCitiesLevel(user, msg);
-                    EmojiCallback.success(msg.getCallbackId());
+                    goToListCitiesLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
                     break;
                 case "back":
-                    goToListCitiesLevel(user, msg);
-                    EmojiCallback.back(msg.getCallbackId());
+                    goToListCitiesLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
                     break;
                 case "forecast":
                     int forecast = Integer.parseInt(arr[1]);
@@ -92,8 +90,11 @@ public class WeatherLevel implements AnswerCreator {
                 .setMessageId(msg.getId()), task);
     }
 
-    public static void goToWeatherLevel(UserInstance user, IncomingMessage msg, int cityId) {
+    public static void goToWeatherLevel(UserInstance user, IncomingMessage msg, int cityId, CallbackAction action) {
         String s = weather.getCurrent(cityId);
-        updateMessage(user, msg, s, cityId, 0, () -> user.setCurrentLvl(instance));
+        updateMessage(user, msg, s, cityId, 0, () -> {
+            user.setCurrentLvl(instance);
+            if (action != null) action.process();
+        });
     }
 }

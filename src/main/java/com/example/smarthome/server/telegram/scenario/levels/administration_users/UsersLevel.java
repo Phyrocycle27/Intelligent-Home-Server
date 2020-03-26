@@ -4,6 +4,7 @@ import com.example.smarthome.server.entity.TelegramUser;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.Bot;
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -49,17 +50,14 @@ public class UsersLevel implements AnswerCreator {
 
             switch (msg.getText()) {
                 case "add":
-                    goToUserAdditionLevel(user, msg);
-                    EmojiCallback.next(msg.getCallbackId());
+                    goToUserAdditionLevel(user, msg, () -> EmojiCallback.next(msg.getCallbackId()));
                     break;
                 case "back":
-                    goToHomeControlLevel(user, msg);
-                    EmojiCallback.back(msg.getCallbackId());
+                    goToHomeControlLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
                     break;
                 case "id":
                     long userId = Long.parseLong(arr[1]);
-                    goToUserLevel(user, msg, userId);
-                    EmojiCallback.next(msg.getCallbackId());
+                    goToUserLevel(user, msg, userId, () -> EmojiCallback.next(msg.getCallbackId()));
                     break;
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
@@ -71,7 +69,7 @@ public class UsersLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToUsersLevel(UserInstance userInstance, IncomingMessage msg) {
+    public static void goToUsersLevel(UserInstance userInstance, IncomingMessage msg, CallbackAction action) {
         List<CallbackButton> users = new ArrayList<>();
 
         for (TelegramUser user : service.getUsers(userInstance.getChatId())) {
@@ -87,10 +85,13 @@ public class UsersLevel implements AnswerCreator {
                 answer.hasAddButton(true);
             }
 
-            executeAsync(answer, () -> userInstance.setCurrentLvl(instance));
+            executeAsync(answer, () -> {
+                userInstance.setCurrentLvl(instance);
+                if (action != null) action.process();
+            });
         } catch (UserNotFoundException e) {
             e.printStackTrace();
-            goToHomeControlLevel(userInstance, msg);
+            goToHomeControlLevel(userInstance, msg, null);
         }
     }
 }

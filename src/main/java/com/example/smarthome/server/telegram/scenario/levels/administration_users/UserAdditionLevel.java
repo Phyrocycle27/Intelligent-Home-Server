@@ -1,5 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.administration_users;
 
+import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -27,13 +28,12 @@ public class UserAdditionLevel implements AnswerCreator {
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK && msg.getText().equals("back")) {
-            goToUsersLevel(user, msg);
-            EmojiCallback.back(msg.getCallbackId());
+            goToUsersLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
             // если сообщение успешно обработано, то возвращаем истину
             return true;
         } else if (msg.getType() == MessageType.CONTACT) {
             try {
-                goToUserSetupRoleLevel(user, msg, Long.parseLong(msg.getText()));
+                goToUserSetupRoleLevel(user, msg, Long.parseLong(msg.getText()), null);
             } finally {
                 deleteAsync(user.getChatId(), user.getLastMessageId(), () -> user.setLastMessageId(0));
             }
@@ -44,11 +44,12 @@ public class UserAdditionLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToUserAdditionLevel(UserInstance user, IncomingMessage msg) {
+    public static void goToUserAdditionLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         executeAsync(new InlineKeyboardMessage(user.getChatId(), sendUserContact, null)
                 .hasBackButton(true).setMessageId(msg.getId()), () -> {
             user.setLastMessageId(msg.getId());
             user.setCurrentLvl(instance);
+            if (action != null) action.process();
         });
     }
 }
