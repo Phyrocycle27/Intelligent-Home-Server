@@ -74,7 +74,8 @@ public class DeviceLevel implements AnswerCreator {
                         goToDeviceEditingLevel(user, msg, deviceId, () -> EmojiCallback.next(msg.getCallbackId()));
                         break;
                     default:
-                        executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                        executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid),
+                                () -> user.setProcessing(false));
                 }
             } catch (ChannelNotFoundException e) {
                 log.warn(e.getMessage());

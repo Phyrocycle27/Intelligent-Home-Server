@@ -58,7 +58,8 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
                         goToDeviceLevel(user, msg, deviceId, () -> EmojiCallback.back(msg.getCallbackId()));
                         break;
                     default:
-                        executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                        executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid),
+                                () -> user.setProcessing(false));
                 }
             } catch (ChannelNotFoundException e) {
                 log.warn(e.getMessage());

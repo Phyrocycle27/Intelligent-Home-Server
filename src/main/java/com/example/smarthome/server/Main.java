@@ -1,5 +1,6 @@
 package com.example.smarthome.server;
 
+import com.example.smarthome.server.netty.Server;
 import com.example.smarthome.server.repository.CitiesRepository;
 import com.example.smarthome.server.repository.TelegramUsersRepository;
 import com.example.smarthome.server.repository.TokensRepository;
@@ -30,15 +31,12 @@ public class Main {
         ApplicationContext ctx = SpringApplication.run(Main.class, args);
 
         // ***** INITIALIZE THE DeviceAccessService CLASS ***********/
-        DeviceAccessService service = DeviceAccessService.getInstance();
-
-        service.setTokensRepo(ctx.getBean(TokensRepository.class));
-        service.setUsersRepo(ctx.getBean(TelegramUsersRepository.class));
-        // *********** NETTY THREAD START ***************
-//        new Server(SERVER_PORT); // starting the netty server
+        DeviceAccessService.getInstance().setTokensRepo(ctx.getBean(TokensRepository.class));
+        DeviceAccessService.getInstance().setUsersRepo(ctx.getBean(TelegramUsersRepository.class));
         WeatherService.getInstance().setCitiesRepo(ctx.getBean(CitiesRepository.class));
         WeatherService.getInstance().setUsersRepo(ctx.getBean(WeatherUsersRepository.class));
-
+        // *********** NETTY THREAD START ***************
+        new Server(SERVER_PORT); // starting the netty server
         // *********** TELEGRAM THREAD START ************
         new Telegram(PROXY_HOST, PROXY_PORT);
     }

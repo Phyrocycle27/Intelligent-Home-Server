@@ -68,7 +68,8 @@ public class DevicesLevel implements AnswerCreator {
                     });
                     break;
                 default:
-                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid),
+                            () -> user.setProcessing(false));
             }
             // если сообщение успешно обработано, то возвращаем истину
             return true;

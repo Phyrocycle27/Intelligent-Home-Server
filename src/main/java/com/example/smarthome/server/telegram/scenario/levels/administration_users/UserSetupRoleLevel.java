@@ -58,7 +58,8 @@ public class UserSetupRoleLevel implements AnswerCreator {
                 case "back":
                     goToUserAdditionLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
                 default:
-                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid),
+                            () -> user.setProcessing(false));
             }
             // если сообщение успешно обработано, то возвращаем истину
             return true;

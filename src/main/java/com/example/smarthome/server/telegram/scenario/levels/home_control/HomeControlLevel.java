@@ -73,7 +73,8 @@ public class HomeControlLevel implements AnswerCreator {
                     goToMenuLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
                     break;
                 default:
-                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid),
+                            () -> user.setProcessing(false));
             }
             // если сообщение успешно обработано, то возвращаем истину
             return true;
