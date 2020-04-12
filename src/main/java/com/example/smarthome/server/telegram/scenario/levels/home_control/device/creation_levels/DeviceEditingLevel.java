@@ -62,7 +62,9 @@ public class DeviceEditingLevel implements AnswerCreator {
                     default:
                         executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid));
                 }
+                return true;
             }
+            return false;
         } else {
             if (msg.getType() == MessageType.CALLBACK && msg.getText().equals("back")) {
                 goToChoice(user, msg, () -> {
@@ -72,8 +74,8 @@ public class DeviceEditingLevel implements AnswerCreator {
             } else {
                 user.getDeviceEditor().process(msg);
             }
+            return true;
         }
-        return true;
     }
 
     public static void goToDeviceEditingLevel(UserInstance user, IncomingMessage msg,

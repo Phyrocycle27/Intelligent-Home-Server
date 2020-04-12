@@ -33,7 +33,7 @@ public class UserAdditionLevel implements AnswerCreator {
             return true;
         } else if (msg.getType() == MessageType.CONTACT) {
             try {
-                goToUserSetupRoleLevel(user, msg, Long.parseLong(msg.getText()), null);
+                goToUserSetupRoleLevel(user, msg, Long.parseLong(msg.getText()), this, null);
             } finally {
                 deleteAsync(user.getChatId(), user.getLastMessageId(), () -> user.setLastMessageId(0));
             }

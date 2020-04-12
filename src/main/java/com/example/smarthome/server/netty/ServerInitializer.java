@@ -1,6 +1,6 @@
 package com.example.smarthome.server.netty;
 
-import com.example.smarthome.server.netty.handler.EventHandler;
+import com.example.smarthome.server.netty.handler.AuthEventHandler;
 import com.example.smarthome.server.netty.handler.security.AuthHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -42,7 +42,7 @@ public class ServerInitializer extends ChannelInitializer<SocketChannel> {
         p.addLast("bytesEncoder", new ByteArrayEncoder());
         p.addLast("idleHandler",
                 new IdleStateHandler(0, 0, 60));
-        p.addLast("eventHandler", new EventHandler());
+        p.addLast("eventHandler", new AuthEventHandler());
         p.addLast("authHandler", new AuthHandler());
     }
 }

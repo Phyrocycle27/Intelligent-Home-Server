@@ -3,21 +3,19 @@ package com.example.smarthome.server.netty.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class SessionHandler extends ChannelInboundHandlerAdapter {
 
-    private static Logger LOGGER;
+    private static final Logger log = LoggerFactory.getLogger(SessionHandler.class);
     private static Map<String, Channel> tokenToChannel;
     private static Map<Channel, String> channelToToken;
 
     static {
-        LOGGER = Logger.getLogger(SessionHandler.class.getName());
-
         tokenToChannel = new HashMap<>();
         channelToToken = new HashMap<>();
     }
@@ -37,19 +35,31 @@ public class SessionHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        super.channelRead(ctx, msg);
+        if (msg.toString().equals("ping")) {
+            ctx.writeAndFlush("pong");
+        }
+    }
+
+    @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        super.channelUnregistered(ctx);
+        log.info("Unregistered");
         removeChannel(ctx.channel());
+        ctx.close().sync();
     }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.log(Level.INFO, "Session handler has added");
+        super.handlerAdded(ctx);
+        log.info("Session handler has added");
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-            throws Exception {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        super.exceptionCaught(ctx, cause);
+        log.info("Exception " + cause.getMessage());
         cause.printStackTrace();
-        ctx.close();
     }
 }

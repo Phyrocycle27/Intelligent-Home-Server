@@ -6,13 +6,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+public class AuthEventHandler extends ChannelDuplexHandler {
 
-public class EventHandler extends ChannelDuplexHandler {
-
-    private static Logger LOGGER = Logger.getLogger(EventHandler.class.getName());
+    private static Logger log = LoggerFactory.getLogger(AuthEventHandler.class);
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -20,10 +19,10 @@ public class EventHandler extends ChannelDuplexHandler {
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent e = (IdleStateEvent) evt;
             if (e.state() == IdleState.ALL_IDLE) {
-                LOGGER.log(Level.INFO, String.format("Close channel with %s; Reason: idle state for %d seconds",
+                log.info(String.format("Close channel with %s; Reason: idle state for %d seconds",
                         ch.remoteAddress(), ((IdleStateHandler) ch.pipeline().get("idleHandler"))
                                 .getAllIdleTimeInMillis() / 1000));
-                ctx.close();
+                ctx.close().sync();
             }
         }
     }

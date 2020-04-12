@@ -100,7 +100,7 @@ public class UserSetupRoleLevel implements AnswerCreator {
                     }
                 }})
                 .setMessageId(msg.getId())
-                .setNumOfColumns(2), () -> {
+                .setNumOfColumns(user == null ? 2 : 1), () -> {
             userInstance.setCurrentLvl(instance);
             if (action != null) action.process();
         });

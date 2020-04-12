@@ -6,19 +6,17 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.ssl.SslHandler;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AuthHandler extends ChannelInboundHandlerAdapter {
 
-    private static final Logger LOGGER;
+    private static final Logger log = LoggerFactory.getLogger(AuthHandler.class);
     private static final DeviceAccessService service;
     private final Encryption enc;
 
     static {
         service = DeviceAccessService.getInstance();
-        LOGGER = Logger.getLogger(AuthHandler.class.getName());
     }
 
     public AuthHandler() {
@@ -27,11 +25,10 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.log(Level.INFO, "Channel is active");
+        log.info("Channel is active");
 
         ctx.pipeline().get(SslHandler.class).handshakeFuture().addListener(future ->
-                LOGGER.log(Level.INFO, "SSL handshake is success!")
-        );
+                log.info("SSL handshake is success!"));
     }
 
     @Override
@@ -48,20 +45,20 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
             ch.pipeline().remove("bytesDecoder");
             ch.pipeline().remove("bytesEncoder");
 
-            LOGGER.log(Level.INFO, "Encryption AES key is: " + enc.isKeySet());
+            log.info("Encryption AES key is: " + enc.isKeySet());
         } else {
             // а тут он высылает токен, который был получен пользователем в телеграме
-            LOGGER.log(Level.INFO, String.format("Token from channel %s is %s", ch.remoteAddress(), msg));
+            log.info(String.format("Token from channel %s is %s", ch.remoteAddress(), msg));
 
             if (service.isExists(msg.toString())) {
-                LOGGER.log(Level.INFO, "Token is right");
+                log.info("Token is right");
 
                 ch.pipeline().remove("idleHandler");
                 ch.pipeline().remove("eventHandler");
                 ch.pipeline().remove(this);
                 ch.pipeline().addLast("sessionHandler", new SessionHandler(msg.toString(), ch));
             } else {
-                LOGGER.log(Level.INFO, "Token is wrong");
+                log.info("Token is wrong");
                 ctx.close();
             }
         }
