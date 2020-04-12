@@ -1,6 +1,8 @@
 package com.example.smarthome.server.telegram.scenario.levels.administration_users;
 
+import com.example.smarthome.server.entity.TelegramUser;
 import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
+import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
@@ -21,6 +23,7 @@ import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserAdditionLevel.goToUserAdditionLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UserLevel.goToUserLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.administration_users.UsersLevel.goToUsersLevel;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -55,8 +58,11 @@ public class UserSetupRoleLevel implements AnswerCreator {
                         e.printStackTrace();
                     }
                     break;
-                case "back":
+                case "back-to-addition":
                     goToUserAdditionLevel(user, msg, () -> EmojiCallback.back(msg.getCallbackId()));
+                    break;
+                case "back-to-user":
+                    goToUserLevel(user, msg, userId, () -> EmojiCallback.back(msg.getCallbackId()));
                     break;
                 default:
                     executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid),
@@ -69,16 +75,33 @@ public class UserSetupRoleLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToUserSetupRoleLevel(UserInstance user, IncomingMessage msg, long userId, CallbackAction action) {
-        executeAsync(new InlineKeyboardMessage(user.getChatId(), chooseRole,
+    public static void goToUserSetupRoleLevel(UserInstance userInstance, IncomingMessage msg, long userId, Object from,
+                                              CallbackAction action) {
+        TelegramUser tmp = null;
+        try {
+            tmp = service.getUser(userId);
+        } catch (UserNotFoundException ignored) {
+        }
+
+        final TelegramUser user = tmp;
+
+        executeAsync(new InlineKeyboardMessage(userInstance.getChatId(), chooseRole,
                 new ArrayList<CallbackButton>() {{
-                    add(new CallbackButton("Admin", "admin_" + userId));
-                    add(new CallbackButton("User", "user_" + userId));
+                    if (user == null || !user.getRole().equals("admin")) {
+                        add(new CallbackButton("Admin", "admin_" + userId));
+                    }
+                    if (user == null || !user.getRole().equals("user")) {
+                        add(new CallbackButton("User", "user_" + userId));
+                    }
+                    if (from instanceof UserLevel) {
+                        add(new CallbackButton("Назад", "back-to-user_" + userId));
+                    } else if (from instanceof UserAdditionLevel) {
+                        add(new CallbackButton("Назад", "back-to-addition"));
+                    }
                 }})
                 .setMessageId(msg.getId())
-                .setNumOfColumns(2)
-                .hasBackButton(true), () -> {
-            user.setCurrentLvl(instance);
+                .setNumOfColumns(2), () -> {
+            userInstance.setCurrentLvl(instance);
             if (action != null) action.process();
         });
     }
