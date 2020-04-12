@@ -2,7 +2,7 @@ package com.example.smarthome.server.telegram;
 
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.scenario.AnswerCreator;
-import com.example.smarthome.server.telegram.scenario.CheckOfStartCommand;
+import com.example.smarthome.server.telegram.scenario.levels.NullLevel;
 import com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceCreator;
 import com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceEditor;
 import lombok.Getter;
@@ -44,7 +44,7 @@ public class UserInstance {
     }
 
     synchronized void sendAnswer(IncomingMessage msg) {
-        if (!CheckOfStartCommand.getInstance().check(this, msg)) {
+        if (!NullLevel.getInstance().check(this, msg)) {
             if (currentLvl != null) {
                 processing = currentLvl.create(this, msg);
             }

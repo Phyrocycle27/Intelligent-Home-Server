@@ -48,7 +48,7 @@ public class UsersLevel implements AnswerCreator {
             String[] arr = p.split(msg.getText());
             String cmd = arr[0];
 
-            switch (msg.getText()) {
+            switch (cmd) {
                 case "add":
                     goToUserAdditionLevel(user, msg, () -> EmojiCallback.next(msg.getCallbackId()));
                     break;
