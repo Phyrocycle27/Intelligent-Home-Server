@@ -21,15 +21,15 @@ public class City {
     @Id
     private int id;
 
-    @Column
+    @Column(nullable = false)
     private String name;
 
-    @Column
+    @Column(nullable = false)
     private String state;
 
-    @Column
+    @Column(nullable = false)
     private String suburb;
 
-    @Column(name = "county_code")
+    @Column(nullable = false, name = "county_code")
     private String countryCode;
 }

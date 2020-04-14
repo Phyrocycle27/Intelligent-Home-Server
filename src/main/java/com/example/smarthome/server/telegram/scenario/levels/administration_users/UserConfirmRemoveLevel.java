@@ -1,5 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.administration_users;
 
+import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
@@ -13,6 +14,8 @@ import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -28,12 +31,13 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
     private static final UserConfirmRemoveLevel instance = new UserConfirmRemoveLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
+    private static final Logger log = LoggerFactory.getLogger(UserConfirmRemoveLevel.class);
 
     private static final Pattern PATTERN = Pattern.compile("[_]");
 
     // ************************************* MESSAGES *************************************************
     private static final String removeConfirmationUser = "Вы действительно хотите удалить этого пользователя?";
-    private static final String userRemoved = "Пользователь удалён";
+    private static final String userNotExists = "Пользователь не найден";
     private static final String buttonInvalid = "Кнопка недействительна";
 
     @Override
@@ -46,8 +50,14 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
 
             switch (cmd) {
                 case "confirmRemove":
-                    service.deleteUser(userId);
-                    goToUsersLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
+                    try {
+                        service.deleteUser(userId);
+                        goToUsersLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
+                    } catch (UserNotFoundException e) {
+                        goToUsersLevel(user, msg, () ->
+                                executeAsync(new AnswerCallback(msg.getCallbackId(), userNotExists)));
+                        log.warn(e.getMessage());
+                    }
                     break;
                 case "cancel":
                     goToUserLevel(user, msg, userId, () -> EmojiCallback.back(msg.getCallbackId()));

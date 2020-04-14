@@ -8,14 +8,17 @@ import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.netty.handler.SessionHandler;
 import com.example.smarthome.server.repository.TelegramUsersRepository;
 import com.example.smarthome.server.repository.TokensRepository;
+import com.example.smarthome.server.telegram.Telegram;
 import com.example.smarthome.server.telegram.objects.UserRole;
 import io.netty.channel.Channel;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.catalina.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -63,8 +66,31 @@ public class DeviceAccessService {
         return usersRepo.findByToken(token);
     }
 
-    public void deleteUser(long userId) {
+    public void deleteUser(long userId) throws UserNotFoundException {
+        TelegramUser deleted = getUser(userId);
         usersRepo.deleteById(userId);
+
+        if (UserRole.valueOf(deleted.getRole().toUpperCase()) == UserRole.CREATOR) {
+            // назначаем следующего пользователя создателем
+            List<TelegramUser> users = usersRepo.findByTokenOrderByAdditionDateAsc(deleted.getToken());
+            if (!users.isEmpty()) {
+                for (int i = 0; i < users.size(); i++) {
+                    TelegramUser user = users.get(i);
+                    if (UserRole.valueOf(user.getRole().toUpperCase()) == UserRole.ADMIN) {
+                        user.setRole(UserRole.CREATOR.getName().toLowerCase());
+                        usersRepo.save(user);
+                        break;
+                    } else if (i + 1 == users.size()) {
+                        user = users.get(0);
+                        user.setRole(UserRole.CREATOR.getName().toLowerCase());
+                        usersRepo.save(user);
+                        break;
+                    }
+                }
+            } else {
+                tokensRepo.delete(deleted.getToken());
+            }
+        }
     }
 
     public TelegramUser getUser(long userId) throws UserNotFoundException {
