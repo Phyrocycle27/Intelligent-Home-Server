@@ -26,6 +26,6 @@ public class Token {
             length = DeviceAccessService.SecureTokenGenerator.SECURE_TOKEN_LENGTH)
     private String token;
 
-    @OneToMany(mappedBy = "token", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "token", fetch = FetchType.EAGER)
     private Set<TelegramUser> users;
 }

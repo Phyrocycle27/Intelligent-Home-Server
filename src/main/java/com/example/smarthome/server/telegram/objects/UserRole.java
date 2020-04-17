@@ -20,4 +20,8 @@ public enum UserRole {
     public int getCode() {
         return code;
     }
+
+    public static UserRole getByName(String name) {
+        return UserRole.valueOf(name.toUpperCase());
+    }
 }

@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.administration_users;
 
 import com.example.smarthome.server.entity.TelegramUser;
-import com.example.smarthome.server.exceptions.UserAlreadyExistsException;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.CallbackAction;
@@ -17,6 +16,8 @@ import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -33,6 +34,7 @@ public class UserSetupRoleLevel implements AnswerCreator {
     private static final UserSetupRoleLevel instance = new UserSetupRoleLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
+    private static final Logger log = LoggerFactory.getLogger(UserSetupRoleLevel.class);
 
     private static final Pattern PATTERN = Pattern.compile("[_]");
 
@@ -52,10 +54,11 @@ public class UserSetupRoleLevel implements AnswerCreator {
                 case "user":
                 case "admin":
                     try {
-                        service.addUser(user.getChatId(), userId, UserRole.valueOf(s.toUpperCase()));
+                        service.changeUserRole(userId, UserRole.getByName(s));
+                        goToUserLevel(user, msg, userId, () -> EmojiCallback.success(msg.getCallbackId()));
+                    } catch (UserNotFoundException ex) {
+                        service.addUser(user.getChatId(), userId, UserRole.getByName(s));
                         goToUsersLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
-                    } catch (UserAlreadyExistsException e) {
-                        e.printStackTrace();
                     }
                     break;
                 case "back-to-addition":

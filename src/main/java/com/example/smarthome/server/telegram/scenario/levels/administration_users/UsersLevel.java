@@ -17,6 +17,8 @@ import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,7 @@ public class UsersLevel implements AnswerCreator {
     private static final UsersLevel instance = new UsersLevel();
 
     private static final DeviceAccessService service = DeviceAccessService.getInstance();
+    private static final Logger log = LoggerFactory.getLogger(UsersLevel.class);
     private static final Bot bot = Bot.getInstance();
 
     private static final Pattern p = Pattern.compile("[_]");
@@ -73,15 +76,16 @@ public class UsersLevel implements AnswerCreator {
     public static void goToUsersLevel(UserInstance userInstance, IncomingMessage msg, CallbackAction action) {
         List<CallbackButton> users = new ArrayList<>();
 
-        for (TelegramUser user : service.getUsers(userInstance.getChatId())) {
-            users.add(new CallbackButton(bot.getUserName(user.getUserId()), "id_" + user.getUserId()));
-        }
-
-        InlineKeyboardMessage answer = new InlineKeyboardMessage(userInstance.getChatId(), allowedUsersMessage, users)
-                .hasBackButton(true)
-                .setMessageId(msg.getId());
-
         try {
+            for (TelegramUser user : service.getUsers(userInstance.getChatId())) {
+                users.add(new CallbackButton(bot.getUserName(user.getUserId()), "id_" + user.getUserId()));
+            }
+
+            InlineKeyboardMessage answer = new InlineKeyboardMessage(userInstance.getChatId(), allowedUsersMessage, users)
+                    .hasBackButton(true)
+                    .setMessageId(msg.getId());
+
+
             if (service.getUser(userInstance.getChatId()).getRole().equals(UserRole.CREATOR.getName())) {
                 answer.hasAddButton(true);
             }
@@ -91,7 +95,7 @@ public class UsersLevel implements AnswerCreator {
                 if (action != null) action.process();
             });
         } catch (UserNotFoundException e) {
-            e.printStackTrace();
+            log.warn(e.getMessage());
             goToHomeControlLevel(userInstance, msg, null);
         }
     }

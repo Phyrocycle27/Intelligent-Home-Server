@@ -84,7 +84,7 @@ public class HomeControlLevel implements AnswerCreator {
     }
 
     public static void goToHomeControlLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
-        if (service.isExists(user.getChatId())) {
+        if (service.isUserExists(user.getChatId())) {
             if (service.isChannelExist(user.getChatId())) {
                 executeAsync(new InlineKeyboardMessage(user.getChatId(), homeControl, homeControlButtons)
                         .setNumOfColumns(2)

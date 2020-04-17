@@ -8,17 +8,14 @@ import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.netty.handler.SessionHandler;
 import com.example.smarthome.server.repository.TelegramUsersRepository;
 import com.example.smarthome.server.repository.TokensRepository;
-import com.example.smarthome.server.telegram.Telegram;
 import com.example.smarthome.server.telegram.objects.UserRole;
 import io.netty.channel.Channel;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.apache.catalina.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Sort;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -53,7 +50,7 @@ public class DeviceAccessService {
 
     public void addUser(long userId, long newUserId, UserRole userRole) throws UserAlreadyExistsException {
 
-        if (isExists(newUserId)) throw new UserAlreadyExistsException(newUserId);
+        if (isUserExists(newUserId)) throw new UserAlreadyExistsException(newUserId);
 
         Token token = usersRepo.getOne(userId).getToken();
         TelegramUser user = new TelegramUser(newUserId, userRole.getName(), LocalDateTime.now(), token);
@@ -61,36 +58,43 @@ public class DeviceAccessService {
         usersRepo.save(user);
     }
 
-    public List<TelegramUser> getUsers(long userId) {
-        Token token = usersRepo.getOne(userId).getToken();
+    public void changeUserRole(long userId, UserRole role) throws UserNotFoundException {
+        TelegramUser user = usersRepo.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+
+        user.setRole(role.getName());
+        usersRepo.save(user);
+    }
+
+    public List<TelegramUser> getUsers(long userId) throws UserNotFoundException {
+        Token token = usersRepo.findById(userId).orElseThrow(() -> new UserNotFoundException(userId)).getToken();
         return usersRepo.findByToken(token);
     }
 
     public void deleteUser(long userId) throws UserNotFoundException {
         TelegramUser deleted = getUser(userId);
-        usersRepo.deleteById(userId);
 
-        if (UserRole.valueOf(deleted.getRole().toUpperCase()) == UserRole.CREATOR) {
+        if (UserRole.getByName(deleted.getRole()) == UserRole.CREATOR) {
             // назначаем следующего пользователя создателем
             List<TelegramUser> users = usersRepo.findByTokenOrderByAdditionDateAsc(deleted.getToken());
             if (!users.isEmpty()) {
                 for (int i = 0; i < users.size(); i++) {
                     TelegramUser user = users.get(i);
-                    if (UserRole.valueOf(user.getRole().toUpperCase()) == UserRole.ADMIN) {
-                        user.setRole(UserRole.CREATOR.getName().toLowerCase());
+                    if (UserRole.getByName(user.getRole()) == UserRole.ADMIN) {
+                        user.setRole(UserRole.CREATOR.getName());
                         usersRepo.save(user);
                         break;
                     } else if (i + 1 == users.size()) {
                         user = users.get(0);
-                        user.setRole(UserRole.CREATOR.getName().toLowerCase());
+                        user.setRole(UserRole.CREATOR.getName());
                         usersRepo.save(user);
                         break;
                     }
                 }
             } else {
-                tokensRepo.delete(deleted.getToken());
+                tokensRepo.deleteById(deleted.getToken().getId());
             }
         }
+        usersRepo.deleteById(userId);
     }
 
     public TelegramUser getUser(long userId) throws UserNotFoundException {
@@ -120,11 +124,11 @@ public class DeviceAccessService {
         return flag;
     }
 
-    public boolean isExists(long userId) {
+    public boolean isUserExists(long userId) {
         return usersRepo.existsById(userId);
     }
 
-    public boolean isExists(String token) {
+    public boolean isTokenExists(String token) {
         return !tokensRepo.findByToken(token).isEmpty();
     }
 

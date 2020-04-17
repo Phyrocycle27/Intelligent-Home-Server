@@ -88,7 +88,7 @@ public class UserLevel implements AnswerCreator {
 
                         if (code >= UserRole.CREATOR.getCode() || userInstance.getChatId() == userId)
                             add(new CallbackButton("Удалить", "remove_" + userId));
-                        if (code >= UserRole.CREATOR.getCode()) {
+                        if (code >= UserRole.CREATOR.getCode() && userInstance.getChatId() != userId) {
                             add(new CallbackButton("Изменить роль", "change-role_" + userId));
                         }
                     }})

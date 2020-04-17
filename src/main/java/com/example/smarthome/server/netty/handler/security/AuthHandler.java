@@ -50,7 +50,7 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
             // а тут он высылает токен, который был получен пользователем в телеграме
             log.info(String.format("Token from channel %s is %s", ch.remoteAddress(), msg));
 
-            if (service.isExists(msg.toString())) {
+            if (service.isTokenExists(msg.toString())) {
                 log.info("Token is right");
 
                 ch.pipeline().remove("idleHandler");

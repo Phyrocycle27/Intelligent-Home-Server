@@ -17,11 +17,7 @@ import java.security.cert.CertificateException;
 
 public class Server implements Runnable {
 
-    public static final Logger log;
-
-    static {
-        log = LoggerFactory.getLogger(Server.class);
-    }
+    public static final Logger log = LoggerFactory.getLogger(Server.class);
 
     private final int PORT;
 
@@ -32,10 +28,14 @@ public class Server implements Runnable {
 
     @Override
     public void run() {
-        log.debug("Netty thread is running");
+        log.info("Netty thread is running");
 
-        EventLoopGroup bossGroup = new EpollEventLoopGroup();
-        EventLoopGroup workerGroup = new EpollEventLoopGroup();
+        EventLoopGroup bossGroup, workerGroup;
+
+        bossGroup = new EpollEventLoopGroup();
+        workerGroup = new EpollEventLoopGroup();
+//        bossGroup = new NioEventLoopGroup();
+//        workerGroup = new NioEventLoopGroup();
 
         SslContext sslCtx = null;
 
@@ -51,8 +51,10 @@ public class Server implements Runnable {
         try {
             ServerBootstrap bootstrap = new ServerBootstrap()
                     .group(bossGroup, workerGroup)
-                    .option(ChannelOption.SO_BACKLOG, 1000) // limit of connections
-                    .channel(EpollServerSocketChannel.class)
+                    .option(ChannelOption.SO_BACKLOG, 100) // limit of connections
+                    .channel(EpollServerSocketChannel.class
+//                            NioServerSocketChannel.class
+                    )
                     .childHandler(new ServerInitializer(sslCtx));
 
             bootstrap.bind(PORT).sync().channel().closeFuture().sync();

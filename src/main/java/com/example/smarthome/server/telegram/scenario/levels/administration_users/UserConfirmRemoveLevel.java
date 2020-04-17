@@ -54,9 +54,9 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
                         service.deleteUser(userId);
                         goToUsersLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
                     } catch (UserNotFoundException e) {
+                        log.warn(e.getMessage());
                         goToUsersLevel(user, msg, () ->
                                 executeAsync(new AnswerCallback(msg.getCallbackId(), userNotExists)));
-                        log.warn(e.getMessage());
                     }
                     break;
                 case "cancel":

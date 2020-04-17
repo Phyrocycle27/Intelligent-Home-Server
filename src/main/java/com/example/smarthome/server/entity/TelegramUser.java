@@ -1,9 +1,6 @@
 package com.example.smarthome.server.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.Proxy;
 
 import javax.persistence.*;
@@ -13,6 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "telegram_users")
 @EqualsAndHashCode(of = {"userId"})
+@ToString(of = {"userId", "role", "additionDate", "token"})
 @AllArgsConstructor
 @NoArgsConstructor
 @Proxy(lazy = false)
@@ -28,7 +26,7 @@ public class TelegramUser {
     @Column(updatable = false, nullable = false, name = "addition_date")
     private LocalDateTime additionDate;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = {CascadeType.ALL})
     @JoinColumn(name = "token_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Token token;
 }
