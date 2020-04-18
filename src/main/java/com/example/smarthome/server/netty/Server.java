@@ -34,8 +34,6 @@ public class Server implements Runnable {
 
         bossGroup = new EpollEventLoopGroup();
         workerGroup = new EpollEventLoopGroup();
-//        bossGroup = new NioEventLoopGroup();
-//        workerGroup = new NioEventLoopGroup();
 
         SslContext sslCtx = null;
 
@@ -52,9 +50,7 @@ public class Server implements Runnable {
             ServerBootstrap bootstrap = new ServerBootstrap()
                     .group(bossGroup, workerGroup)
                     .option(ChannelOption.SO_BACKLOG, 100) // limit of connections
-                    .channel(EpollServerSocketChannel.class
-//                            NioServerSocketChannel.class
-                    )
+                    .channel(EpollServerSocketChannel.class)
                     .childHandler(new ServerInitializer(sslCtx));
 
             bootstrap.bind(PORT).sync().channel().closeFuture().sync();

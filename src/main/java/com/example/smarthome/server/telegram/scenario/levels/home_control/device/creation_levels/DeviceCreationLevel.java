@@ -9,19 +9,24 @@ import com.example.smarthome.server.telegram.scenario.AnswerCreator;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DeviceCreationLevel implements AnswerCreator {
 
     @Getter
     private static final DeviceCreationLevel instance = new DeviceCreationLevel();
+    private static final Logger log = LoggerFactory.getLogger(DeviceCreationLevel.class);
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK && msg.getText().equals("back")) {
             user.getDeviceCreator().goToPrev(msg, () -> EmojiCallback.back(msg.getCallbackId()));
-        } else user.getDeviceCreator().process(msg);
-        return true;
+            return true;
+        } else {
+            return user.getDeviceCreator().process(msg);
+        }
     }
 
     public static void goToDeviceCreationLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {

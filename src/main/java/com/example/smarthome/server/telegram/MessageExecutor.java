@@ -26,12 +26,14 @@ public class MessageExecutor {
     }
 
     public static void executeAsync(AnswerCallback callback, CallbackAction task) {
-        AnswerCallbackQuery answer = new AnswerCallbackQuery()
-                .setCallbackQueryId(callback.getCallbackId())
-                .setText(callback.getText())
-                .setShowAlert(callback.isAlert());
+        if (callback.getCallbackId() != null) {
+            AnswerCallbackQuery answer = new AnswerCallbackQuery()
+                    .setCallbackQueryId(callback.getCallbackId())
+                    .setText(callback.getText())
+                    .setShowAlert(callback.isAlert());
 
-        bot.executeAsync(answer, task);
+            bot.executeAsync(answer, task);
+        }
     }
 
     /*

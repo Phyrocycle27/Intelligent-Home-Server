@@ -23,7 +23,7 @@ public class UserInstance {
     private DeviceEditor deviceEditor;
     @Setter
     private AnswerCreator currentLvl;
-    private long chatId;
+    private final long chatId;
 
     @Setter
     private int lastMessageId;
@@ -46,6 +46,7 @@ public class UserInstance {
     synchronized void sendAnswer(IncomingMessage msg) {
         if (!NullLevel.getInstance().check(this, msg)) {
             if (currentLvl != null) {
+                log.info("Creating answer");
                 processing = currentLvl.create(this, msg);
             }
         }

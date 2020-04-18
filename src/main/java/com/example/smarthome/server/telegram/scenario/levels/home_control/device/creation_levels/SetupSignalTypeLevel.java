@@ -1,7 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
 import com.example.smarthome.server.telegram.CallbackAction;
-import com.example.smarthome.server.telegram.MessageExecutor;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
@@ -39,7 +38,8 @@ public class SetupSignalTypeLevel implements MessageProcessor {
         if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
                 case "pwm":
-                    MessageExecutor.executeAsync(new AnswerCallback(msg.getCallbackId(), signalTypeNotSupport));
+                    executeAsync(new AnswerCallback(msg.getCallbackId(), signalTypeNotSupport),
+                            () -> user.setProcessing(false));
                     break;
                 case "digital":
                     return msg.getText();

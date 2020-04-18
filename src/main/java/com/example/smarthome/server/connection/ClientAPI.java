@@ -2,6 +2,8 @@ package com.example.smarthome.server.connection;
 
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
+import com.example.smarthome.server.exceptions.OutputAlreadyExistException;
+import com.example.smarthome.server.exceptions.OutputNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.google.gson.*;
 import io.netty.channel.Channel;
@@ -55,35 +57,51 @@ public class ClientAPI {
     }
 
     // DELETE
-    public static void deleteOutput(Channel ch, Integer outputId) throws ChannelNotFoundException {
+    public static void deleteOutput(Channel ch, Integer outputId) throws ChannelNotFoundException, OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "DELETE")
                 .put("uri", "http://localhost:8080/outputs/one/" + outputId));
 
-        JsonRequester.execute(request, ch);
+        JSONObject response = JsonRequester.execute(request, ch);
+
+        if (response.getInt("code") != 204) {
+            throw new OutputNotFoundException(outputId);
+        }
     }
 
     // CREATE
-    public static void createOutput(Channel ch, Output newOutput) throws ChannelNotFoundException {
+    public static void createOutput(Channel ch, Output newOutput) throws ChannelNotFoundException,
+            OutputAlreadyExistException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "POST")
                 .put("uri", "http://localhost:8080/outputs/create")
                 .put("request_body", new JSONObject(newOutput)));
 
-        JsonRequester.execute(request, ch);
+        JSONObject response = JsonRequester.execute(request, ch);
+
+        if (response.getInt("code") == 409) {
+            throw new OutputAlreadyExistException(newOutput.getGpio());
+        }
     }
 
-    public static void updateOutput(Channel ch, Output updatedOutput) throws ChannelNotFoundException {
+    public static void updateOutput(Channel ch, Output updatedOutput) throws ChannelNotFoundException,
+            OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "PUT")
                 .put("uri", "http://localhost:8080/outputs/one/" + updatedOutput.getOutputId())
                 .put("request_body", new JSONObject(gson.toJson(updatedOutput))));
 
-        JsonRequester.execute(request, ch);
+        JSONObject response = JsonRequester.execute(request, ch);
+
+        if (response.getInt("code") != 200) {
+            throw new OutputNotFoundException(updatedOutput.getOutputId());
+        }
     }
 
     // GET
-    public static Output getOutput(Channel ch, Integer outputId) throws ChannelNotFoundException {
+    public static Output getOutput(Channel ch, Integer outputId) throws ChannelNotFoundException,
+            OutputNotFoundException {
+
         Output output = new Output();
 
         // ***********************************************************
@@ -97,7 +115,7 @@ public class ClientAPI {
         if (response.getInt("code") == 200) {
             return gson.fromJson(response.getJSONObject("entity").toString(), Output.class);
         } else {
-            return null;
+            throw new OutputNotFoundException(outputId);
         }
     }
 

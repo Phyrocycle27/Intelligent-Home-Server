@@ -45,7 +45,6 @@ public class JsonRequester {
 
                 @Override
                 public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-                    super.exceptionCaught(ctx, cause);
                     log.error("Cause " + cause.getMessage());
                 }
             });

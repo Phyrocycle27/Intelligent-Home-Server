@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
+import com.example.smarthome.server.exceptions.OutputNotFoundException;
 import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceLevel.goToDeviceLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.SetupNameLevel.goToSetupNameLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.SetupSignalInversionLevel.goToSetupSignalInversionLevel;
 
@@ -35,6 +37,7 @@ public class DeviceEditingLevel implements AnswerCreator {
     // ************************************* MESSAGES *************************************************
     private static final String chooseToEdit = "Выберите параметр, который хотите изменить";
     private static final String buttonInvalid = "Кнопка недействительна";
+    private static final String deviceNotFound = "Устройство не найдено";
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {
@@ -71,22 +74,24 @@ public class DeviceEditingLevel implements AnswerCreator {
                     user.getDeviceEditor().setCurrEditingLvl(null);
                     EmojiCallback.back(msg.getCallbackId());
                 });
+                return true;
             } else {
-                user.getDeviceEditor().process(msg);
+                return user.getDeviceEditor().process(msg);
             }
-            return true;
         }
     }
 
     public static void goToDeviceEditingLevel(UserInstance user, IncomingMessage msg,
                                               int deviceId, CallbackAction action) {
         try {
-
             user.setDeviceEditor(new DeviceEditor(user, deviceId));
             goToChoice(user, msg, () -> {
                 user.setCurrentLvl(instance);
                 if (action != null) action.process();
             });
+        } catch (OutputNotFoundException e) {
+            log.warn(e.getMessage());
+            goToDevicesLevel(user, msg, () -> executeAsync(new AnswerCallback(msg.getCallbackId(), deviceNotFound)));
         } catch (ChannelNotFoundException e) {
             log.warn(e.getMessage());
             goToHomeControlLevel(user, msg, null);

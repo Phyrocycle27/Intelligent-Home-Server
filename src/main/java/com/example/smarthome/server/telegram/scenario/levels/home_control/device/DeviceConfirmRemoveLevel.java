@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
 
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
+import com.example.smarthome.server.exceptions.OutputNotFoundException;
 import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.EmojiCallback;
 import com.example.smarthome.server.telegram.UserInstance;
@@ -39,6 +40,7 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
     // ************************************* MESSAGES *************************************************
     private static final String removeConfirmationDevice = "Вы действительно хотите удалить это устройство?";
     private static final String buttonInvalid = "Кнопка недействительна";
+    private static final String deviceNotFound = "Устройство не найдено";
 
     @Override
     public boolean create(UserInstance user, IncomingMessage msg) {
@@ -51,8 +53,14 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
             try {
                 switch (cmd) {
                     case "confirmRemove":
-                        deleteOutput(getChannel(user.getChatId()), deviceId);
-                        goToDevicesLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
+                        try {
+                            deleteOutput(getChannel(user.getChatId()), deviceId);
+                            goToDevicesLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
+                        } catch (OutputNotFoundException e) {
+                            log.warn(e.getMessage());
+                            goToDevicesLevel(user, msg, () ->
+                                    executeAsync(new AnswerCallback(msg.getCallbackId(), deviceNotFound)));
+                        }
                         break;
                     case "cancel":
                         goToDeviceLevel(user, msg, deviceId, () -> EmojiCallback.back(msg.getCallbackId()));

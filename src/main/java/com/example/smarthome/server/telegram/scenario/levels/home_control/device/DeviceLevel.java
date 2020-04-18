@@ -2,6 +2,7 @@ package com.example.smarthome.server.telegram.scenario.levels.home_control.devic
 
 import com.example.smarthome.server.entity.Output;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
+import com.example.smarthome.server.exceptions.OutputNotFoundException;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
 import com.example.smarthome.server.telegram.CallbackAction;
@@ -91,45 +92,43 @@ public class DeviceLevel implements AnswerCreator {
     public static void goToDeviceLevel(UserInstance user, IncomingMessage msg, int deviceId, CallbackAction action) {
         try {
             Output output = getOutput(getChannel(user.getChatId()), deviceId);
+            boolean currState = getDigitalState(getChannel(user.getChatId()), output.getOutputId());
+            String currStateText = currState ? "включено" : "выключено";
+            String inversion = output.getReverse() ? "включена" : "выключена";
+            String signalType = "";
 
-            if (output == null) goToDevicesLevel(user, msg, () -> executeAsync(
-                    new AnswerCallback(msg.getCallbackId(), deviceNotFound)));
-            else {
-                boolean currState = getDigitalState(getChannel(user.getChatId()), output.getOutputId());
-                String currStateText = currState ? "включено" : "выключено";
-                String inversion = output.getReverse() ? "включена" : "выключена";
-                String signalType = "";
-
-                switch (output.getType()) {
-                    case "digital":
-                        signalType = "цифовой";
-                        break;
-                    case "pwm":
-                        signalType = "ШИМ";
-                }
-
-                List<CallbackButton> buttons = new ArrayList<CallbackButton>() {{
-                    if (currState) add(new CallbackButton("Выключить", "off_" + output.getOutputId()));
-                    else add(new CallbackButton("Включить", "on_" + output.getOutputId()));
-                    if (UserRole.valueOf(service.getUser(user.getChatId()).getRole().toUpperCase()).getCode() > 0) {
-                        add(new CallbackButton("Удалить", "remove_" + output.getOutputId()));
-                        add(new CallbackButton("Редактировать", "edit_" + output.getOutputId()));
-                    }
-                }};
-
-                executeAsync(new InlineKeyboardMessage(user.getChatId(), String.format("<b>%s</b>\n" +
-                                "Текущее состояние: <i>%s</i>\n" +
-                                "Тип сигнала: <i>%s</i>\n" +
-                                "Инверсия: <i>%s</i>\n" +
-                                "GPIO-пин: <i>%d</i>",
-                        output.getName(), currStateText, signalType, inversion,
-                        output.getGpio()), buttons)
-                        .setMessageId(msg.getId())
-                        .hasBackButton(true), () -> {
-                    user.setCurrentLvl(instance);
-                    if (action != null) action.process();
-                });
+            switch (output.getType()) {
+                case "digital":
+                    signalType = "цифовой";
+                    break;
+                case "pwm":
+                    signalType = "ШИМ";
             }
+
+            List<CallbackButton> buttons = new ArrayList<CallbackButton>() {{
+                if (currState) add(new CallbackButton("Выключить", "off_" + output.getOutputId()));
+                else add(new CallbackButton("Включить", "on_" + output.getOutputId()));
+                if (UserRole.valueOf(service.getUser(user.getChatId()).getRole().toUpperCase()).getCode() > 0) {
+                    add(new CallbackButton("Удалить", "remove_" + output.getOutputId()));
+                    add(new CallbackButton("Редактировать", "edit_" + output.getOutputId()));
+                }
+            }};
+
+            executeAsync(new InlineKeyboardMessage(user.getChatId(), String.format("<b>%s</b>\n" +
+                            "Текущее состояние: <i>%s</i>\n" +
+                            "Тип сигнала: <i>%s</i>\n" +
+                            "Инверсия: <i>%s</i>\n" +
+                            "GPIO-пин: <i>%d</i>",
+                    output.getName(), currStateText, signalType, inversion,
+                    output.getGpio()), buttons)
+                    .setMessageId(msg.getId())
+                    .hasBackButton(true), () -> {
+                user.setCurrentLvl(instance);
+                if (action != null) action.process();
+            });
+        } catch (OutputNotFoundException e) {
+            log.warn(e.getMessage());
+            goToDevicesLevel(user, msg, () -> executeAsync(new AnswerCallback(msg.getCallbackId(), deviceNotFound)));
         } catch (ChannelNotFoundException | UserNotFoundException e) {
             log.warn(e.getMessage());
             goToHomeControlLevel(user, msg, null);

@@ -5,6 +5,7 @@ import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
+import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
 import com.example.smarthome.server.telegram.objects.callback.CallbackButton;
 import com.example.smarthome.server.telegram.objects.inlinemsg.InlineKeyboardMessage;
 import com.example.smarthome.server.telegram.scenario.MessageProcessor;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static com.example.smarthome.server.connection.ClientAPI.getAvailableOutputs;
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
@@ -31,6 +33,7 @@ public class SetupGPIOLevel implements MessageProcessor {
 
     // ************************************* MESSAGES *************************************************
     private static final String choosePin = "Теперь выберите пин, к которому вы хотите подключить новое устройство";
+    private static final String gpioIsBusy = "Данный выход уже занят другим устройством";
 
     @Override
     public Object process(UserInstance user, IncomingMessage msg) {
@@ -39,6 +42,9 @@ public class SetupGPIOLevel implements MessageProcessor {
                 if (getAvailableOutputs(getChannel(user.getChatId()), user.getDeviceCreator()
                         .getCreationOutput().getType()).contains(msg.getText())) {
                     return Integer.valueOf(msg.getText());
+                } else {
+                    goToSetupGPIOLevel(user, msg, () ->
+                            executeAsync(new AnswerCallback(msg.getCallbackId(), gpioIsBusy)));
                 }
             } catch (NumberFormatException e) {
                 log.error(e.getMessage());
@@ -53,8 +59,9 @@ public class SetupGPIOLevel implements MessageProcessor {
     public static void goToSetupGPIOLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         try {
             executeAsync(new InlineKeyboardMessage(user.getChatId(), choosePin, new ArrayList<CallbackButton>() {{
-                for (String s : getAvailableOutputs(getChannel(user.getChatId()), user.getDeviceCreator()
-                        .getCreationOutput().getType()))
+                List<String> outputs = getAvailableOutputs(getChannel(user.getChatId()), user.getDeviceCreator()
+                        .getCreationOutput().getType());
+                for (String s : outputs)
                     add(new CallbackButton(s, s));
             }})
                     .setMessageId(msg.getId())
