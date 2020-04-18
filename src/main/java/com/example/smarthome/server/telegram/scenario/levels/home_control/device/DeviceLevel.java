@@ -29,6 +29,7 @@ import static com.example.smarthome.server.connection.ClientAPI.*;
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceConfirmRemoveLevel.goToDeviceConfirmRemoveLevel;
+import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicePwmControlLevel.goToDevicePwmControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DevicesLevel.goToDevicesLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels.DeviceEditingLevel.goToDeviceEditingLevel;
 
@@ -44,7 +45,6 @@ public class DeviceLevel implements AnswerCreator {
     private static final Pattern PATTERN = Pattern.compile("[_]");
 
     // ************************************* MESSAGES *************************************************
-    private static final String removeConfirmationDevice = "Вы действительно хотите удалить это устройство?";
     private static final String buttonInvalid = "Кнопка недействительна";
     private static final String deviceNotFound = "Устройство не найдено";
     private static final String deviceOff = "Устройство выключено";
@@ -74,10 +74,16 @@ public class DeviceLevel implements AnswerCreator {
                     case "edit":
                         goToDeviceEditingLevel(user, msg, deviceId, () -> EmojiCallback.next(msg.getCallbackId()));
                         break;
+                    case "control":
+                        goToDevicePwmControlLevel(user, msg, deviceId, () -> EmojiCallback.next(msg.getCallbackId()));
+                        break;
                     default:
                         executeAsync(new AnswerCallback(msg.getCallbackId(), buttonInvalid),
                                 () -> user.setProcessing(false));
                 }
+            } catch (OutputNotFoundException e) {
+                log.warn(e.getMessage());
+                goToDevicesLevel(user, msg, () -> executeAsync(new AnswerCallback(msg.getCallbackId(), deviceNotFound)));
             } catch (ChannelNotFoundException e) {
                 log.warn(e.getMessage());
                 goToHomeControlLevel(user, msg, null);
@@ -92,10 +98,36 @@ public class DeviceLevel implements AnswerCreator {
     public static void goToDeviceLevel(UserInstance user, IncomingMessage msg, int deviceId, CallbackAction action) {
         try {
             Output output = getOutput(getChannel(user.getChatId()), deviceId);
-            boolean currState = getDigitalState(getChannel(user.getChatId()), output.getOutputId());
-            String currStateText = currState ? "включено" : "выключено";
+            List<CallbackButton> buttons = new ArrayList<>();
             String inversion = output.getReverse() ? "включена" : "выключена";
+            String currStateText = "";
             String signalType = "";
+
+            if (output.getType().equals("digital")) {
+                boolean currState = getDigitalState(getChannel(user.getChatId()), output.getOutputId());
+                currStateText = currState ? "включено" : "выключено";
+
+                if (currState) {
+                    buttons.add(new CallbackButton("Выключить", "off_" + output.getOutputId()));
+                } else {
+                    buttons.add(new CallbackButton("Включить", "on_" + output.getOutputId()));
+                }
+            } else if (output.getType().equals("pwm")) {
+                int currSignal = getPwmSignal(getChannel(user.getChatId()), output.getOutputId());
+                if (currSignal >= 768) {
+                    currStateText = "очень сильный";
+                } else if (currSignal >= 512) {
+                    currStateText = "сильный";
+                } else if (currSignal >= 256) {
+                    currStateText = "средний";
+                } else if (currSignal >= 1) {
+                    currStateText = "слабый";
+                } else {
+                    currStateText = "выключено";
+                }
+
+                buttons.add(new CallbackButton("Управлять", "control_" + output.getOutputId()));
+            }
 
             switch (output.getType()) {
                 case "digital":
@@ -105,14 +137,10 @@ public class DeviceLevel implements AnswerCreator {
                     signalType = "ШИМ";
             }
 
-            List<CallbackButton> buttons = new ArrayList<CallbackButton>() {{
-                if (currState) add(new CallbackButton("Выключить", "off_" + output.getOutputId()));
-                else add(new CallbackButton("Включить", "on_" + output.getOutputId()));
-                if (UserRole.valueOf(service.getUser(user.getChatId()).getRole().toUpperCase()).getCode() > 0) {
-                    add(new CallbackButton("Удалить", "remove_" + output.getOutputId()));
-                    add(new CallbackButton("Редактировать", "edit_" + output.getOutputId()));
-                }
-            }};
+            if (UserRole.valueOf(service.getUser(user.getChatId()).getRole().toUpperCase()).getCode() > 0) {
+                buttons.add(new CallbackButton("Удалить", "remove_" + output.getOutputId()));
+                buttons.add(new CallbackButton("Редактировать", "edit_" + output.getOutputId()));
+            }
 
             executeAsync(new InlineKeyboardMessage(user.getChatId(), String.format("<b>%s</b>\n" +
                             "Текущее состояние: <i>%s</i>\n" +

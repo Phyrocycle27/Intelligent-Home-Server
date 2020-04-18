@@ -33,18 +33,23 @@ public class ClientAPI {
                             new JsonPrimitive(localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
             .create();
 
-    public static boolean getDigitalState(Channel ch, @NonNull Integer outputId) throws ChannelNotFoundException {
+    public static boolean getDigitalState(Channel ch, @NonNull Integer outputId) throws ChannelNotFoundException,
+            OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
                 .put("uri", "http://localhost:8080/outputs/control/digital?id=" + outputId));
 
-        return JsonRequester.execute(request, ch)
-                .getJSONObject("entity")
-                .getBoolean("digitalState");
+        JSONObject response = JsonRequester.execute(request, ch);
+
+        if (response.getInt("code") == 200) {
+            return response.getJSONObject("entity").getBoolean("digitalState");
+        } else {
+            throw new OutputNotFoundException(outputId);
+        }
     }
 
     public static void setDigitalState(Channel ch, @NonNull Integer outputId, boolean state)
-            throws ChannelNotFoundException {
+            throws ChannelNotFoundException, OutputNotFoundException {
 
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "PUT")
@@ -53,7 +58,43 @@ public class ClientAPI {
                         .put("outputId", outputId)
                         .put("digitalState", state)));
 
-        JsonRequester.execute(request, ch);
+        JSONObject response = JsonRequester.execute(request, ch);
+
+        if (response.getInt("code") != 200) {
+            throw new OutputNotFoundException(outputId);
+        }
+    }
+
+    public static int getPwmSignal(Channel ch, @NonNull Integer outputId) throws ChannelNotFoundException,
+            OutputNotFoundException {
+        JSONObject request = buildRequest(new JSONObject()
+                .put("method", "GET")
+                .put("uri", "http://localhost:8080/outputs/control/pwm?id=" + outputId));
+
+        JSONObject response = JsonRequester.execute(request, ch);
+
+        if (response.getInt("code") == 200) {
+            return response.getJSONObject("entity").getInt("pwmSignal");
+        } else {
+            throw new OutputNotFoundException(outputId);
+        }
+    }
+
+    public static void setPwmSignal(Channel ch, @NonNull Integer outputId, int signal)
+            throws ChannelNotFoundException, OutputNotFoundException {
+
+        JSONObject request = buildRequest(new JSONObject()
+                .put("method", "PUT")
+                .put("uri", "http://localhost:8080/outputs/control/pwm")
+                .put("request_body", new JSONObject()
+                        .put("outputId", outputId)
+                        .put("pwmSignal", signal)));
+
+        JSONObject response = JsonRequester.execute(request, ch);
+
+        if (response.getInt("code") != 200) {
+            throw new OutputNotFoundException(outputId);
+        }
     }
 
     // DELETE

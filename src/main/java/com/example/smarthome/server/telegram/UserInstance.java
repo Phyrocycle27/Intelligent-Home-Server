@@ -44,9 +44,9 @@ public class UserInstance {
     }
 
     synchronized void sendAnswer(IncomingMessage msg) {
+        log.info("Creating answer");
         if (!NullLevel.getInstance().check(this, msg)) {
             if (currentLvl != null) {
-                log.info("Creating answer");
                 processing = currentLvl.create(this, msg);
             }
         }
