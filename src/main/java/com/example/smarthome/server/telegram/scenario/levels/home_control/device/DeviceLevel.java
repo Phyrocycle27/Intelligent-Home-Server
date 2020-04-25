@@ -1,6 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
 
-import com.example.smarthome.server.entity.Output;
+import com.example.smarthome.server.entity.Device;
+import com.example.smarthome.server.entity.GPIOType;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.OutputNotFoundException;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
@@ -97,23 +98,27 @@ public class DeviceLevel implements AnswerCreator {
 
     public static void goToDeviceLevel(UserInstance user, IncomingMessage msg, int deviceId, CallbackAction action) {
         try {
-            Output output = getOutput(getChannel(user.getChatId()), deviceId);
+            Device device = getDevice(getChannel(user.getChatId()), deviceId);
             List<CallbackButton> buttons = new ArrayList<>();
-            String inversion = output.getReverse() ? "включена" : "выключена";
+            String inversion = device.getReverse() ? "включена" : "выключена";
             String currStateText = "";
             String signalType = "";
 
-            if (output.getType().equals("digital")) {
-                boolean currState = getDigitalState(getChannel(user.getChatId()), output.getOutputId());
+            if (device.getGpio().getType() == GPIOType.DIGITAL) {
+                boolean currState = getDigitalState(getChannel(user.getChatId()), device.getId());
+                signalType = "цифовой";
+
                 currStateText = currState ? "включено" : "выключено";
 
                 if (currState) {
-                    buttons.add(new CallbackButton("Выключить", "off_" + output.getOutputId()));
+                    buttons.add(new CallbackButton("Выключить", "off_" + device.getId()));
                 } else {
-                    buttons.add(new CallbackButton("Включить", "on_" + output.getOutputId()));
+                    buttons.add(new CallbackButton("Включить", "on_" + device.getId()));
                 }
-            } else if (output.getType().equals("pwm")) {
-                int currSignal = getPwmSignal(getChannel(user.getChatId()), output.getOutputId());
+            } else if (device.getGpio().getType() == GPIOType.PWM) {
+                int currSignal = getPwmSignal(getChannel(user.getChatId()), device.getId());
+                signalType = "ШИМ";
+
                 if (currSignal >= 768) {
                     currStateText = "очень сильный";
                 } else if (currSignal >= 512) {
@@ -126,20 +131,12 @@ public class DeviceLevel implements AnswerCreator {
                     currStateText = "выключено";
                 }
 
-                buttons.add(new CallbackButton("Управлять", "control_" + output.getOutputId()));
-            }
-
-            switch (output.getType()) {
-                case "digital":
-                    signalType = "цифовой";
-                    break;
-                case "pwm":
-                    signalType = "ШИМ";
+                buttons.add(new CallbackButton("Управлять", "control_" + device.getId()));
             }
 
             if (UserRole.valueOf(service.getUser(user.getChatId()).getRole().toUpperCase()).getCode() > 0) {
-                buttons.add(new CallbackButton("Удалить", "remove_" + output.getOutputId()));
-                buttons.add(new CallbackButton("Редактировать", "edit_" + output.getOutputId()));
+                buttons.add(new CallbackButton("Удалить", "remove_" + device.getId()));
+                buttons.add(new CallbackButton("Редактировать", "edit_" + device.getId()));
             }
 
             executeAsync(new InlineKeyboardMessage(user.getChatId(), String.format("<b>%s</b>\n" +
@@ -147,8 +144,8 @@ public class DeviceLevel implements AnswerCreator {
                             "Тип сигнала: <i>%s</i>\n" +
                             "Инверсия: <i>%s</i>\n" +
                             "GPIO-пин: <i>%d</i>",
-                    output.getName(), currStateText, signalType, inversion,
-                    output.getGpio()), buttons)
+                    device.getName(), currStateText, signalType, inversion,
+                    device.getGpio().getGpio()), buttons)
                     .setMessageId(msg.getId())
                     .hasBackButton(true), () -> {
                 user.setCurrentLvl(instance);

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-import static com.example.smarthome.server.connection.ClientAPI.deleteOutput;
+import static com.example.smarthome.server.connection.ClientAPI.deleteDevice;
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
@@ -54,7 +54,7 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
                 switch (cmd) {
                     case "confirmRemove":
                         try {
-                            deleteOutput(getChannel(user.getChatId()), deviceId);
+                            deleteDevice(getChannel(user.getChatId()), deviceId);
                             goToDevicesLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
                         } catch (OutputNotFoundException e) {
                             log.warn(e.getMessage());

@@ -1,6 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
-import com.example.smarthome.server.entity.Output;
+import com.example.smarthome.server.entity.Device;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.OutputNotFoundException;
 import com.example.smarthome.server.telegram.CallbackAction;
@@ -33,10 +33,10 @@ public class DeviceEditor {
     private MessageProcessor currEditingLvl;
     private final UserInstance user;
     @Getter(value = AccessLevel.PACKAGE)
-    private final Output editingOutput;
+    private final Device editingDevice;
 
     DeviceEditor(UserInstance user, int deviceId) throws ChannelNotFoundException, OutputNotFoundException {
-        editingOutput = getOutput(getChannel(user.getChatId()), deviceId);
+        editingDevice = getDevice(getChannel(user.getChatId()), deviceId);
         this.user = user;
     }
 
@@ -45,7 +45,7 @@ public class DeviceEditor {
             String deviceName = (String) currEditingLvl.process(user, msg);
 
             if (deviceName != null && !deviceName.isEmpty()) {
-                editingOutput.setName(deviceName);
+                editingDevice.setName(deviceName);
                 deleteAsync(user.getChatId(), user.getLastMessageId(), () -> user.setLastMessageId(0));
                 update(msg, null);
                 return true;
@@ -54,7 +54,7 @@ public class DeviceEditor {
             Boolean inversion = (Boolean) currEditingLvl.process(user, msg);
 
             if (inversion != null) {
-                editingOutput.setReverse(inversion);
+                editingDevice.setReverse(inversion);
                 update(msg, () -> EmojiCallback.success(msg.getCallbackId()));
                 return true;
             }
@@ -68,7 +68,7 @@ public class DeviceEditor {
 
     private void update(IncomingMessage msg, CallbackAction action) {
         try {
-            updateOutput(getChannel(user.getChatId()), editingOutput);
+            updateDevice(getChannel(user.getChatId()), editingDevice);
             goToChoice(user, msg, () -> {
                 currEditingLvl = null;
                 if (action != null) action.process();

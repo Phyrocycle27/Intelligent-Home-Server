@@ -57,7 +57,7 @@ public class DeviceEditingLevel implements AnswerCreator {
                         });
                         break;
                     case "back":
-                        goToDeviceLevel(user, msg, user.getDeviceEditor().getEditingOutput().getOutputId(), () -> {
+                        goToDeviceLevel(user, msg, user.getDeviceEditor().getEditingDevice().getId(), () -> {
                             user.getDeviceEditor().destroy();
                             EmojiCallback.back(msg.getCallbackId());
                         });

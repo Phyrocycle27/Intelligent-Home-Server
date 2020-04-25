@@ -1,6 +1,7 @@
 package com.example.smarthome.server.connection;
 
-import com.example.smarthome.server.entity.Output;
+import com.example.smarthome.server.entity.Device;
+import com.example.smarthome.server.entity.GPIOType;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.OutputAlreadyExistException;
 import com.example.smarthome.server.exceptions.OutputNotFoundException;
@@ -33,167 +34,164 @@ public class ClientAPI {
                             new JsonPrimitive(localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
             .create();
 
-    public static boolean getDigitalState(Channel ch, @NonNull Integer outputId) throws ChannelNotFoundException,
+    public static boolean getDigitalState(Channel ch, @NonNull Integer id) throws ChannelNotFoundException,
             OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
-                .put("uri", "http://localhost:8080/outputs/control/digital?id=" + outputId));
+                .put("uri", "http://localhost:8080/control/digital?id=" + id));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") == 200) {
             return response.getJSONObject("entity").getBoolean("digitalState");
         } else {
-            throw new OutputNotFoundException(outputId);
+            throw new OutputNotFoundException(id);
         }
     }
 
-    public static void setDigitalState(Channel ch, @NonNull Integer outputId, boolean state)
+    public static void setDigitalState(Channel ch, @NonNull Integer deviceId, boolean state)
             throws ChannelNotFoundException, OutputNotFoundException {
 
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "PUT")
-                .put("uri", "http://localhost:8080/outputs/control/digital")
+                .put("uri", "http://localhost:8080/control/digital")
                 .put("request_body", new JSONObject()
-                        .put("outputId", outputId)
+                        .put("id", deviceId)
                         .put("digitalState", state)));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") != 200) {
-            throw new OutputNotFoundException(outputId);
+            throw new OutputNotFoundException(deviceId);
         }
     }
 
-    public static int getPwmSignal(Channel ch, @NonNull Integer outputId) throws ChannelNotFoundException,
+    public static int getPwmSignal(Channel ch, @NonNull Integer id) throws ChannelNotFoundException,
             OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
-                .put("uri", "http://localhost:8080/outputs/control/pwm?id=" + outputId));
+                .put("uri", "http://localhost:8080/control/pwm?id=" + id));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") == 200) {
             return response.getJSONObject("entity").getInt("pwmSignal");
         } else {
-            throw new OutputNotFoundException(outputId);
+            throw new OutputNotFoundException(id);
         }
     }
 
-    public static void setPwmSignal(Channel ch, @NonNull Integer outputId, int signal)
+    public static void setPwmSignal(Channel ch, @NonNull Integer deviceId, int signal)
             throws ChannelNotFoundException, OutputNotFoundException {
 
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "PUT")
                 .put("uri", "http://localhost:8080/outputs/control/pwm")
                 .put("request_body", new JSONObject()
-                        .put("outputId", outputId)
+                        .put("deviceId", deviceId)
                         .put("pwmSignal", signal)));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") != 200) {
-            throw new OutputNotFoundException(outputId);
+            throw new OutputNotFoundException(deviceId);
         }
     }
 
     // DELETE
-    public static void deleteOutput(Channel ch, Integer outputId) throws ChannelNotFoundException, OutputNotFoundException {
+    public static void deleteDevice(Channel ch, Integer deviceId) throws ChannelNotFoundException, OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "DELETE")
-                .put("uri", "http://localhost:8080/outputs/one/" + outputId));
+                .put("uri", "http://localhost:8080/devices/one/" + deviceId));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") != 204) {
-            throw new OutputNotFoundException(outputId);
+            throw new OutputNotFoundException(deviceId);
         }
     }
 
     // CREATE
-    public static void createOutput(Channel ch, Output newOutput) throws ChannelNotFoundException,
+    public static void createDevice(Channel ch, Device newDevice) throws ChannelNotFoundException,
             OutputAlreadyExistException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "POST")
-                .put("uri", "http://localhost:8080/outputs/create")
-                .put("request_body", new JSONObject(newOutput)));
+                .put("uri", "http://localhost:8080/devices/create")
+                .put("request_body", new JSONObject(newDevice)));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") == 409) {
-            throw new OutputAlreadyExistException(newOutput.getGpio());
+            throw new OutputAlreadyExistException(newDevice.getGpio().getGpio());
         }
     }
 
-    public static void updateOutput(Channel ch, Output updatedOutput) throws ChannelNotFoundException,
+    public static void updateDevice(Channel ch, Device updatedDevice) throws ChannelNotFoundException,
             OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "PUT")
-                .put("uri", "http://localhost:8080/outputs/one/" + updatedOutput.getOutputId())
-                .put("request_body", new JSONObject(gson.toJson(updatedOutput))));
+                .put("uri", "http://localhost:8080/devices/one/" + updatedDevice.getId())
+                .put("request_body", new JSONObject(gson.toJson(updatedDevice))));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") != 200) {
-            throw new OutputNotFoundException(updatedOutput.getOutputId());
+            throw new OutputNotFoundException(updatedDevice.getId());
         }
     }
 
     // GET
-    public static Output getOutput(Channel ch, Integer outputId) throws ChannelNotFoundException,
+    public static Device getDevice(Channel ch, Integer deviceId) throws ChannelNotFoundException,
             OutputNotFoundException {
-
-        Output output = new Output();
-
         // ***********************************************************
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
-                .put("uri", "http://localhost:8080/outputs/one/" + outputId));
+                .put("uri", "http://localhost:8080/devices/one/" + deviceId));
         // ***********************************************************
 
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") == 200) {
-            return gson.fromJson(response.getJSONObject("entity").toString(), Output.class);
+            return gson.fromJson(response.getJSONObject("entity").toString(), Device.class);
         } else {
-            throw new OutputNotFoundException(outputId);
+            throw new OutputNotFoundException(deviceId);
         }
     }
 
     // GET LIST
-    public static List<Output> getOutputs(Channel ch) throws ChannelNotFoundException {
-        List<Output> outputs = new ArrayList<>();
+    public static List<Device> getDevices(Channel ch) throws ChannelNotFoundException {
+        List<Device> devices = new ArrayList<>();
 
         // ***********************************************************
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
-                .put("uri", "http://localhost:8080/outputs/all"));
+                .put("uri", "http://localhost:8080/devices/all"));
         // ***********************************************************
         JSONArray response = JsonRequester.execute(request, ch).getJSONArray("entity");
 
         if (response.length() != 0) {
-            // Создаём из объектов массива JSON объекты Output
+            // Создаём из объектов массива JSON объекты Device
             // и вносим их в List outputs
             for (int i = 0; i < response.length(); i++) {
                 JSONObject outputJson = response.getJSONObject(i);
-                Output output = new Output();
+                Device device = new Device();
 
-                output.setName(outputJson.getString("name"));
-                output.setOutputId(outputJson.getInt("outputId"));
+                device.setName(outputJson.getString("name"));
+                device.setId(outputJson.getInt("id"));
 
-                outputs.add(output);
+                devices.add(device);
             }
         }
-        return outputs;
+        return devices;
     }
 
     // GET LIST CONTAINS NUMBERS OF FREE GPIOS
-    public static List<String> getAvailableOutputs(Channel ch, String type) throws ChannelNotFoundException {
+    public static List<String> getAvailableGPIOS(Channel ch, GPIOType type) throws ChannelNotFoundException {
         List<String> gpios = new ArrayList<>();
 
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
-                .put("uri", "http://localhost:8080/outputs/available?type=" + type));
+                .put("uri", "http://localhost:8080/devices/available?type=" + type.name().toLowerCase()));
 
         JSONArray array = JsonRequester.execute(request, ch)
                 .getJSONObject("entity")

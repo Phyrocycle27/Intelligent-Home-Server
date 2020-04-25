@@ -1,6 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
 
-import com.example.smarthome.server.entity.Output;
+import com.example.smarthome.server.entity.Device;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.OutputNotFoundException;
 import com.example.smarthome.server.telegram.CallbackAction;
@@ -81,7 +81,7 @@ public class DevicePwmControlLevel implements AnswerCreator {
     public static void goToDevicePwmControlLevel(UserInstance user, IncomingMessage msg, int deviceId,
                                                  CallbackAction action) {
         try {
-            Output device = getOutput(getChannel(user.getChatId()), deviceId);
+            Device device = getDevice(getChannel(user.getChatId()), deviceId);
             int currSignal = getPwmSignal(getChannel(user.getChatId()), deviceId);
             List<CallbackButton> buttons = new ArrayList<>();
             String currSignalText;

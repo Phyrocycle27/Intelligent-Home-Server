@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.example.smarthome.server.connection.ClientAPI.getAvailableOutputs;
+import static com.example.smarthome.server.connection.ClientAPI.getAvailableGPIOS;
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
@@ -39,8 +39,8 @@ public class SetupGPIOLevel implements MessageProcessor {
     public Object process(UserInstance user, IncomingMessage msg) {
         if (msg.getType() == MessageType.CALLBACK) {
             try {
-                if (getAvailableOutputs(getChannel(user.getChatId()), user.getDeviceCreator()
-                        .getCreationOutput().getType()).contains(msg.getText())) {
+                if (getAvailableGPIOS(getChannel(user.getChatId()), user.getDeviceCreator()
+                        .getCreationDevice().getGpio().getType()).contains(msg.getText())) {
                     return Integer.valueOf(msg.getText());
                 } else {
                     goToSetupGPIOLevel(user, msg, () ->
@@ -59,8 +59,8 @@ public class SetupGPIOLevel implements MessageProcessor {
     public static void goToSetupGPIOLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         try {
             executeAsync(new InlineKeyboardMessage(user.getChatId(), choosePin, new ArrayList<CallbackButton>() {{
-                List<String> outputs = getAvailableOutputs(getChannel(user.getChatId()), user.getDeviceCreator()
-                        .getCreationOutput().getType());
+                List<String> outputs = getAvailableGPIOS(getChannel(user.getChatId()), user.getDeviceCreator()
+                        .getCreationDevice().getGpio().getType());
                 for (String s : outputs)
                     add(new CallbackButton(s, s));
             }})

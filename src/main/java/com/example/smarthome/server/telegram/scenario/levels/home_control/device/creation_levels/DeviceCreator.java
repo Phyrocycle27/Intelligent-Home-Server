@@ -1,6 +1,10 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
-import com.example.smarthome.server.entity.Output;
+import com.example.smarthome.server.connection.ClientAPI;
+import com.example.smarthome.server.entity.Device;
+import com.example.smarthome.server.entity.GPIO;
+import com.example.smarthome.server.entity.GPIOMode;
+import com.example.smarthome.server.entity.GPIOType;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.OutputAlreadyExistException;
 import com.example.smarthome.server.telegram.CallbackAction;
@@ -15,7 +19,6 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.example.smarthome.server.connection.ClientAPI.createOutput;
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
 import static com.example.smarthome.server.telegram.MessageExecutor.deleteAsync;
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
@@ -37,10 +40,12 @@ public class DeviceCreator {
     private final UserInstance user;
 
     @Getter(value = AccessLevel.PACKAGE)
-    private final Output creationOutput;
+    private final Device creationDevice;
 
     DeviceCreator(UserInstance user) {
-        creationOutput = new Output();
+        creationDevice = new Device();
+        creationDevice.setGpio(new GPIO());
+        creationDevice.getGpio().setMode(GPIOMode.OUTPUT);
         this.user = user;
     }
 
@@ -80,16 +85,16 @@ public class DeviceCreator {
         if (currCreationLvl.getClass().equals(SetupNameLevel.class)) {
             String deviceName = (String) currCreationLvl.process(user, msg);
             if (deviceName != null && !deviceName.isEmpty()) {
-                creationOutput.setName(deviceName);
+                creationDevice.setName(deviceName);
                 deleteAsync(user.getChatId(), user.getLastMessageId(), () -> user.setLastMessageId(0));
                 goToSetupSignalTypeLevel(user, msg, () -> user.getDeviceCreator()
                         .setCurrCreationLvl(SetupSignalTypeLevel.getInstance()));
                 return true;
             }
         } else if (currCreationLvl.getClass().equals(SetupSignalTypeLevel.class)) {
-            String signalType = (String) currCreationLvl.process(user, msg);
+            GPIOType signalType = (GPIOType) currCreationLvl.process(user, msg);
             if (signalType != null) {
-                creationOutput.setType(signalType);
+                creationDevice.getGpio().setType(signalType);
                 goToSetupGPIOLevel(user, msg, () -> {
                     user.getDeviceCreator().setCurrCreationLvl(SetupGPIOLevel.getInstance());
                     EmojiCallback.next(msg.getCallbackId());
@@ -99,7 +104,7 @@ public class DeviceCreator {
         } else if (currCreationLvl.getClass().equals(SetupGPIOLevel.class)) {
             Integer gpio = (Integer) currCreationLvl.process(user, msg);
             if (gpio != null) {
-                creationOutput.setGpio(gpio);
+                creationDevice.getGpio().setGpio(gpio);
                 goToSetupSignalInversionLevel(user, msg, () -> {
                     user.getDeviceCreator().setCurrCreationLvl(SetupSignalInversionLevel.getInstance());
                     EmojiCallback.next(msg.getCallbackId());
@@ -109,7 +114,7 @@ public class DeviceCreator {
         } else if (currCreationLvl.getClass().equals(SetupSignalInversionLevel.class)) {
             Boolean inversion = (Boolean) currCreationLvl.process(user, msg);
             if (inversion != null) {
-                creationOutput.setReverse(inversion);
+                creationDevice.setReverse(inversion);
                 createDevice(msg);
                 destroy();
                 return true;
@@ -121,7 +126,7 @@ public class DeviceCreator {
 
     private void createDevice(IncomingMessage msg) {
         try {
-            createOutput(getChannel(user.getChatId()), creationOutput);
+            ClientAPI.createDevice(getChannel(user.getChatId()), creationDevice);
             goToDevicesLevel(user, msg, () -> EmojiCallback.success(msg.getCallbackId()));
         } catch (OutputAlreadyExistException e) {
             log.warn(e.getMessage());

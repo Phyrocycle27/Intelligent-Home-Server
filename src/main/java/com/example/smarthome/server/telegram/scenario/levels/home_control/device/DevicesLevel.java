@@ -1,6 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
 
-import com.example.smarthome.server.entity.Output;
+import com.example.smarthome.server.entity.Device;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
 import com.example.smarthome.server.service.DeviceAccessService;
@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import static com.example.smarthome.server.connection.ClientAPI.getChannel;
-import static com.example.smarthome.server.connection.ClientAPI.getOutputs;
+import static com.example.smarthome.server.connection.ClientAPI.getDevices;
 import static com.example.smarthome.server.telegram.MessageExecutor.executeAsync;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.HomeControlLevel.goToHomeControlLevel;
 import static com.example.smarthome.server.telegram.scenario.levels.home_control.device.DeviceLevel.goToDeviceLevel;
@@ -82,9 +82,10 @@ public class DevicesLevel implements AnswerCreator {
         try {
             List<CallbackButton> devices = new ArrayList<>();
 
-            for (Output output : getOutputs(getChannel(user.getChatId()))) {
-                devices.add(new CallbackButton(output.getName(), "device_" + output.getOutputId()));
+            for (Device device : getDevices(getChannel(user.getChatId()))) {
+                devices.add(new CallbackButton(device.getName(), "device_" + device.getId()));
             }
+
             InlineKeyboardMessage answer = new InlineKeyboardMessage(user.getChatId(),
                     devices.isEmpty() ? devicesNotFound : devicesMsg, devices)
                     .hasBackButton(true)
