@@ -1,7 +1,7 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device;
 
 import com.example.smarthome.server.entity.Device;
-import com.example.smarthome.server.entity.GPIOType;
+import com.example.smarthome.server.entity.signal.SignalType;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.OutputNotFoundException;
 import com.example.smarthome.server.exceptions.UserNotFoundException;
@@ -104,7 +104,7 @@ public class DeviceLevel implements AnswerCreator {
             String currStateText = "";
             String signalType = "";
 
-            if (device.getGpio().getType() == GPIOType.DIGITAL) {
+            if (device.getGpio().getType() == SignalType.DIGITAL) {
                 boolean currState = getDigitalState(getChannel(user.getChatId()), device.getId());
                 signalType = "цифовой";
 
@@ -115,7 +115,7 @@ public class DeviceLevel implements AnswerCreator {
                 } else {
                     buttons.add(new CallbackButton("Включить", "on_" + device.getId()));
                 }
-            } else if (device.getGpio().getType() == GPIOType.PWM) {
+            } else if (device.getGpio().getType() == SignalType.PWM) {
                 int currSignal = getPwmSignal(getChannel(user.getChatId()), device.getId());
                 signalType = "ШИМ";
 

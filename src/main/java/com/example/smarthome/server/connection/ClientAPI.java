@@ -1,7 +1,7 @@
 package com.example.smarthome.server.connection;
 
 import com.example.smarthome.server.entity.Device;
-import com.example.smarthome.server.entity.GPIOType;
+import com.example.smarthome.server.entity.signal.SignalType;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.OutputAlreadyExistException;
 import com.example.smarthome.server.exceptions.OutputNotFoundException;
@@ -186,7 +186,7 @@ public class ClientAPI {
     }
 
     // GET LIST CONTAINS NUMBERS OF FREE GPIOS
-    public static List<String> getAvailableGPIOS(Channel ch, GPIOType type) throws ChannelNotFoundException {
+    public static List<String> getAvailableGPIOS(Channel ch, SignalType type) throws ChannelNotFoundException {
         List<String> gpios = new ArrayList<>();
 
         JSONObject request = buildRequest(new JSONObject()

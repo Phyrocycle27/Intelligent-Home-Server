@@ -1,5 +1,6 @@
 package com.example.smarthome.server.entity;
 
+import com.example.smarthome.server.entity.signal.SignalType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -15,7 +16,7 @@ public class GPIO {
 
     private Integer gpio;
 
-    private GPIOType type;
+    private SignalType type;
 
     private GPIOMode mode;
 }

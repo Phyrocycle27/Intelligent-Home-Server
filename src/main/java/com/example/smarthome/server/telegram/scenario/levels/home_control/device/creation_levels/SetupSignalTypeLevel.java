@@ -1,6 +1,6 @@
 package com.example.smarthome.server.telegram.scenario.levels.home_control.device.creation_levels;
 
-import com.example.smarthome.server.entity.GPIOType;
+import com.example.smarthome.server.entity.signal.SignalType;
 import com.example.smarthome.server.telegram.CallbackAction;
 import com.example.smarthome.server.telegram.UserInstance;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
@@ -38,9 +38,9 @@ public class SetupSignalTypeLevel implements MessageProcessor {
         if (msg.getType() == MessageType.CALLBACK) {
             switch (msg.getText()) {
                 case "pwm":
-                    return GPIOType.PWM;
+                    return SignalType.PWM;
                 case "digital":
-                    return GPIOType.DIGITAL;
+                    return SignalType.DIGITAL;
             }
         }
         return null;

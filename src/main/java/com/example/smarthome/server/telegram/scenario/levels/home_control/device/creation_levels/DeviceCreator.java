@@ -4,7 +4,7 @@ import com.example.smarthome.server.connection.ClientAPI;
 import com.example.smarthome.server.entity.Device;
 import com.example.smarthome.server.entity.GPIO;
 import com.example.smarthome.server.entity.GPIOMode;
-import com.example.smarthome.server.entity.GPIOType;
+import com.example.smarthome.server.entity.signal.SignalType;
 import com.example.smarthome.server.exceptions.ChannelNotFoundException;
 import com.example.smarthome.server.exceptions.OutputAlreadyExistException;
 import com.example.smarthome.server.telegram.CallbackAction;
@@ -92,7 +92,7 @@ public class DeviceCreator {
                 return true;
             }
         } else if (currCreationLvl.getClass().equals(SetupSignalTypeLevel.class)) {
-            GPIOType signalType = (GPIOType) currCreationLvl.process(user, msg);
+            SignalType signalType = (SignalType) currCreationLvl.process(user, msg);
             if (signalType != null) {
                 creationDevice.getGpio().setType(signalType);
                 goToSetupGPIOLevel(user, msg, () -> {
