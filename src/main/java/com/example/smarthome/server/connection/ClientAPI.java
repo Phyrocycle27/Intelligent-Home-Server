@@ -38,7 +38,7 @@ public class ClientAPI {
             OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
-                .put("uri", "http://localhost:8080/control/digital?id=" + id));
+                .put("uri", "http://localhost:8080/devices/control/digital?id=" + id));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
@@ -54,7 +54,7 @@ public class ClientAPI {
 
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "PUT")
-                .put("uri", "http://localhost:8080/control/digital")
+                .put("uri", "http://localhost:8080/devices/control/digital")
                 .put("request_body", new JSONObject()
                         .put("id", deviceId)
                         .put("digitalState", state)));
@@ -70,7 +70,7 @@ public class ClientAPI {
             OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
-                .put("uri", "http://localhost:8080/control/pwm?id=" + id));
+                .put("uri", "http://localhost:8080/devices/control/pwm?id=" + id));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
@@ -86,7 +86,7 @@ public class ClientAPI {
 
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "PUT")
-                .put("uri", "http://localhost:8080/outputs/control/pwm")
+                .put("uri", "http://localhost:8080/devices/outputs/control/pwm")
                 .put("request_body", new JSONObject()
                         .put("deviceId", deviceId)
                         .put("pwmSignal", signal)));
@@ -106,7 +106,7 @@ public class ClientAPI {
 
         JSONObject response = JsonRequester.execute(request, ch);
 
-        if (response.getInt("code") != 204) {
+        if (response.getInt("code") != 200) {
             throw new OutputNotFoundException(deviceId);
         }
     }
@@ -195,7 +195,7 @@ public class ClientAPI {
 
         JSONArray array = JsonRequester.execute(request, ch)
                 .getJSONObject("entity")
-                .getJSONArray("available_gpios");
+                .getJSONArray("available_gpio_pins");
 
         for (int i = 0; i < array.length(); i++) {
             gpios.add(String.valueOf(array.getInt(i)));

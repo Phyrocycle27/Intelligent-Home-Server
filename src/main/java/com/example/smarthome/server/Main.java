@@ -38,6 +38,6 @@ public class Main {
         // *********** NETTY THREAD START ***************
         new Server(SERVER_PORT); // starting the netty server
         // *********** TELEGRAM THREAD START ************
-        new Telegram(PROXY_HOST, PROXY_PORT);
+        new Telegram();
     }
 }
