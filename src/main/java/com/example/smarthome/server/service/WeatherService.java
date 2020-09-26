@@ -48,7 +48,7 @@ public class WeatherService {
     private WeatherUsersRepository usersRepo;
 
     private final HttpClient client;
-    private LocationManager locationManager;
+    private final LocationManager locationManager;
     private final Logger log;
 
     private final DecimalFormat df;
@@ -118,7 +118,7 @@ public class WeatherService {
                 cities.add(city);
             }
         } else {
-            user.setCities(new ArrayList<City>() {{
+            user.setCities(new ArrayList<>() {{
                 add(city);
             }});
         }

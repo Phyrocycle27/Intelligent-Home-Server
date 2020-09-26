@@ -43,7 +43,7 @@ public class ClientAPI {
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") == 200) {
-            return response.getJSONObject("entity").getBoolean("digitalState");
+            return response.getJSONObject("entity").getBoolean("digital_state");
         } else {
             throw new OutputNotFoundException(id);
         }
@@ -57,7 +57,7 @@ public class ClientAPI {
                 .put("uri", "http://localhost:8080/devices/control/digital")
                 .put("request_body", new JSONObject()
                         .put("id", deviceId)
-                        .put("digitalState", state)));
+                        .put("digital_state", state)));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
@@ -75,7 +75,7 @@ public class ClientAPI {
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") == 200) {
-            return response.getJSONObject("entity").getInt("pwmSignal");
+            return response.getJSONObject("entity").getInt("pwm_signal");
         } else {
             throw new OutputNotFoundException(id);
         }
@@ -88,8 +88,8 @@ public class ClientAPI {
                 .put("method", "PUT")
                 .put("uri", "http://localhost:8080/devices/outputs/control/pwm")
                 .put("request_body", new JSONObject()
-                        .put("deviceId", deviceId)
-                        .put("pwmSignal", signal)));
+                        .put("id", deviceId)
+                        .put("pwm_signal", signal)));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
@@ -191,7 +191,7 @@ public class ClientAPI {
 
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
-                .put("uri", "http://localhost:8080/devices/available?type=" + type.name().toLowerCase()));
+                .put("uri", "http://localhost:8080/util/gpio/available?type=" + type.name().toLowerCase()));
 
         JSONArray array = JsonRequester.execute(request, ch)
                 .getJSONObject("entity")

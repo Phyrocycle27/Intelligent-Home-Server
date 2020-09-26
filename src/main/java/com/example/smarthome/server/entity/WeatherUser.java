@@ -30,6 +30,6 @@ public class WeatherUser {
                     name = "city_id",
                     referencedColumnName = "id"
             ))
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
     private List<City> cities;
 }

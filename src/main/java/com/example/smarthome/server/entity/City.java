@@ -12,7 +12,6 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "cities")
 @EqualsAndHashCode(of = {"id"})
-@ToString(of = {"id", "name", "suburb", "state", "countryCode"})
 @AllArgsConstructor
 @NoArgsConstructor
 @Proxy(lazy = false)
