@@ -6,6 +6,7 @@ import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 public class InlineKeyboardMessage extends Message {
@@ -17,11 +18,7 @@ public class InlineKeyboardMessage extends Message {
 
     public InlineKeyboardMessage(long chatId, String text, List<CallbackButton> buttons) {
         super(chatId, text);
-        if (buttons == null) {
-            this.buttons = new ArrayList<>();
-        } else {
-            this.buttons = buttons;
-        }
+        this.buttons = Objects.requireNonNullElseGet(buttons, ArrayList::new);
     }
 
     public InlineKeyboardMessage setNumOfColumns(int numOfColumns) {

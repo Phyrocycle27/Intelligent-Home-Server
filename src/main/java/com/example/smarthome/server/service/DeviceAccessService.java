@@ -39,7 +39,7 @@ public class DeviceAccessService {
         Token token = new Token(0, tokenStr, null);
         TelegramUser user = new TelegramUser(userId, UserRole.CREATOR.getName(), LocalDateTime.now(), token);
 
-        token.setUsers(new HashSet<TelegramUser>() {{
+        token.setUsers(new HashSet<>() {{
             add(user);
         }});
 
@@ -134,6 +134,7 @@ public class DeviceAccessService {
 
     public static class SecureTokenGenerator {
 
+        @SuppressWarnings("SpellCheckingInspection")
         private static final String CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
         public static final int SECURE_TOKEN_LENGTH = 32;

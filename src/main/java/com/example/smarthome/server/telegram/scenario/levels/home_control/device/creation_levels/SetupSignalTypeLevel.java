@@ -28,7 +28,7 @@ public class SetupSignalTypeLevel implements MessageProcessor {
     private static final String signalTypeNotSupport = "Поддержка этого типа сигнала ещё не добавлена";
 
     // ************************************* BUTTONS **************************************************
-    private static final List<CallbackButton> typesOfSignal = new ArrayList<CallbackButton>() {{
+    private static final List<CallbackButton> typesOfSignal = new ArrayList<>() {{
         add(new CallbackButton("Цифровой", "digital"));
         add(new CallbackButton("ШИМ", "pwm"));
     }};

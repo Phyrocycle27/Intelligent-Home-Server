@@ -47,12 +47,12 @@ public class HomeControlLevel implements AnswerCreator {
             "выберите Датчики чтобы посмотреть показания или добавить новый датчик";
 
     // ************************************** BUTTONS *************************************************
-    private static final List<CallbackButton> homeControlButtons = new ArrayList<CallbackButton>() {{
+    private static final List<CallbackButton> homeControlButtons = new ArrayList<>() {{
         add(new CallbackButton("Устройства", "devices"));
         add(new CallbackButton("Датчики", "sensors"));
         add(new CallbackButton("Пользователи", "users"));
     }};
-    private static final List<CallbackButton> tokenGenButton = new ArrayList<CallbackButton>() {{
+    private static final List<CallbackButton> tokenGenButton = new ArrayList<>() {{
         add(new CallbackButton("Сгенерировать токен", "token_gen"));
     }};
 

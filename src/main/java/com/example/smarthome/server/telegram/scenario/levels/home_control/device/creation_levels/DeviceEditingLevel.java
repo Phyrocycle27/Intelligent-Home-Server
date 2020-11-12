@@ -99,7 +99,7 @@ public class DeviceEditingLevel implements AnswerCreator {
     }
 
     public static void goToChoice(UserInstance user, IncomingMessage msg, CallbackAction action) {
-        executeAsync(new InlineKeyboardMessage(user.getChatId(), chooseToEdit, new ArrayList<CallbackButton>() {{
+        executeAsync(new InlineKeyboardMessage(user.getChatId(), chooseToEdit, new ArrayList<>() {{
             add(new CallbackButton("Имя", "name"));
             add(new CallbackButton("Инверсия сигнала", "inversion_of_signal"));
         }}).setMessageId(msg.getId())

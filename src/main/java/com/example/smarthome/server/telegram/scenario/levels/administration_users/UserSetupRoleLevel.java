@@ -89,7 +89,7 @@ public class UserSetupRoleLevel implements AnswerCreator {
         final TelegramUser user = tmp;
 
         executeAsync(new InlineKeyboardMessage(userInstance.getChatId(), chooseRole,
-                new ArrayList<CallbackButton>() {{
+                new ArrayList<>() {{
                     if (user == null || !user.getRole().equals("admin")) {
                         add(new CallbackButton("Admin", "admin_" + userId));
                     }

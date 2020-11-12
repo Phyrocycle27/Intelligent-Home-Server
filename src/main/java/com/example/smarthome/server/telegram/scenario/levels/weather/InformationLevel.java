@@ -44,7 +44,7 @@ public class InformationLevel implements AnswerCreator {
     private static final String notModified = "Bad Request: message is not modified";
 
     // ************************************** BUTTONS *************************************************
-    private static final List<CallbackButton> infoButtons = new ArrayList<CallbackButton>() {{
+    private static final List<CallbackButton> infoButtons = new ArrayList<>() {{
         add(new CallbackButton("Погода", "weather"));
         add(new CallbackButton("Время", "time"));
     }};

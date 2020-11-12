@@ -27,10 +27,11 @@ public class MessageExecutor {
 
     public static void executeAsync(AnswerCallback callback, CallbackAction task) {
         if (callback.getCallbackId() != null) {
-            AnswerCallbackQuery answer = new AnswerCallbackQuery()
-                    .setCallbackQueryId(callback.getCallbackId())
-                    .setText(callback.getText())
-                    .setShowAlert(callback.isAlert());
+            AnswerCallbackQuery answer = new AnswerCallbackQuery();
+
+            answer.setCallbackQueryId(callback.getCallbackId());
+            answer.setShowAlert(callback.isAlert());
+            answer.setText(callback.getText());
 
             bot.executeAsync(answer, task);
         }
@@ -48,16 +49,17 @@ public class MessageExecutor {
 
         log.info("Sending message...");
         if (msg.getMessageId() == 0) {
-            SendMessage answer = new SendMessage(msg.getChatId(), msg.getText())
-                    .setParseMode("HTML");
+            SendMessage answer = new SendMessage(String.valueOf(msg.getChatId()), msg.getText());
+            answer.setParseMode("HTML");
 
             bot.executeAsync(answer, task, errorHandler);
         } else {
-            EditMessageText answer = new EditMessageText()
-                    .setChatId(msg.getChatId())
-                    .setText(msg.getText())
-                    .setMessageId(msg.getMessageId())
-                    .setParseMode("HTML");
+            EditMessageText answer = new EditMessageText();
+
+            answer.setChatId(String.valueOf(msg.getChatId()));
+            answer.setMessageId(msg.getMessageId());
+            answer.setText(msg.getText());
+            answer.setParseMode("HTML");
 
             bot.executeAsync(answer, task, errorHandler);
         }
@@ -111,7 +113,7 @@ public class MessageExecutor {
 
     public static void deleteAsync(long chatId, int messageId, CallbackAction task) {
         log.info("Removing message...");
-        DeleteMessage message = new DeleteMessage(chatId, messageId);
+        DeleteMessage message = new DeleteMessage(String.valueOf(chatId), messageId);
         bot.executeAsync(message, task);
     }
 }

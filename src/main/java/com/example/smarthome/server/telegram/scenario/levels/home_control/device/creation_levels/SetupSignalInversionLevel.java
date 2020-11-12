@@ -26,7 +26,7 @@ public class SetupSignalInversionLevel implements MessageProcessor {
     private static final String inversionMsg = "Сделать инверсию сигнала для данного устройства?";
 
     // ************************************* BUTTONS **************************************************
-    private static final List<CallbackButton> yesOrNo = new ArrayList<CallbackButton>() {{
+    private static final List<CallbackButton> yesOrNo = new ArrayList<>() {{
         add(new CallbackButton("Да", "true"));
         add(new CallbackButton("Нет", "false"));
     }};

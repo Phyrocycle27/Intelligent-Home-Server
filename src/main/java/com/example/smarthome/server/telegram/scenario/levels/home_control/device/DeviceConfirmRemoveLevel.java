@@ -84,7 +84,7 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
                                                     int deviceId, CallbackAction action) {
 
         executeAsync(new InlineKeyboardMessage(user.getChatId(), removeConfirmationDevice,
-                new ArrayList<CallbackButton>() {{
+                new ArrayList<>() {{
                     add(new CallbackButton("Подтвердить", "confirmRemove_" + deviceId));
                     add(new CallbackButton("Отмена", "cancel_" + deviceId));
                 }})

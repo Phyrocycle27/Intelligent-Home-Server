@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class WeatherService {
 
     private final String API_KEY = "appid=3156e4747f7d07492a0c3a19b388ed8f";
@@ -118,7 +119,7 @@ public class WeatherService {
                 cities.add(city);
             }
         } else {
-            user.setCities(new ArrayList<City>() {{
+            user.setCities(new ArrayList<>() {{
                 add(city);
             }});
         }

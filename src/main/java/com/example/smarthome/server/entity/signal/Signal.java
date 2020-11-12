@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 @AllArgsConstructor
-@EqualsAndHashCode(of = {"outputId"}, callSuper = false)
+@EqualsAndHashCode(of = {"outputId"})
 abstract class Signal{
 
     @Getter

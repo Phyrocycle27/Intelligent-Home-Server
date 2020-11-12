@@ -35,7 +35,7 @@ public class MenuLevel implements AnswerCreator {
             "просмотру информации с датчиков или нажмите \"Информация\", чтобы узнать точное время или погоду";
 
     // ************************************** BUTTONS *************************************************
-    private static final List<CallbackButton> menuButtons = new ArrayList<CallbackButton>() {{
+    private static final List<CallbackButton> menuButtons = new ArrayList<>() {{
         add(new CallbackButton("Управление домом", "home_control"));
         add(new CallbackButton("Информация", "information"));
     }};

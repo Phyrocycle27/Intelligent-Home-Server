@@ -14,7 +14,7 @@ public class InlineKeyboardBuilder {
     private int messageId;
     private String text;
 
-    private List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+    private final List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
     private List<InlineKeyboardButton> row = new ArrayList<>();
 
     private InlineKeyboardBuilder() {
@@ -42,12 +42,22 @@ public class InlineKeyboardBuilder {
     }
 
     public InlineKeyboardBuilder button(String text, String callbackData) {
-        row.add(new InlineKeyboardButton().setText(text).setCallbackData(callbackData));
+        InlineKeyboardButton button = new InlineKeyboardButton();
+
+        button.setCallbackData(callbackData);
+        button.setText(text);
+
+        row.add(button);
         return this;
     }
 
     public InlineKeyboardBuilder button(String text) {
-        row.add(new InlineKeyboardButton().setText(text).setCallbackData(text));
+        InlineKeyboardButton button = new InlineKeyboardButton();
+
+        button.setCallbackData(text);
+        button.setText(text);
+
+        row.add(button);
         return this;
     }
 
@@ -58,11 +68,12 @@ public class InlineKeyboardBuilder {
     }
 
     public EditMessageText buildEdited() {
-        EditMessageText message = new EditMessageText()
-                .setChatId(chatId)
-                .setMessageId(messageId)
-                .setText(text)
-                .setParseMode("HTML");
+        EditMessageText message = new EditMessageText();
+
+        message.setChatId(String.valueOf(chatId));
+        message.setMessageId(messageId);
+        message.setParseMode("HTML");
+        message.setText(text);
 
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
 
@@ -73,10 +84,11 @@ public class InlineKeyboardBuilder {
     }
 
     public SendMessage buildNew() {
-        SendMessage message = new SendMessage()
-                .setChatId(chatId)
-                .setText(text)
-                .setParseMode("HTML");
+        SendMessage message = new SendMessage();
+
+        message.setChatId(String.valueOf(chatId));
+        message.setParseMode("HTML");
+        message.setText(text);
 
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
 

@@ -1,18 +1,15 @@
 package com.example.smarthome.server.telegram;
 
-import org.apache.http.HttpHost;
-import org.telegram.telegrambots.ApiContextInitializer;
-import org.telegram.telegrambots.bots.DefaultBotOptions;
-import org.telegram.telegrambots.meta.ApiContext;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Telegram implements Runnable {
 
-    private static Logger LOGGER = Logger.getLogger(Telegram.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(Telegram.class.getName());
     private final String PROXY_HOST;
     private final Integer PROXY_PORT;
 
@@ -32,24 +29,9 @@ public class Telegram implements Runnable {
     public void run() {
         LOGGER.log(Level.INFO, "Telegram thread is running");
 
-        ApiContextInitializer.init();
-
-        TelegramBotsApi telegram = new TelegramBotsApi();
-        Bot bot;
-
-        if (PROXY_HOST != null && PROXY_PORT != 0) {
-            HttpHost httpHost = new HttpHost(PROXY_HOST, PROXY_PORT);
-
-            DefaultBotOptions options = ApiContext.getInstance(DefaultBotOptions.class);
-
-            options.setProxyType(DefaultBotOptions.ProxyType.SOCKS5);
-            options.setProxyHost(PROXY_HOST);
-            options.setProxyPort(PROXY_PORT);
-            bot = Bot.getInstance(options);
-        } else bot = Bot.getInstance();
-
         try {
-            telegram.registerBot(bot);
+            TelegramBotsApi telegram = new TelegramBotsApi(DefaultBotSession.class);
+            telegram.registerBot(new Bot());
             LOGGER.log(Level.INFO, "Successful connection to Telegram API server!");
         } catch (TelegramApiException e) {
             e.printStackTrace();

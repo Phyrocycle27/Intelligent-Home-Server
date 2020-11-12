@@ -72,7 +72,7 @@ public class WeatherLevel implements AnswerCreator {
                                       int currForecast, CallbackAction task) {
 
         executeAsync(new InlineKeyboardMessage(user.getChatId(), s,
-                new ArrayList<CallbackButton>() {{
+                new ArrayList<>() {{
                     if (currForecast != 3) {
                         add(new CallbackButton("Прогноз на 3 часа", "forecast_3_" + cityId));
                     }

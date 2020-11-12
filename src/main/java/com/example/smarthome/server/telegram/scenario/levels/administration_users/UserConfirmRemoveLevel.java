@@ -77,7 +77,7 @@ public class UserConfirmRemoveLevel implements AnswerCreator {
                                                   long userId, CallbackAction action) {
 
         executeAsync(new InlineKeyboardMessage(user.getChatId(), removeConfirmationUser,
-                new ArrayList<CallbackButton>() {{
+                new ArrayList<>() {{
                     add(new CallbackButton("Подтвердить", "confirmRemove_" + userId));
                     add(new CallbackButton("Отмена", "cancel_" + userId));
                 }})

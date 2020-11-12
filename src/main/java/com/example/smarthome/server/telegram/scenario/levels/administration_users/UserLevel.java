@@ -83,7 +83,7 @@ public class UserLevel implements AnswerCreator {
                     String.format("<i>%s</i>\nУровень доступа: %s\nДата добавления: %s",
                             bot.getUserName(userId), user.getRole(), user.getAdditionDate()
                                     .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))),
-                    new ArrayList<CallbackButton>() {{
+                    new ArrayList<>() {{
                         int code = UserRole.valueOf(currUser.getRole().toUpperCase()).getCode();
 
                         if (code >= UserRole.CREATOR.getCode() || userInstance.getChatId() == userId)

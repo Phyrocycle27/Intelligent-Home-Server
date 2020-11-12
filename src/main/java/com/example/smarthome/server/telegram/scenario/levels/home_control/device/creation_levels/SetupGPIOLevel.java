@@ -58,7 +58,7 @@ public class SetupGPIOLevel implements MessageProcessor {
 
     public static void goToSetupGPIOLevel(UserInstance user, IncomingMessage msg, CallbackAction action) {
         try {
-            executeAsync(new InlineKeyboardMessage(user.getChatId(), choosePin, new ArrayList<CallbackButton>() {{
+            executeAsync(new InlineKeyboardMessage(user.getChatId(), choosePin, new ArrayList<>() {{
                 List<String> outputs = getAvailableGPIOS(getChannel(user.getChatId()), user.getDeviceCreator()
                         .getCreationDevice().getGpio().getType());
                 for (String s : outputs)

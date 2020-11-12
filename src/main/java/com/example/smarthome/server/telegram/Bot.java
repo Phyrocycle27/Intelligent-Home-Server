@@ -3,9 +3,9 @@ package com.example.smarthome.server.telegram;
 import com.example.smarthome.server.telegram.objects.IncomingMessage;
 import com.example.smarthome.server.telegram.objects.MessageType;
 import com.example.smarthome.server.telegram.objects.callback.AnswerCallback;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.groupadministration.GetChat;
@@ -24,39 +24,26 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class Bot extends TelegramLongPollingBot {
 
-        private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
-        private final static String USER_NAME = "intelligent_home_bot";
-//    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
-//    private final static String USER_NAME = "intelligent_home_beta_bot";
-
     public static final Logger log = LoggerFactory.getLogger(Bot.class);
-
-    private ExecutorService answerCreatorPool = Executors.newFixedThreadPool(16);
-    private ExecutorService messageExecutorPool = Executors.newFixedThreadPool(16);
-    private Map<Long, UserInstance> instances = new HashMap<>();
-
+    private final static String TOKEN = "1061610133:AAFS9b1Z5GPYNTCqpPVam43xGa4wiph32pE";
+    //    private final static String TOKEN = "945155772:AAF6_o_jIz9P-IJnvzUrH99WVpXuTUsyjDo";
+//    private final static String USER_NAME = "intelligent_home_beta_bot";
+    private final static String USER_NAME = "intelligent_home_bot";
+    @Getter
     private static Bot instance;
+    private final ExecutorService answerCreatorPool = Executors.newFixedThreadPool(16);
+    private final ExecutorService messageExecutorPool = Executors.newFixedThreadPool(16);
+    private final Map<Long, UserInstance> instances = new HashMap<>();
 
-    private Bot(DefaultBotOptions options) {
-        super(options);
+    Bot() {
+        instance = this;
     }
 
-    private Bot() {
-    }
-
-    public static Bot getInstance(DefaultBotOptions options) {
-        if (instance == null) {
-            if (options != null) {
-                instance = new Bot(options);
-            } else instance = new Bot();
-        }
-        return instance;
-    }
-
-    public static Bot getInstance() {
-        return getInstance(null);
+    private static void answer(UserInstance instance, IncomingMessage msg) {
+        instance.sendAnswer(msg);
     }
 
     @Override
@@ -127,10 +114,6 @@ public class Bot extends TelegramLongPollingBot {
         answerCreatorPool.execute(task);
     }
 
-    private static void answer(UserInstance instance, IncomingMessage msg) {
-        instance.sendAnswer(msg);
-    }
-
     private synchronized UserInstance getUserInstance(long userId) {
         UserInstance userInstance = instances.get(userId);
         if (userInstance == null) {
@@ -142,7 +125,9 @@ public class Bot extends TelegramLongPollingBot {
 
     public String getUserName(long userId) {
         try {
-            Chat chat = sendApiMethod(new GetChat().setChatId(userId));
+            GetChat getChatMethod = new GetChat();
+            getChatMethod.setChatId(String.valueOf(userId));
+            Chat chat = sendApiMethod(getChatMethod);
             String firstName = chat.getFirstName();
             String lastName = chat.getLastName();
             return firstName + (lastName != null ? " " + lastName : "");
