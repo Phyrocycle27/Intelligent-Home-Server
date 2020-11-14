@@ -25,6 +25,7 @@ public class ClientAPI {
     private static final Logger log = LoggerFactory.getLogger(ClientAPI.class);
     private static final Gson gson = new GsonBuilder()
             .setDateFormat("yyyy-MM-dd HH:mm:ss")
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .registerTypeAdapter(LocalDateTime.class, (JsonDeserializer<LocalDateTime>)
                     (json, type, jsonDeserializationContext) ->
                             LocalDateTime.parse(json.getAsJsonPrimitive().getAsString(),
@@ -34,30 +35,30 @@ public class ClientAPI {
                             new JsonPrimitive(localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
             .create();
 
-    public static boolean getDigitalState(Channel ch, @NonNull Integer id) throws ChannelNotFoundException,
+    public static boolean getDigitalState(Channel ch, @NonNull Long id) throws ChannelNotFoundException,
             OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
-                .put("uri", "http://localhost:8080/devices/control/digital?id=" + id));
+                .put("uri", "http://localhost:8080/devices/control/digital/" + id));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") == 200) {
-            return response.getJSONObject("entity").getBoolean("digitalState");
+            return response.getJSONObject("entity").getBoolean("digital_state");
         } else {
             throw new OutputNotFoundException(id);
         }
     }
 
-    public static void setDigitalState(Channel ch, @NonNull Integer deviceId, boolean state)
+    public static void setDigitalState(Channel ch, @NonNull Long deviceId, boolean state)
             throws ChannelNotFoundException, OutputNotFoundException {
 
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "PUT")
                 .put("uri", "http://localhost:8080/devices/control/digital")
                 .put("request_body", new JSONObject()
-                        .put("id", deviceId)
-                        .put("digitalState", state)));
+                        .put("hardware_id", deviceId)
+                        .put("digital_state", state)));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
@@ -66,30 +67,30 @@ public class ClientAPI {
         }
     }
 
-    public static int getPwmSignal(Channel ch, @NonNull Integer id) throws ChannelNotFoundException,
+    public static int getPwmSignal(Channel ch, @NonNull Long id) throws ChannelNotFoundException,
             OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
-                .put("uri", "http://localhost:8080/devices/control/pwm?id=" + id));
+                .put("uri", "http://localhost:8080/devices/control/pwm/" + id));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") == 200) {
-            return response.getJSONObject("entity").getInt("pwmSignal");
+            return response.getJSONObject("entity").getInt("pwm_signal");
         } else {
             throw new OutputNotFoundException(id);
         }
     }
 
-    public static void setPwmSignal(Channel ch, @NonNull Integer deviceId, int signal)
+    public static void setPwmSignal(Channel ch, @NonNull Long deviceId,int signal)
             throws ChannelNotFoundException, OutputNotFoundException {
 
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "PUT")
-                .put("uri", "http://localhost:8080/devices/outputs/control/pwm")
+                .put("uri", "http://localhost:8080/devices/control/pwm")
                 .put("request_body", new JSONObject()
-                        .put("deviceId", deviceId)
-                        .put("pwmSignal", signal)));
+                        .put("hardware_id", deviceId)
+                        .put("pwm_signal", signal)));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
@@ -99,14 +100,14 @@ public class ClientAPI {
     }
 
     // DELETE
-    public static void deleteDevice(Channel ch, Integer deviceId) throws ChannelNotFoundException, OutputNotFoundException {
+    public static void deleteDevice(Channel ch, Long deviceId) throws ChannelNotFoundException, OutputNotFoundException {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "DELETE")
                 .put("uri", "http://localhost:8080/devices/one/" + deviceId));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
-        if (response.getInt("code") != 200) {
+        if (response.getInt("code") != 204) {
             throw new OutputNotFoundException(deviceId);
         }
     }
@@ -117,12 +118,12 @@ public class ClientAPI {
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "POST")
                 .put("uri", "http://localhost:8080/devices/create")
-                .put("request_body", new JSONObject(newDevice)));
+                .put("request_body", new JSONObject(gson.toJson(newDevice))));
 
         JSONObject response = JsonRequester.execute(request, ch);
 
         if (response.getInt("code") == 409) {
-            throw new OutputAlreadyExistException(newDevice.getGpio().getGpio());
+            throw new OutputAlreadyExistException(newDevice.getGpio().getGpioPin());
         }
     }
 
@@ -141,7 +142,7 @@ public class ClientAPI {
     }
 
     // GET
-    public static Device getDevice(Channel ch, Integer deviceId) throws ChannelNotFoundException,
+    public static Device getDevice(Channel ch, Long deviceId) throws ChannelNotFoundException,
             OutputNotFoundException {
         // ***********************************************************
         JSONObject request = buildRequest(new JSONObject()
@@ -177,7 +178,7 @@ public class ClientAPI {
                 Device device = new Device();
 
                 device.setName(outputJson.getString("name"));
-                device.setId(outputJson.getInt("id"));
+                device.setId(outputJson.getLong("id"));
 
                 devices.add(device);
             }
@@ -191,7 +192,7 @@ public class ClientAPI {
 
         JSONObject request = buildRequest(new JSONObject()
                 .put("method", "GET")
-                .put("uri", "http://localhost:8080/devices/available?type=" + type.name().toLowerCase()));
+                .put("uri", "http://localhost:8080/util/gpio/available?signalType=" + type.name().toLowerCase()));
 
         JSONArray array = JsonRequester.execute(request, ch)
                 .getJSONObject("entity")

@@ -48,7 +48,7 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
 
             String[] arr = PATTERN.split(msg.getText());
             String cmd = arr[0];
-            int deviceId = arr.length > 1 ? Integer.parseInt(arr[1]) : 0;
+            long deviceId = arr.length > 1 ? Integer.parseInt(arr[1]) : 0;
 
             try {
                 switch (cmd) {
@@ -81,7 +81,7 @@ public class DeviceConfirmRemoveLevel implements AnswerCreator {
     }
 
     public static void goToDeviceConfirmRemoveLevel(UserInstance user, IncomingMessage msg,
-                                                    int deviceId, CallbackAction action) {
+                                                    long deviceId, CallbackAction action) {
 
         executeAsync(new InlineKeyboardMessage(user.getChatId(), removeConfirmationDevice,
                 new ArrayList<>() {{

@@ -82,7 +82,7 @@ public class DeviceEditingLevel implements AnswerCreator {
     }
 
     public static void goToDeviceEditingLevel(UserInstance user, IncomingMessage msg,
-                                              int deviceId, CallbackAction action) {
+                                              long deviceId, CallbackAction action) {
         try {
             user.setDeviceEditor(new DeviceEditor(user, deviceId));
             goToChoice(user, msg, () -> {

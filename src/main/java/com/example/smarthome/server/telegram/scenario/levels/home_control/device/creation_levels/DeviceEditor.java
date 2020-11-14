@@ -35,7 +35,7 @@ public class DeviceEditor {
     @Getter(value = AccessLevel.PACKAGE)
     private final Device editingDevice;
 
-    DeviceEditor(UserInstance user, int deviceId) throws ChannelNotFoundException, OutputNotFoundException {
+    DeviceEditor(UserInstance user, long deviceId) throws ChannelNotFoundException, OutputNotFoundException {
         editingDevice = getDevice(getChannel(user.getChatId()), deviceId);
         this.user = user;
     }
@@ -54,7 +54,7 @@ public class DeviceEditor {
             Boolean inversion = (Boolean) currEditingLvl.process(user, msg);
 
             if (inversion != null) {
-                editingDevice.setReverse(inversion);
+                editingDevice.setSignalInversion(inversion);
                 update(msg, () -> EmojiCallback.success(msg.getCallbackId()));
                 return true;
             }

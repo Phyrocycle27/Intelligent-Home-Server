@@ -45,7 +45,7 @@ public class DeviceCreator {
     DeviceCreator(UserInstance user) {
         creationDevice = new Device();
         creationDevice.setGpio(new GPIO());
-        creationDevice.getGpio().setMode(GPIOMode.OUTPUT);
+        creationDevice.getGpio().setPinMode(GPIOMode.OUTPUT);
         this.user = user;
     }
 
@@ -94,7 +94,7 @@ public class DeviceCreator {
         } else if (currCreationLvl.getClass().equals(SetupSignalTypeLevel.class)) {
             SignalType signalType = (SignalType) currCreationLvl.process(user, msg);
             if (signalType != null) {
-                creationDevice.getGpio().setType(signalType);
+                creationDevice.getGpio().setSignalType(signalType);
                 goToSetupGPIOLevel(user, msg, () -> {
                     user.getDeviceCreator().setCurrCreationLvl(SetupGPIOLevel.getInstance());
                     EmojiCallback.next(msg.getCallbackId());
@@ -104,7 +104,7 @@ public class DeviceCreator {
         } else if (currCreationLvl.getClass().equals(SetupGPIOLevel.class)) {
             Integer gpio = (Integer) currCreationLvl.process(user, msg);
             if (gpio != null) {
-                creationDevice.getGpio().setGpio(gpio);
+                creationDevice.getGpio().setGpioPin(gpio);
                 goToSetupSignalInversionLevel(user, msg, () -> {
                     user.getDeviceCreator().setCurrCreationLvl(SetupSignalInversionLevel.getInstance());
                     EmojiCallback.next(msg.getCallbackId());
@@ -114,7 +114,7 @@ public class DeviceCreator {
         } else if (currCreationLvl.getClass().equals(SetupSignalInversionLevel.class)) {
             Boolean inversion = (Boolean) currCreationLvl.process(user, msg);
             if (inversion != null) {
-                creationDevice.setReverse(inversion);
+                creationDevice.setSignalInversion(inversion);
                 createDevice(msg);
                 destroy();
                 return true;

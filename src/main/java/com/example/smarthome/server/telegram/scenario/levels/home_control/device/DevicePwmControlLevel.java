@@ -47,7 +47,7 @@ public class DevicePwmControlLevel implements AnswerCreator {
 
             String[] arr = PATTERN.split(msg.getText());
             String cmd = arr[0];
-            int deviceId = arr.length > 1 ? Integer.parseInt(arr[1]) : 0;
+            long deviceId = arr.length > 1 ? Long.parseLong(arr[1]) : 0;
 
             try {
                 switch (cmd) {
@@ -78,7 +78,7 @@ public class DevicePwmControlLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToDevicePwmControlLevel(UserInstance user, IncomingMessage msg, int deviceId,
+    public static void goToDevicePwmControlLevel(UserInstance user, IncomingMessage msg, long deviceId,
                                                  CallbackAction action) {
         try {
             Device device = getDevice(getChannel(user.getChatId()), deviceId);

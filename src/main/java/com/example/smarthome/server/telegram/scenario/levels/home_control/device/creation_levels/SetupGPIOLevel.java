@@ -40,7 +40,7 @@ public class SetupGPIOLevel implements MessageProcessor {
         if (msg.getType() == MessageType.CALLBACK) {
             try {
                 if (getAvailableGPIOS(getChannel(user.getChatId()), user.getDeviceCreator()
-                        .getCreationDevice().getGpio().getType()).contains(msg.getText())) {
+                        .getCreationDevice().getGpio().getSignalType()).contains(msg.getText())) {
                     return Integer.valueOf(msg.getText());
                 } else {
                     goToSetupGPIOLevel(user, msg, () ->
@@ -60,7 +60,7 @@ public class SetupGPIOLevel implements MessageProcessor {
         try {
             executeAsync(new InlineKeyboardMessage(user.getChatId(), choosePin, new ArrayList<>() {{
                 List<String> outputs = getAvailableGPIOS(getChannel(user.getChatId()), user.getDeviceCreator()
-                        .getCreationDevice().getGpio().getType());
+                        .getCreationDevice().getGpio().getSignalType());
                 for (String s : outputs)
                     add(new CallbackButton(s, s));
             }})

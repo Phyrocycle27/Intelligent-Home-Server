@@ -11,13 +11,19 @@ import java.time.LocalDateTime;
 @Builder
 public class Device {
 
-    private Integer id;
+    private Long id;
 
     private String name;
 
-    private Boolean reverse;
+    private String description;
 
-    private LocalDateTime creationDate;
+    private Boolean signalInversion;
+
+    private Long areaId;
+
+    private LocalDateTime creationTimestamp;
+
+    private LocalDateTime updateTimestamp;
 
     private GPIO gpio;
 }

@@ -57,7 +57,7 @@ public class DeviceLevel implements AnswerCreator {
 
             String[] arr = PATTERN.split(msg.getText());
             String cmd = arr[0];
-            int deviceId = arr.length > 1 ? Integer.parseInt(arr[1]) : 0;
+            long deviceId = arr.length > 1 ? Long.parseLong(arr[1]) : 0;
 
             try {
                 switch (cmd) {
@@ -96,15 +96,15 @@ public class DeviceLevel implements AnswerCreator {
         return false;
     }
 
-    public static void goToDeviceLevel(UserInstance user, IncomingMessage msg, int deviceId, CallbackAction action) {
+    public static void goToDeviceLevel(UserInstance user, IncomingMessage msg, long deviceId, CallbackAction action) {
         try {
             Device device = getDevice(getChannel(user.getChatId()), deviceId);
             List<CallbackButton> buttons = new ArrayList<>();
-            String inversion = device.getReverse() ? "включена" : "выключена";
+            String inversion = device.getSignalInversion() ? "включена" : "выключена";
             String currStateText = "";
             String signalType = "";
 
-            if (device.getGpio().getType() == SignalType.DIGITAL) {
+            if (device.getGpio().getSignalType() == SignalType.DIGITAL) {
                 boolean currState = getDigitalState(getChannel(user.getChatId()), device.getId());
                 signalType = "цифовой";
 
@@ -115,7 +115,7 @@ public class DeviceLevel implements AnswerCreator {
                 } else {
                     buttons.add(new CallbackButton("Включить", "on_" + device.getId()));
                 }
-            } else if (device.getGpio().getType() == SignalType.PWM) {
+            } else if (device.getGpio().getSignalType() == SignalType.PWM) {
                 int currSignal = getPwmSignal(getChannel(user.getChatId()), device.getId());
                 signalType = "ШИМ";
 
@@ -145,7 +145,7 @@ public class DeviceLevel implements AnswerCreator {
                             "Инверсия: <i>%s</i>\n" +
                             "GPIO-пин: <i>%d</i>",
                     device.getName(), currStateText, signalType, inversion,
-                    device.getGpio().getGpio()), buttons)
+                    device.getGpio().getGpioPin()), buttons)
                     .setMessageId(msg.getId())
                     .hasBackButton(true), () -> {
                 user.setCurrentLvl(instance);
